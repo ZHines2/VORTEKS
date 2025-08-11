@@ -2,6 +2,8 @@ import { Game, setLogFunction } from './game.js';
 import { createRenderFunction, bump, bumpHP, bumpShield } from './ui.js';
 import { openDeckBuilder, buildRandomDeck } from './deck-builder.js';
 import { runSelfTests } from './tests.js';
+import { initFaceGenerator, drawOppFace, setOpponentName } from './face-generator.js';
+import { makePersonaDeck } from './ai.js';
 
 const MUSIC_FILE = 'VORTEKS.mp3';
 const LS_KEY = 'vorteks-muted';
@@ -51,6 +53,9 @@ window.buildRandomDeck = buildRandomDeck;
 document.addEventListener('DOMContentLoaded', () => {
   setupMusic();
 
+  // Initialize face generator
+  initFaceGenerator();
+
   // Usual game boot
   setLogFunction(function log(entry){
     const logBox = document.getElementById('log');
@@ -72,6 +77,21 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('endTurn').onclick = () => Game.endTurn();
   document.getElementById('restart').onclick = () => { document.getElementById('startModal').hidden = false; };
   document.getElementById('selfTest').onclick = () => runSelfTests(Game, window.log, showStart);
+
+  // Reroll Face button handler
+  document.getElementById('rerollFace').onclick = () => {
+    const faceInfo = drawOppFace();
+    Game.persona = faceInfo.persona;
+    setOpponentName(Game.persona);
+    // Rebuild opponent deck to match new face/persona and redraw their hand to same size
+    const keepN = Game.opp.hand ? Game.opp.hand.length : 5;
+    Game.opp.deck = makePersonaDeck(Game.persona);
+    Game.opp.hand = [];
+    Game.opp.discard = [];
+    Game.opp.draw(keepN || 5);
+    if (window.log) window.log('Opponent shifts to ' + Game.persona + ' persona. Deck re-tuned.');
+    if (window.render) window.render();
+  };
 
   // Start screen logic
   function showStart() {
