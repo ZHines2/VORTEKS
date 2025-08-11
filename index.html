@@ -238,116 +238,6 @@
   const rng = (n)=>Math.floor(Math.random()*n);
   const shuffle = a => { for(let i=a.length-1;i>0;i--){ const j=rng(i+1); [a[i],a[j]]=[a[j],a[i]] } return a };
 
-  // ---------- Card Unlock System ----------
-  /**
-   * Card unlock system for VORTEKS
-   * 
-   * Starting cards (6): swords, shield, heart, fire, bolt, star
-   * Locked cards (4): echo, snow, dagger, loop
-   * 
-   * Persistence: localStorage with key 'vorteks-unlocked-cards'
-   * Unlock conditions: defeat opponents with specific personas
-   * 
-   * Future extensibility: Add new cards to UNLOCK_CONDITIONS with custom unlock logic
-   */
-  
-  // Cards available at game start (always unlocked)
-  const STARTING_CARDS = ['swords', 'shield', 'heart', 'fire', 'bolt', 'star'];
-  
-  // Unlock conditions for locked cards
-  const UNLOCK_CONDITIONS = {
-    'echo': { type: 'defeat-persona', persona: 'Trickster', description: 'Defeat a Trickster opponent' },
-    'snow': { type: 'defeat-persona', persona: 'Doctor', description: 'Defeat a Doctor opponent' },
-    'dagger': { type: 'defeat-persona', persona: 'Bruiser', description: 'Defeat a Bruiser opponent' },
-    'loop': { type: 'defeat-persona', persona: 'any', description: 'Win any battle' }
-  };
-
-  // Get unlocked cards from localStorage, defaults to starting cards only
-  function getUnlockedCards() {
-    try {
-      const stored = localStorage.getItem('vorteks-unlocked-cards');
-      const unlocked = stored ? JSON.parse(stored) : STARTING_CARDS.slice();
-      // Ensure starting cards are always included
-      STARTING_CARDS.forEach(id => {
-        if (!unlocked.includes(id)) unlocked.push(id);
-      });
-      return unlocked;
-    } catch (e) {
-      console.warn('Failed to load unlocked cards:', e);
-      return STARTING_CARDS.slice();
-    }
-  }
-
-  // Save unlocked cards to localStorage
-  function saveUnlockedCards(unlockedCards) {
-    try {
-      localStorage.setItem('vorteks-unlocked-cards', JSON.stringify(unlockedCards));
-    } catch (e) {
-      console.warn('Failed to save unlocked cards:', e);
-    }
-  }
-
-  // Check if a card is unlocked
-  function isCardUnlocked(cardId) {
-    return getUnlockedCards().includes(cardId);
-  }
-
-  // Filter CARDS array to only unlocked cards
-  function getAvailableCards() {
-    const unlocked = getUnlockedCards();
-    return CARDS.filter(card => unlocked.includes(card.id));
-  }
-
-  // Unlock a card and persist the change
-  function unlockCard(cardId) {
-    const unlocked = getUnlockedCards();
-    if (!unlocked.includes(cardId)) {
-      unlocked.push(cardId);
-      saveUnlockedCards(unlocked);
-      
-      // Find card for notification
-      const card = CARDS.find(c => c.id === cardId);
-      if (card) {
-        showUnlockNotification(card);
-        log(`🎉 CARD UNLOCKED: ${card.sym} ${card.name}!`);
-      }
-      return true;
-    }
-    return false;
-  }
-
-  // Show unlock notification (modal or enhanced log message)
-  function showUnlockNotification(card) {
-    // For now, use enhanced log message - can be expanded to modal later
-    const logBox = $('#log');
-    const notification = document.createElement('div');
-    notification.style.cssText = 'color: var(--good); font-weight: bold; border: 1px solid var(--good); padding: 4px; margin: 2px 0;';
-    notification.textContent = `🎉 NEW CARD UNLOCKED: ${card.sym} ${card.name} - ${cardText(card)}`;
-    logBox.prepend(notification);
-  }
-
-  // Check for and process card unlocks after winning a battle
-  function checkForUnlocks(defeatedPersona) {
-    const unlocked = getUnlockedCards();
-    let newUnlocks = false;
-
-    for (const [cardId, condition] of Object.entries(UNLOCK_CONDITIONS)) {
-      // Skip if already unlocked
-      if (unlocked.includes(cardId)) continue;
-
-      // Check unlock condition
-      if (condition.type === 'defeat-persona') {
-        if (condition.persona === 'any' || condition.persona === defeatedPersona) {
-          unlockCard(cardId);
-          newUnlocks = true;
-        }
-      }
-      // Future unlock types can be added here (e.g., 'win-streak', 'use-card-x-times', etc.)
-    }
-
-    return newUnlocks;
-  }
-
   // ---------- Data-driven cards ----------
   const CARDS = [
     { id:'heart', sym:icons.heart, name:'Heart', cost:1, type:'skill', tags:['heal'],
@@ -537,13 +427,7 @@
       if(this.you.hp<=0 || this.opp.hp<=0){
         this.over=true; const youWin = this.opp.hp<=0 && this.you.hp>0;
         log(youWin? 'You win!':'AI wins!');
-        if(youWin){ 
-          this.streak++; 
-          // Check for card unlocks when player wins
-          checkForUnlocks(this.persona);
-        } else { 
-          this.streak=0; 
-        }
+        if(youWin){ this.streak++; } else { this.streak=0; }
       }
     }
   };
@@ -656,19 +540,13 @@
     const grid=$('#deckGrid');
     const cntEl=$('#deckCount');
     const need=20; $('#deckNeed').textContent=need;
-    const counts={}; 
-    
-    // Only initialize counts for unlocked cards
-    const availableCards = getAvailableCards();
-    availableCards.forEach(c=>counts[c.id]=0);
-    
+    const counts={}; CARDS.forEach(c=>counts[c.id]=0);
     function deckSize(){ return Object.values(counts).reduce((a,b)=>a+b,0); }
     function rebuild(){
       grid.innerHTML='';
-      // Only show unlocked cards in deck builder
-      availableCards.forEach(c=>{
+      CARDS.forEach(c=>{
         const card=document.createElement('div'); card.className='qcard';
-        card.innerHTML=`<div style=\"display:flex;justify-content:space-between;align-items:center\"><div><span style=\"margin-right:6px\">${c.sym}</span>${c.name}</div><div class=\"cost\">${c.cost}</div></div><div style=\"margin-top:6px;font-size:10px\">${cardText(c)}</div><div style=\"display:flex;gap:6px;margin-top:6px;align-items:center\"><button class=\"btn\" data-act=\"sub\" data-id=\"${c.id}\">-</button><div>${counts[c.id]||0}</div><button class=\"btn\" data-act=\"add\" data-id=\"${c.id}\">+</button></div>`;
+        card.innerHTML=`<div style=\"display:flex;justify-content:space-between;align-items:center\"><div><span style=\"margin-right:6px\">${c.sym}</span>${c.name}</div><div class=\"cost\">${c.cost}</div></div><div style=\"margin-top:6px;font-size:10px\">${cardText(c)}</div><div style=\"display:flex;gap:6px;margin-top:6px;align-items:center\"><button class=\"btn\" data-act=\"sub\" data-id=\"${c.id}\">-</button><div>${counts[c.id]}</div><button class=\"btn\" data-act=\"add\" data-id=\"${c.id}\">+</button></div>`;
         grid.appendChild(card);
       });
       cntEl.textContent = deckSize();
@@ -676,13 +554,13 @@
     }
     grid.onclick=(e)=>{
       const b=e.target.closest('button.btn'); if(!b) return; const id=b.getAttribute('data-id'); const act=b.getAttribute('data-act');
-      if(act==='add'){ if((counts[id]||0)<4 && deckSize()<need) counts[id]=(counts[id]||0)+1; }
-      if(act==='sub'){ if((counts[id]||0)>0) counts[id]--; }
+      if(act==='add'){ if(counts[id]<4 && deckSize()<need) counts[id]++; }
+      if(act==='sub'){ if(counts[id]>0) counts[id]--; }
       rebuild();
     };
     $('#deckClear').onclick=()=>{ Object.keys(counts).forEach(k=>counts[k]=0); rebuild(); };
     $('#deckConfirm').onclick=()=>{
-      const deck=[]; for(const id in counts){ for(let i=0;i<(counts[id]||0);i++){ deck.push(CARDS.find(c=>c.id===id)); } }
+      const deck=[]; for(const id in counts){ for(let i=0;i<counts[id];i++){ deck.push(CARDS.find(c=>c.id===id)); } }
       modal.hidden=true; done(shuffle(deck));
     };
     $('#deckQuick').onclick=()=>{ modal.hidden=true; done(buildRandomDeck(20,4)); };
@@ -733,9 +611,7 @@
 
   // ---------- Quick Start Helpers ----------
   function buildRandomDeck(size=20, maxCopies=4){
-    // Only use unlocked cards for deck generation
-    const availableCards = getAvailableCards();
-    const pool = availableCards.map(c=>c.id);
+    const pool = CARDS.map(c=>c.id);
     const counts={}; pool.forEach(id=>counts[id]=0);
     const deck=[];
     while(deck.length<size){
