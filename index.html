@@ -9,8 +9,9 @@
 </head>
 <body>
   <div class="wrap">
+    <!-- Mute Button: always visible, top-right -->
+    <button id="muteBtn" aria-label="Mute music" title="Mute/unmute music">🔊</button>
     <h1>VORTEKS</h1>
-
     <!-- Opponent Panel -->
     <div class="panel" id="oppPanel">
       <div class="opp-box">
@@ -31,7 +32,6 @@
         </div>
       </div>
     </div>
-
     <!-- Player Panel -->
     <div class="panel" id="youPanel">
       <div class="hud">
@@ -48,13 +48,11 @@
         <button id="selfTest" class="btn" title="Run built-in tests">SELF‑TESTS</button>
       </div>
     </div>
-
     <!-- Log Panel -->
     <div class="panel">
       <div class="log" id="log" aria-live="polite"></div>
     </div>
   </div>
-
   <!-- Start Screen Modal -->
   <div class="modal" id="startModal">
     <div class="box" style="text-align:center; width:min(96vw, 480px)">
@@ -65,7 +63,6 @@
       </div>
     </div>
   </div>
-
   <!-- Deck Builder Modal -->
   <div class="modal" id="deckModal" hidden>
     <div class="box">
@@ -81,7 +78,6 @@
       </div>
     </div>
   </div>
-
   <!-- Quirk Picker Modal -->
   <div class="modal" id="quirkModal" hidden>
     <div class="box">
@@ -93,7 +89,6 @@
       </div>
     </div>
   </div>
-
   <script type="module" src="src/main.js"></script>
 </body>
 </html>
