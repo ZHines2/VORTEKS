@@ -214,6 +214,15 @@ export const Game = {
   
   hit(target, dmg, pierce = false, simulate = false) {
     const atk = this.turn === 'you' ? this.you : this.opp;
+    
+    // Apply Focus bonus (+nextPlus) and consume it
+    if (atk.status.nextPlus && atk.status.nextPlus > 0) {
+      dmg += atk.status.nextPlus;
+      if (!simulate) {
+        atk.status.nextPlus = 0;
+      }
+    }
+    
     let extraPierce = 0;
     if (!atk.isAI && atk.quirk === 'piercer' && !atk.status.firstAttackUsed) { 
       extraPierce = 1; 
@@ -223,17 +232,21 @@ export const Game = {
     let blocked = 0;
     
     if (!pierce) {
-      if (extraPierce > 0) { 
-        const used = Math.min(target.shield, extraPierce); 
-        target.shield -= used; 
-      }
-      const used = Math.min(target.shield, dmg); 
+      // Piercer allows 1 damage to bypass shield, but rest is blocked normally
+      let pierceAmount = Math.min(extraPierce, dmg);
+      let remainingDmg = dmg - pierceAmount;
+      
+      // Block remaining damage with shield
+      const used = Math.min(target.shield, remainingDmg); 
       if (used > 0) { 
         target.shield -= used; 
         if (!simulate && window.bumpShield) window.bumpShield(target); 
-        dmg -= used; 
+        remainingDmg -= used; 
         blocked = used;
       }
+      
+      // Total damage is pierced amount + unblocked remainder
+      dmg = pierceAmount + remainingDmg;
     }
     if (dmg > 0) { 
       target.hp = Math.max(0, target.hp - dmg); 
