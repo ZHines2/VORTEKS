@@ -153,6 +153,14 @@ export const Game = {
     p.energy = p.maxEnergy - (p.energyPenaltyNext || 0);
     p.energyPenaltyNext = 0;
     
+    // Handle Curiosity next-turn draw effect
+    if (p.status.curiosityNextDraw) {
+      const actorName = p === this.you ? '[YOU]' : '[CAT]';
+      if (log) log(`${actorName} Curiosity triggers (+1 draw).`);
+      p.draw(1);
+      p.status.curiosityNextDraw = false;
+    }
+    
     // Reset per-turn achievement tracking if player's turn
     if (p === this.you) {
       this.turnTypes = new Set();
@@ -189,6 +197,13 @@ export const Game = {
         youShield: this.you.shield,
         youUnspentEnergy: this.you.energy
       });
+    }
+    
+    // Handle Curiosity power effect: bank unspent energy for next turn draw
+    if (me.status.curiosityPower && me.energy > 0) {
+      me.status.curiosityNextDraw = true;
+      const actorName = me === this.you ? '[YOU]' : '[CAT]';
+      if (log) log(`${actorName} Curiosity stores potential.`);
     }
     
     if (me.status.burn && me.status.burnTurns > 0) { 
@@ -411,6 +426,9 @@ export const Game = {
       }
       if (status.self.energyNowDelta) { 
         state.me.energy = clamp(state.me.energy + status.self.energyNowDelta, 0, state.me.maxEnergy); 
+      }
+      if (status.self.curiosityPower && !simulate) { 
+        state.me.status.curiosityPower = true; 
       }
     }
     

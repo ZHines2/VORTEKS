@@ -23,12 +23,27 @@ export function makePersonaDeck(kind) {
     counts.snow += 1; 
     counts.swords -= 1; 
   }
+  if (kind === 'cat') {
+    // Cat deck: 3 copies of Curiosity + balanced mix of low-cost attacks/skills
+    counts.curiosity = 3;
+    counts.swords += 1;  // More basic attacks
+    counts.bolt += 1;    // Low-cost draw attack
+    counts.heart += 1;   // Some sustain
+    counts.shield += 1;  // Some defense
+    counts.dagger -= 1;  // Fewer expensive cards
+    counts.loop -= 1;    // Fewer expensive cards
+  }
   
   const deck = []; 
   for (const id in counts) { 
-    for (let i = 0; i < counts[id]; i++) { 
-      deck.push(CARDS.find(c => c.id === id)); 
-    } 
+    if (counts[id] > 0) {  // Only add cards with positive counts
+      for (let i = 0; i < counts[id]; i++) { 
+        const card = CARDS.find(c => c.id === id);
+        if (card) {  // Only add if card exists
+          deck.push(card); 
+        }
+      } 
+    }
   }
   return shuffle(deck);
 }

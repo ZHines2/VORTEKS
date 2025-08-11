@@ -93,12 +93,21 @@ const UNLOCK_META = [
     resetBattleFlags: (state) => {
       delete state.progress.loopBankedThisBattle;
     }
+  },
+  {
+    id: 'curiosity',
+    kind: 'persona',
+    description: 'Defeat a Cat opponent.',
+    progressHint: () => 'Find and defeat a rare Cat opponent.',
+    check: () => false // Handled by persona defeat system
   }
 ];
 
 // Persona-based unlock mapping (future expansion)
 // personaName -> cardId
 const PERSONA_UNLOCKS = {
+  // Cat persona unlocks Curiosity card
+  'cat': 'curiosity'
   // Example future entries:
   // 'Glacier': 'snow',
   // 'Assassin': 'dagger'

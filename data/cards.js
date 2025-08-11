@@ -123,4 +123,16 @@ export const CARDS = [
     scaling: {}, 
     ai: { role: 'economy', pri: 65 } 
   },
+  { 
+    id: 'curiosity', 
+    sym: '🐈', 
+    name: '🐈 Curiosity', 
+    cost: 1, 
+    type: 'power', 
+    tags: ['curiosity'],
+    effects: { damage: 0, pierce: false, heal: 0, shield: 0, draw: 0 }, 
+    status: { target: { burn: null, freezeEnergy: 0 }, self: { nextPlus: 0, maxEnergyDelta: 0, energyNowDelta: 0, cleanse: false, curiosityPower: true } }, 
+    scaling: {}, 
+    ai: { role: 'setup', pri: 45 } 
+  },
 ];
