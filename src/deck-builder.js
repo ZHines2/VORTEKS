@@ -1,6 +1,7 @@
 import { CARDS } from '../data/cards.js';
 import { shuffle, $ } from './utils.js';
 import { cardText } from './ui.js';
+import { getUnlockedCards } from './card-unlock.js';
 
 // Deck building functionality
 export function openDeckBuilder(done) {
@@ -9,8 +10,13 @@ export function openDeckBuilder(done) {
   const cntEl = $('#deckCount');
   const need = 20; 
   $('#deckNeed').textContent = need;
+  
+  // Get only unlocked cards
+  const unlockedCardIds = getUnlockedCards();
+  const availableCards = CARDS.filter(c => unlockedCardIds.includes(c.id));
+  
   const counts = {}; 
-  CARDS.forEach(c => counts[c.id] = 0);
+  availableCards.forEach(c => counts[c.id] = 0);
   
   function deckSize() { 
     return Object.values(counts).reduce((a, b) => a + b, 0); 
@@ -18,7 +24,7 @@ export function openDeckBuilder(done) {
   
   function rebuild() {
     grid.innerHTML = '';
-    CARDS.forEach(c => {
+    availableCards.forEach(c => {
       const card = document.createElement('div'); 
       card.className = 'qcard';
       card.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><div><span style="margin-right:6px">${c.sym}</span>${c.name}</div><div class="cost">${c.cost}</div></div><div style="margin-top:6px;font-size:10px">${cardText(c)}</div><div style="display:flex;gap:6px;margin-top:6px;align-items:center"><button class="btn" data-act="sub" data-id="${c.id}">-</button><div>${counts[c.id]}</div><button class="btn" data-act="add" data-id="${c.id}">+</button></div>`;
@@ -68,7 +74,10 @@ export function openDeckBuilder(done) {
 }
 
 export function buildRandomDeck(size = 20, maxCopies = 4) {
-  const pool = CARDS.map(c => c.id);
+  // Get only unlocked cards for random deck building
+  const unlockedCardIds = getUnlockedCards();
+  const pool = unlockedCardIds;
+  
   const counts = {}; 
   pool.forEach(id => counts[id] = 0);
   const deck = [];
