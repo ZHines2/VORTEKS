@@ -9,8 +9,9 @@
 </head>
 <body>
   <div class="wrap">
-    <!-- Mute Button: always visible, top-right -->
+    <!-- Top-right buttons: mute and help -->
     <button id="muteBtn" aria-label="Mute music" title="Mute/unmute music">🔊</button>
+    <button id="helpBtn" aria-label="Help" title="How to play VORTEKS">?</button>
     <h1>VORTEKS</h1>
     <!-- Opponent Panel -->
     <div class="panel" id="oppPanel">
@@ -87,6 +88,22 @@
         <div class="qcard" data-quirk="spicy">SPICY<br/><small>Your Burns deal +1.</small></div>
         <div class="qcard" data-quirk="piercer">PIERCER<br/><small>Your first attack each turn pierces 1.</small></div>
       </div>
+    </div>
+  </div>
+  <!-- How to Play Modal -->
+  <div class="modal" id="helpModal" hidden>
+    <div class="box" style="text-align:center; width:min(96vw, 520px)">
+      <div style="font-size:18px; color:var(--accent); margin:8px 0 16px"><strong>How to Play</strong></div>
+      <div style="text-align:left; line-height:1.4; margin-bottom:16px">
+        Welcome to <strong>VORTEKS</strong> — a tactical card battler where every decision matters!<br/><br/>
+        • Play cards using ⚡ energy to attack, defend, and combo<br/>
+        • Manage your health ❤, shields 🛡, and energy wisely<br/>
+        • Defeat AI opponents with unique personas and strategies<br/>
+        • Build custom decks or jump in with Quick Start<br/>
+        • Master quirks and status effects for deeper tactics<br/><br/>
+        <em>Strategy and timing unlock VORTEKS's true potential...</em>
+      </div>
+      <button id="helpCloseBtn" class="btn" style="background:var(--good); color:black; font-weight:bold">Got it!</button>
     </div>
   </div>
   <script type="module" src="src/main.js"></script>
