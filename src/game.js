@@ -171,6 +171,14 @@ export const Game = {
       logOpp('ends turn');
     }
     
+    // TODO: Call checkAchievementUnlocks with turnEnd context:
+    // checkAchievementUnlocks({
+    //   event: 'turnEnd',
+    //   turnTypes: /* Set of card types played this turn */,
+    //   youShield: this.you.shield,
+    //   youUnspentEnergy: this.you.energy
+    // });
+    
     if (me.status.burn && me.status.burnTurns > 0) { 
       this.hit(me, me.status.burn, true, false); 
       me.status.burnTurns--; 
@@ -199,6 +207,16 @@ export const Game = {
     } else {
       logOpp(`plays ${cardName}${costStr}`);
     }
+    
+    // TODO: Call checkAchievementUnlocks with cardPlayed context:
+    // if (isPlayer) {
+    //   checkAchievementUnlocks({
+    //     event: 'cardPlayed',
+    //     cardId: card.id,
+    //     cardType: card.type,
+    //     youEnergyAfter: p.energy - card.cost
+    //   });
+    // }
     
     // spend cost first
     p.spend(card.cost);
@@ -274,6 +292,13 @@ export const Game = {
       } else {
         logOpp(msg);
       }
+      
+      // TODO: Call checkAchievementUnlocks with damage context:
+      // checkAchievementUnlocks({
+      //   event: 'damage',
+      //   source: attackerIsPlayer ? 'you' : 'opp',
+      //   amount: dmg
+      // });
     }
     
     if (!simulate && !atk.status.firstAttackUsed && (dmg > 0 || pierce || extraPierce > 0)) {
@@ -408,6 +433,14 @@ export const Game = {
       } else { 
         this.streak = 0; 
       }
+      
+      // TODO: Call card unlock functions after battle end:
+      // recordBattleResult(youWin ? 'win' : 'loss');
+      // checkAchievementUnlocks({
+      //   event: 'battleEnd',
+      //   result: youWin ? 'win' : 'loss'
+      // });
+      // checkPersonaDefeatUnlocks(youWin ? this.persona : null);
     }
   },
 

@@ -15,6 +15,11 @@ export function openDeckBuilder(done) {
   const unlockedCardIds = getUnlockedCards();
   const availableCards = CARDS.filter(c => unlockedCardIds.includes(c.id));
   
+  // TODO: Future enhancement - show locked cards grayed out with unlock requirements:
+  // - Import getUnlockableCardsInfo() to show locked cards with descriptions
+  // - Display locked cards with reduced opacity and unlock hints
+  // - Make them unselectable but visible to show progression goals
+  
   const counts = {}; 
   availableCards.forEach(c => counts[c.id] = 0);
   

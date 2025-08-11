@@ -12,7 +12,8 @@ import {
   resetUnlocks, 
   debugUnlock,
   checkPersonaDefeatUnlocks,
-  checkAchievementUnlocks 
+  checkAchievementUnlocks,
+  recordBattleResult
 } from './card-unlock.js';
 
 const MUSIC_FILE = 'VORTEKS.mp3';
@@ -108,7 +109,8 @@ window.CardUnlock = {
   resetUnlocks,
   debugUnlock,
   checkPersonaDefeatUnlocks,
-  checkAchievementUnlocks
+  checkAchievementUnlocks,
+  recordBattleResult
 };
 
 // --- Game boot logic ---

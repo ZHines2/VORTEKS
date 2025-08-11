@@ -1,197 +1,251 @@
-// Card Unlock System for VORTEKS
-// Manages which cards are available to players
+// card-unlock.js
+// VORTEKS Card Unlock System
+// Design goals: simplicity, declarative metadata, scalability, non-intrusive UX.
 
-const UNLOCK_STORAGE_KEY = 'vorteks-unlocked-cards';
+const LS_KEY = 'vorteks-card-unlocks';
+const STORAGE_VERSION = 1;
 
-// Define starter cards (available from the beginning)
-const STARTER_CARDS = ['heart', 'swords', 'shield', 'fire', 'bolt', 'star'];
+// 6 starter cards (always unlocked immediately)
+const STARTER_CARDS = ['swords','shield','heart','fire','bolt','star'];
 
-// Define unlockable cards with their unlock conditions (stubbed for future expansion)
-const UNLOCKABLE_CARDS = {
-  'echo': {
-    name: 'Echo',
-    unlockCondition: 'defeat_trickster', // Stub: defeat a persona with trickster AI
-    description: 'Unlocked by defeating a Trickster persona'
+// Unlock metadata for NON-starter existing/future cards.
+// Each entry:
+//  id: card id
+//  kind: 'achievement' | 'persona'
+//  description: appears in UI / future unlocks panel
+//  check(ctx, state): returns true if achievement just satisfied; may mutate state.progress
+//  progressHint: optional progress string
+//  resetBattleFlags(state): optional cleanup at battle end
+const UNLOCK_META = [
+  {
+    id: 'echo',
+    kind: 'achievement',
+    description: 'Play 3 different card types in a single turn (attack + skill + power).',
+    progressHint: s => `Turn type diversity best: ${s.progress.echoMaxTurnTypes || 0}/3`,
+    check: (ctx, state) => {
+      if (ctx.event === 'turnEnd' && ctx.turnTypes) {
+        const size = ctx.turnTypes.size;
+        if (!state.progress.echoMaxTurnTypes || size > state.progress.echoMaxTurnTypes) {
+          state.progress.echoMaxTurnTypes = size;
+        }
+        return size >= 3;
+      }
+      return false;
+    }
   },
-  'snow': {
-    name: 'Freeze',
-    unlockCondition: 'achieve_perfect_defense', // Stub: win without taking damage
-    description: 'Unlocked by achieving perfect defense in a battle'
+  {
+    id: 'snow',
+    kind: 'achievement',
+    description: 'Win a battle while you have 10+ shield at any end-of-turn.',
+    progressHint: () => 'Accumulate ≥10 shield then win.',
+    check: (ctx, state) => {
+      if (ctx.event === 'turnEnd' && ctx.youShield != null) {
+        if (ctx.youShield >= 10) state.progress.snowFlagThisBattle = true;
+      }
+      if (ctx.event === 'battleEnd' && ctx.result === 'win') {
+        return !!state.progress.snowFlagThisBattle;
+      }
+      return false;
+    },
+    resetBattleFlags: (state) => {
+      delete state.progress.snowFlagThisBattle;
+    }
   },
-  'dagger': {
-    name: 'Pierce',
-    unlockCondition: 'defeat_armored_foe', // Stub: defeat enemy with high shield
-    description: 'Unlocked by defeating a heavily armored opponent'
+  {
+    id: 'dagger',
+    kind: 'achievement',
+    description: 'Deal 7 or more total damage in a single turn.',
+    progressHint: s => `Best burst: ${s.progress.daggerBurst || 0}/7`,
+    check: (ctx, state) => {
+      if (ctx.event === 'damage' && ctx.source === 'you') {
+        state.progress.tempTurnDamage = (state.progress.tempTurnDamage || 0) + ctx.amount;
+      }
+      if (ctx.event === 'turnEnd') {
+        const burst = state.progress.tempTurnDamage || 0;
+        if (!state.progress.daggerBurst || burst > state.progress.daggerBurst) {
+          state.progress.daggerBurst = burst;
+        }
+        state.progress.tempTurnDamage = 0;
+        return burst >= 7;
+      }
+      return false;
+    }
   },
-  'loop': {
-    name: 'Surge',
-    unlockCondition: 'win_streak_5', // Stub: achieve 5 win streak
-    description: 'Unlocked by achieving a 5-win streak'
+  {
+    id: 'loop',
+    kind: 'achievement',
+    description: 'End 3 different turns in one battle with ≥2 unspent energy, then win.',
+    progressHint: s => `Banked turns best: ${s.progress.loopBestBanked || 0}/3`,
+    check: (ctx, state) => {
+      if (ctx.event === 'turnEnd' && ctx.youUnspentEnergy != null) {
+        if (ctx.youUnspentEnergy >= 2) {
+          state.progress.loopBankedThisBattle = (state.progress.loopBankedThisBattle || 0) + 1;
+          if (!state.progress.loopBestBanked || state.progress.loopBankedThisBattle > state.progress.loopBestBanked) {
+            state.progress.loopBestBanked = state.progress.loopBankedThisBattle;
+          }
+        }
+      }
+      if (ctx.event === 'battleEnd' && ctx.result === 'win') {
+        return (state.progress.loopBankedThisBattle || 0) >= 3;
+      }
+      return false;
+    },
+    resetBattleFlags: (state) => {
+      delete state.progress.loopBankedThisBattle;
+    }
   }
+];
+
+// Persona-based unlock mapping (future expansion)
+// personaName -> cardId
+const PERSONA_UNLOCKS = {
+  // Example future entries:
+  // 'Glacier': 'snow',
+  // 'Assassin': 'dagger'
 };
 
-/**
- * Get the list of currently unlocked card IDs
- * @returns {string[]} Array of unlocked card IDs
- */
-export function getUnlockedCards() {
+function freshState() {
+  const base = {
+    version: STORAGE_VERSION,
+    unlocked: {},
+    progress: {},
+    personaDefeats: {},
+    stats: {}
+  };
+  STARTER_CARDS.forEach(id => { base.unlocked[id] = true; });
+  return base;
+}
+
+function loadState() {
   try {
-    const saved = localStorage.getItem(UNLOCK_STORAGE_KEY);
-    const unlocked = saved ? JSON.parse(saved) : [];
-    
-    // Always include starter cards
-    const allUnlocked = new Set([...STARTER_CARDS, ...unlocked]);
-    return Array.from(allUnlocked);
-  } catch (error) {
-    console.warn('Failed to load unlock state, using starter cards only:', error);
-    return [...STARTER_CARDS];
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) {
+      const s = freshState();
+      saveState(s);
+      return s;
+    }
+    const parsed = JSON.parse(raw);
+    if (parsed.version !== STORAGE_VERSION) {
+      const s = freshState();
+      saveState(s);
+      return s;
+    }
+    parsed.unlocked ||= {};
+    parsed.progress ||= {};
+    parsed.personaDefeats ||= {};
+    parsed.stats ||= {};
+    return parsed;
+  } catch {
+    const s = freshState();
+    saveState(s);
+    return s;
   }
 }
 
-/**
- * Check if a specific card is unlocked
- * @param {string} cardId - The card ID to check
- * @returns {boolean} True if the card is unlocked
- */
-export function isCardUnlocked(cardId) {
-  return getUnlockedCards().includes(cardId);
+function saveState(state) {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch {}
 }
 
-/**
- * Unlock a card and save to localStorage
- * @param {string} cardId - The card ID to unlock
- * @returns {boolean} True if card was newly unlocked, false if already unlocked
- */
-export function unlockCard(cardId) {
-  if (STARTER_CARDS.includes(cardId)) {
-    return false; // Starter cards are always unlocked
-  }
-  
-  if (!UNLOCKABLE_CARDS[cardId]) {
-    console.warn(`Attempted to unlock unknown card: ${cardId}`);
-    return false;
-  }
-  
-  const currentUnlocked = getUnlockedCards();
-  if (currentUnlocked.includes(cardId)) {
-    return false; // Already unlocked
-  }
-  
+let _state = loadState();
+
+function isCardUnlocked(id) { return !!_state.unlocked[id]; }
+function getUnlockedCards() { return Object.keys(_state.unlocked).filter(k => _state.unlocked[k]); }
+
+function unlockCard(id, cause = '') {
+  if (isCardUnlocked(id)) return false;
+  _state.unlocked[id] = true;
+  saveState(_state);
+  announceUnlock(id, cause);
+  return true;
+}
+
+function announceUnlock(id, cause) {
+  const cardName = id; // Placeholder: could map id->pretty name later
+  const msg = `CARD UNLOCKED: ${cardName}${cause ? ' (' + cause + ')' : ''}`;
+  if (window.log) window.log(msg);
+  // Lightweight toast
   try {
-    const saved = localStorage.getItem(UNLOCK_STORAGE_KEY);
-    const unlocked = saved ? JSON.parse(saved) : [];
-    unlocked.push(cardId);
-    localStorage.setItem(UNLOCK_STORAGE_KEY, JSON.stringify(unlocked));
-    
-    // Show celebration message
-    showUnlockCelebration(cardId);
-    
-    return true;
-  } catch (error) {
-    console.error('Failed to save unlock state:', error);
-    return false;
+    const existing = document.getElementById('unlockToast');
+    if (existing) existing.remove();
+    const div = document.createElement('div');
+    div.id = 'unlockToast';
+    div.textContent = msg;
+    Object.assign(div.style, {
+      position: 'fixed', top: '12px', left: '50%', transform: 'translateX(-50%)',
+      background: 'var(--accent)', color: 'black', padding: '6px 12px', fontSize: '12px',
+      fontWeight: 'bold', borderRadius: '6px', zIndex: 9999, boxShadow: '0 2px 6px rgba(0,0,0,0.4)'
+    });
+    document.body.appendChild(div);
+    setTimeout(()=>div.remove(), 4000);
+  } catch {}
+}
+
+function getUnlockableCardsInfo() {
+  return UNLOCK_META.map(m => ({
+    id: m.id,
+    unlocked: isCardUnlocked(m.id),
+    kind: m.kind,
+    description: m.description,
+    progress: m.progressHint ? m.progressHint(_state) : ''
+  }));
+}
+
+function resetUnlocks() {
+  _state = freshState();
+  saveState(_state);
+}
+
+function debugUnlock(id) { unlockCard(id, 'debug'); }
+
+function checkPersonaDefeatUnlocks(personaName) {
+  if (!personaName) return;
+  _state.personaDefeats[personaName] = (_state.personaDefeats[personaName] || 0) + 1;
+  const cardId = PERSONA_UNLOCKS[personaName];
+  if (cardId && !isCardUnlocked(cardId)) unlockCard(cardId, 'Defeated persona: ' + personaName);
+  saveState(_state);
+}
+
+// ctx shapes:
+// { event: 'cardPlayed', cardId, cardType, youEnergyAfter }
+// { event: 'turnEnd', turnTypes:Set<string>, youShield, youUnspentEnergy }
+// { event: 'damage', source:'you'|'opp', amount }
+// { event: 'battleEnd', result:'win'|'loss' }
+function checkAchievementUnlocks(ctx) {
+  let unlockedAny = false;
+  for (const meta of UNLOCK_META) {
+    if (isCardUnlocked(meta.id)) continue;
+    const before = JSON.stringify(_state.progress);
+    const success = meta.check(ctx, _state);
+    const after = JSON.stringify(_state.progress);
+    if (success) {
+      unlockCard(meta.id, 'Achievement');
+      unlockedAny = true;
+    } else if (before !== after) {
+      saveState(_state); // progress changed
+    }
+    if (ctx.event === 'battleEnd' && meta.resetBattleFlags) meta.resetBattleFlags(_state);
   }
+  if (unlockedAny) saveState(_state);
 }
 
-/**
- * Show a celebratory message when a card is unlocked
- * @param {string} cardId - The unlocked card ID
- */
-function showUnlockCelebration(cardId) {
-  const cardInfo = UNLOCKABLE_CARDS[cardId];
-  if (!cardInfo) return;
-  
-  const message = `🎉 NEW CARD UNLOCKED! ${cardInfo.name} is now available in your deck builder!`;
-  
-  // Log to game log if available
-  if (window.log) {
-    window.log(message);
-  }
-  
-  // Also show as alert for immediate feedback
-  // TODO: Replace with proper UI notification in future
-  console.log(message);
+function recordBattleResult(result) {
+  _state.stats.totalBattles = (_state.stats.totalBattles || 0) + 1;
+  if (result === 'win') _state.stats.totalWins = (_state.stats.totalWins || 0) + 1;
+  saveState(_state);
 }
 
-/**
- * Get all unlockable cards and their states
- * @returns {Object} Object with card info and unlock states
- */
-export function getUnlockableCardsInfo() {
-  const unlockedCards = getUnlockedCards();
-  const info = {};
-  
-  for (const [cardId, cardData] of Object.entries(UNLOCKABLE_CARDS)) {
-    info[cardId] = {
-      ...cardData,
-      isUnlocked: unlockedCards.includes(cardId)
-    };
-  }
-  
-  return info;
-}
+// TODO (future): expose richer API for a dedicated Unlocks UI panel.
 
-/**
- * Reset all unlocks (for testing/debugging)
- * @returns {void}
- */
-export function resetUnlocks() {
-  try {
-    localStorage.removeItem(UNLOCK_STORAGE_KEY);
-    console.log('All card unlocks reset to default (starter cards only)');
-  } catch (error) {
-    console.error('Failed to reset unlocks:', error);
-  }
-}
-
-// Stub functions for future unlock trigger implementations
-// These will be called when specific game events occur
-
-/**
- * Check and potentially unlock cards based on defeating a persona
- * @param {string} persona - The defeated persona type
- * TODO: Implement persona-based unlock logic
- */
-export function checkPersonaDefeatUnlocks(persona) {
-  // Stub for future expansion
-  console.log(`Checking unlocks for defeating ${persona} persona...`);
-  
-  // Example implementation (commented out until persona system is ready):
-  // if (persona === 'trickster') {
-  //   unlockCard('echo');
-  // }
-}
-
-/**
- * Check and potentially unlock cards based on gameplay achievements
- * @param {string} achievement - The achievement earned
- * @param {Object} gameState - Current game state for context
- * TODO: Implement achievement-based unlock logic
- */
-export function checkAchievementUnlocks(achievement, gameState = {}) {
-  // Stub for future expansion
-  console.log(`Checking unlocks for achievement: ${achievement}`);
-  
-  // Example implementations (commented out until systems are ready):
-  // if (achievement === 'perfect_defense' && gameState.damageTaken === 0) {
-  //   unlockCard('snow');
-  // }
-  // if (achievement === 'win_streak' && gameState.streak >= 5) {
-  //   unlockCard('loop');
-  // }
-}
-
-/**
- * Manual unlock function for testing and debugging
- * @param {string} cardId - Card to unlock
- */
-export function debugUnlock(cardId) {
-  if (unlockCard(cardId)) {
-    console.log(`DEBUG: Manually unlocked ${cardId}`);
-  } else {
-    console.log(`DEBUG: ${cardId} was already unlocked or invalid`);
-  }
-}
-
-// Export constants for use by other modules
-export { STARTER_CARDS, UNLOCKABLE_CARDS };
+export {
+  STARTER_CARDS,
+  UNLOCK_META,
+  getUnlockedCards,
+  isCardUnlocked,
+  unlockCard,
+  getUnlockableCardsInfo,
+  resetUnlocks,
+  debugUnlock,
+  checkPersonaDefeatUnlocks,
+  checkAchievementUnlocks,
+  recordBattleResult
+};
