@@ -12,6 +12,19 @@ export function setLogFunction(logFn) {
   window.log = logFn;
 }
 
+// Helper functions for actor-aware logging
+function logYou(text) {
+  if (log) log({ actor: 'you', text });
+}
+
+function logOpp(text) {
+  if (log) log({ actor: 'opp', text });
+}
+
+function logAction(actor, text) {
+  if (log) log({ actor, text });
+}
+
 // Game state and logic
 export const Game = {
   you: null, 
@@ -42,7 +55,7 @@ export const Game = {
         this.opp.draw(5);
         this.turn = 'you'; 
         this.over = false;
-        log('New game. You start.');
+        if (log) log('New game. You start.');
         this.pickQuirk(() => { 
           this.startTurn(this.you); 
           if (window.render) window.render(); 
@@ -70,7 +83,7 @@ export const Game = {
     this.opp.draw(5);
     this.turn = 'you'; 
     this.over = false; 
-    log('Quick Start. You start.');
+    if (log) log('Quick Start. You start.');
     this.pickQuirk(() => { 
       this.startTurn(this.you); 
       if (window.render) window.render(); 
@@ -89,7 +102,7 @@ export const Game = {
           this.you.energy = clamp(this.you.energy + 1, 0, this.you.maxEnergy); 
         }
         modal.hidden = true;
-        log('Quirk: ' + q.toUpperCase());
+        if (log) log('Quirk: ' + q.toUpperCase());
         done();
       };
     });
@@ -105,16 +118,32 @@ export const Game = {
     }
     p.energy = p.maxEnergy - (p.energyPenaltyNext || 0);
     p.energyPenaltyNext = 0;
+    
+    // Log turn start and draw
+    const isPlayer = (p === this.you);
+    if (isPlayer) {
+      logYou('draws 1');
+    } else {
+      logOpp('draws 1');
+    }
+    
     p.draw(1);
     if (window.render) window.render();
   },
   
   endTurn() {
     const me = this.turn === 'you' ? this.you : this.opp;
+    
+    // Log end turn
+    if (me === this.you) {
+      logYou('ends turn');
+    } else {
+      logOpp('ends turn');
+    }
+    
     if (me.status.burn && me.status.burnTurns > 0) { 
       this.hit(me, me.status.burn, true, false); 
       me.status.burnTurns--; 
-      log(`${me.isAI ? 'AI' : 'You'} take burn.`);
     }
     if (me.status.burnTurns === 0) me.status.burn = 0;
     this.turn = this.turn === 'you' ? 'opp' : 'you';
@@ -130,6 +159,16 @@ export const Game = {
     const card = p.hand[idx]; 
     if (!card) return; 
     if (!p.canAfford(card)) return;
+    
+    // Log card play
+    const isPlayer = (p === this.you);
+    const cardName = card.name || card.id;
+    const costStr = card.cost > 0 ? ` (${card.cost}⚡)` : '';
+    if (isPlayer) {
+      logYou(`plays ${cardName}${costStr}`);
+    } else {
+      logOpp(`plays ${cardName}${costStr}`);
+    }
     
     // spend cost first
     p.spend(card.cost);
@@ -149,6 +188,10 @@ export const Game = {
     if (!atk.isAI && atk.quirk === 'piercer' && !atk.status.firstAttackUsed) { 
       extraPierce = 1; 
     }
+    
+    let originalDmg = dmg;
+    let blocked = 0;
+    
     if (!pierce) {
       if (extraPierce > 0) { 
         const used = Math.min(target.shield, extraPierce); 
@@ -159,12 +202,37 @@ export const Game = {
         target.shield -= used; 
         if (!simulate && window.bumpShield) window.bumpShield(target); 
         dmg -= used; 
+        blocked = used;
       }
     }
     if (dmg > 0) { 
       target.hp = Math.max(0, target.hp - dmg); 
       if (!simulate && window.bumpHP) window.bumpHP(target); 
     }
+    
+    // Log damage
+    if (!simulate && originalDmg > 0) {
+      const attackerIsPlayer = (atk === this.you);
+      const targetIsPlayer = (target === this.you);
+      
+      let msg = '';
+      if (pierce && extraPierce > 0) {
+        msg = `hits for ${originalDmg} (pierces ${extraPierce + originalDmg})`;
+      } else if (pierce) {
+        msg = `hits for ${originalDmg} (pierce)`;
+      } else if (blocked > 0) {
+        msg = `hits for ${dmg} (${blocked} blocked)`;
+      } else {
+        msg = `hits for ${dmg}`;
+      }
+      
+      if (attackerIsPlayer) {
+        logYou(msg);
+      } else {
+        logOpp(msg);
+      }
+    }
+    
     if (!simulate && !atk.status.firstAttackUsed && (dmg > 0 || pierce || extraPierce > 0)) {
       atk.status.firstAttackUsed = true;
     }
@@ -196,10 +264,22 @@ export const Game = {
     }
     
     // 2) primary numeric effects
-    if (effects.heal) { 
+    if (effects.heal && !simulate) { 
+      const isPlayer = (state.me === this.you);
+      if (isPlayer) {
+        logYou(`heals ${effects.heal}`);
+      } else {
+        logOpp(`heals ${effects.heal}`);
+      }
       state.me.hp = clamp(state.me.hp + effects.heal, 0, state.me.maxHP); 
     }
-    if (effects.shield) { 
+    if (effects.shield && !simulate) { 
+      const isPlayer = (state.me === this.you);
+      if (isPlayer) {
+        logYou(`gains ${effects.shield} shield`);
+      } else {
+        logOpp(`gains ${effects.shield} shield`);
+      }
       state.me.shield += effects.shield; 
     }
     if (effects.pierce) { 
@@ -214,11 +294,23 @@ export const Game = {
     }
     
     // 3) statuses
-    if (burnObj) { 
+    if (burnObj && !simulate) { 
+      const isPlayer = (state.me === this.you);
+      if (isPlayer) {
+        logYou(`applies Burn (${burnObj.amount})`);
+      } else {
+        logOpp(`applies Burn (${burnObj.amount})`);
+      }
       state.them.status.burn = burnObj.amount; 
       state.them.status.burnTurns = burnObj.turns; 
     }
-    if (status.target && status.target.freezeEnergy) { 
+    if (status.target && status.target.freezeEnergy && !simulate) { 
+      const isPlayer = (state.me === this.you);
+      if (isPlayer) {
+        logYou(`freezes opponent`);
+      } else {
+        logOpp(`freezes opponent`);
+      }
       state.them.status.frozenNext = (state.them.status.frozenNext || 0) + status.target.freezeEnergy; 
     }
     if (status.self) {

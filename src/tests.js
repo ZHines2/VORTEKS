@@ -97,5 +97,39 @@ export function runSelfTests(Game, log, showStart) {
     assertEqual('showStart exists', typeof showStart, 'function', log); 
   }
   
+  {
+    // Test actor-aware logging
+    let capturedLogs = [];
+    const testLog = (entry) => {
+      capturedLogs.push(entry);
+    };
+    
+    const me = createPlayer(false);
+    const foe = createPlayer(true);
+    const testGame = Object.create(Game);
+    testGame.you = me;
+    testGame.opp = foe;
+    testGame.turn = 'you';
+    testGame.over = false;
+    
+    // Set test log function
+    const originalSetLog = Game.setLogFunction;
+    Game.setLogFunction(testLog);
+    
+    // Test playCard logging
+    me.hand = [CARDS.find(c => c.id === 'swords')];
+    me.energy = 3;
+    testGame.playCard(me, 0);
+    
+    // Restore original log
+    Game.setLogFunction(log);
+    
+    // Check if actor-aware log was captured
+    const hasActorLog = capturedLogs.some(entry => 
+      entry && typeof entry === 'object' && entry.actor === 'you' && entry.text && entry.text.includes('plays')
+    );
+    assertEqual('Actor-aware logging works', hasActorLog, true, log);
+  }
+  
   log('Self-tests complete.');
 }
