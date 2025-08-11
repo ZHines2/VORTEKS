@@ -35,6 +35,10 @@ export const Game = {
   persona: null,
   ai: null,
   
+  setLogFunction(logFn) {
+    setLogFunction(logFn);
+  },
+  
   init() {
     this.you = createPlayer(false);
     this.opp = createPlayer(true);
