@@ -1,4 +1,4 @@
-import { clamp, $ } from './utils.js';
+import { clamp, $, shuffle } from './utils.js';
 import { createPlayer } from './player.js';
 import { drawOppFace, setOpponentName } from './face-generator.js';
 import { makePersonaDeck, createAIPlayer } from './ai.js';
@@ -486,10 +486,9 @@ export const Game = {
     this.you.status = { nextPlus: 0, firstAttackUsed: false };
     
     // Shuffle deck back together
-    this.you.deck = [...this.you.hand, ...this.you.discard];
+    this.you.deck = shuffle([...this.you.hand, ...this.you.discard]);
     this.you.hand = [];
     this.you.discard = [];
-    this.you.shuffleDeck();
     this.you.draw(5);
     
     // Generate new opponent
@@ -507,18 +506,31 @@ export const Game = {
 
   // Generate new opponent with different face and deck
   generateNewOpponent() {
-    // Create new AI opponent
-    this.opp = createAIPlayer();
-    this.ai = null; // Will be recreated
-    
     // Generate new face and persona
-    drawOppFace();
+    const faceInfo = drawOppFace();
+    this.persona = faceInfo.persona;
+    this.oppFeatures = faceInfo.features;
+    setOpponentName(this.persona, this.oppFeatures);
     
-    // Create new AI deck based on current opponent features
-    this.oppFeatures = null; // Reset for new generation
-    if (window.createAI) {
-      this.ai = window.createAI(this);
+    // Reset opponent stats  
+    this.opp.hp = this.opp.maxHP;
+    this.opp.shield = 0;
+    this.opp.energy = this.opp.maxEnergy;
+    this.opp.status = { nextPlus: 0, firstAttackUsed: false };
+    
+    // Create new AI deck based on current opponent persona
+    this.opp.deck = makePersonaDeck(this.persona);
+    this.opp.hand = [];
+    this.opp.discard = [];
+    this.opp.draw(5);
+    
+    // Log the new opponent
+    let logMessage = 'New opponent: ' + this.persona + ' appears!';
+    if (this.oppFeatures.isEasterEgg) {
+      logMessage = `✨ RARE OPPONENT! ${this.oppFeatures.easterEggType} ${this.persona} appears! ✨ [${this.oppFeatures.rarity.toUpperCase()}]`;
+      this.activateEasterEggMechanic(this.oppFeatures.placeholderMechanic);
     }
+    if (log) log(logMessage);
   },
 
   // Clear log function for restart
