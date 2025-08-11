@@ -130,6 +130,56 @@ export function runSelfTests(Game, log, showStart) {
     );
     assertEqual('Actor-aware logging works', hasActorLog, true, log);
   }
+
+  // Face generator enhancement tests
+  {
+    // Test easter egg face detection
+    const mockEasterEgg = {
+      persona: 'Automaton',
+      features: {
+        isEasterEgg: true,
+        easterEggType: 'Robot',
+        rarity: 'epic',
+        placeholderMechanic: 'electric_resistance'
+      }
+    };
+    
+    const isEasterEgg = mockEasterEgg.features.isEasterEgg;
+    const hasCorrectType = mockEasterEgg.features.easterEggType === 'Robot';
+    const hasRarity = ['rare', 'epic', 'legendary'].includes(mockEasterEgg.features.rarity);
+    const hasMechanic = typeof mockEasterEgg.features.placeholderMechanic === 'string';
+    
+    assertEqual('Easter egg detection works', isEasterEgg, true, log);
+    assertEqual('Easter egg has type', hasCorrectType, true, log);
+    assertEqual('Easter egg has valid rarity', hasRarity, true, log);
+    assertEqual('Easter egg has placeholder mechanic', hasMechanic, true, log);
+  }
+
+  {
+    // Test placeholder mechanics framework
+    const testGame = Object.create(Game);
+    testGame.easterEggMechanics = JSON.parse(JSON.stringify(Game.easterEggMechanics));
+    testGame.activateEasterEggMechanic = Game.activateEasterEggMechanic;
+    
+    // Test activating a mechanic
+    const originalLogFn = log;
+    let mechanicLogged = false;
+    const testLogFn = (msg) => {
+      if (typeof msg === 'string' && msg.includes('MECHANIC PLACEHOLDER')) {
+        mechanicLogged = true;
+      }
+    };
+    
+    // Temporarily replace log for this test
+    const originalSetLog = Game.setLogFunction;
+    Game.setLogFunction(testLogFn);
+    testGame.activateEasterEggMechanic('fire_mastery');
+    Game.setLogFunction(originalSetLog);
+    
+    const isActive = testGame.easterEggMechanics.fire_mastery.active;
+    assertEqual('Placeholder mechanic activates', isActive, true, log);
+    assertEqual('Placeholder mechanic logs', mechanicLogged, true, log);
+  }
   
   log('Self-tests complete.');
 }

@@ -21,15 +21,346 @@ export function randomName() {
   return syllA[rngInt(syllA.length)] + syllB[rngInt(syllB.length)];
 }
 
+// Easter egg face definitions
+const EASTER_EGG_FACES = [
+  { 
+    name: 'Duck', 
+    persona: 'Quacker', 
+    rarity: 'legendary',
+    placeholderMechanic: 'water_immunity' 
+  },
+  { 
+    name: 'Robot', 
+    persona: 'Automaton', 
+    rarity: 'epic',
+    placeholderMechanic: 'electric_resistance' 
+  },
+  { 
+    name: 'Cat', 
+    persona: 'Feline', 
+    rarity: 'rare',
+    placeholderMechanic: 'stealth_ability' 
+  },
+  { 
+    name: 'Dragon', 
+    persona: 'Wyrm', 
+    rarity: 'legendary',
+    placeholderMechanic: 'fire_mastery' 
+  },
+  { 
+    name: 'Ghost', 
+    persona: 'Specter', 
+    rarity: 'epic',
+    placeholderMechanic: 'phase_through' 
+  }
+];
+
+// Easter egg chance (5% for any special face)
+const EASTER_EGG_CHANCE = 0.05;
+
 export function drawOppFace() {
   if (!faceCanvas || !fctx) {
     console.error('Face generator not initialized');
     return { persona: 'Bruiser', features: {} };
   }
 
+  // Check for easter egg generation first
+  if (Math.random() < EASTER_EGG_CHANCE) {
+    const easterEgg = EASTER_EGG_FACES[rngInt(EASTER_EGG_FACES.length)];
+    return drawEasterEggFace(easterEgg);
+  }
+
+  // Generate regular face
+  return drawRegularFace();
+}
+
+// Draw special easter egg faces
+function drawEasterEggFace(easterEgg) {
+  const S = 6;
+  fctx.clearRect(0, 0, faceCanvas.width, faceCanvas.height);
+  const px = (x, y, c) => { fctx.fillStyle = c; fctx.fillRect(x * S, y * S, S, S); };
+
+  // background
+  for (let y = 0; y < 16; y++) {
+    for (let x = 0; x < 16; x++) {
+      px(x, y, '#000000');
+    }
+  }
+
+  // Draw specific easter egg face based on type
+  switch (easterEgg.name) {
+    case 'Duck':
+      drawDuckFace(px);
+      break;
+    case 'Robot':
+      drawRobotFace(px);
+      break;
+    case 'Cat':
+      drawCatFace(px);
+      break;
+    case 'Dragon':
+      drawDragonFace(px);
+      break;
+    case 'Ghost':
+      drawGhostFace(px);
+      break;
+    default:
+      // Fallback to regular face if something goes wrong
+      return drawRegularFace();
+  }
+
+  return { 
+    persona: easterEgg.persona,
+    features: { 
+      isEasterEgg: true,
+      easterEggType: easterEgg.name,
+      rarity: easterEgg.rarity,
+      placeholderMechanic: easterEgg.placeholderMechanic
+    }
+  };
+}
+
+// Individual easter egg drawing functions
+function drawDuckFace(px) {
+  const yellow = '#ffdb4d';
+  const orange = '#ff8c1a';
+  const black = '#000000';
+  const white = '#ffffff';
+
+  // Duck head (yellow)
+  for (let y = 4; y <= 11; y++) { 
+    for (let x = 5; x <= 10; x++) {
+      px(x, y, yellow); 
+    } 
+  }
+  
+  // Beak (orange)
+  px(6, 9, orange);
+  px(7, 9, orange);
+  px(5, 10, orange);
+  px(6, 10, orange);
+  px(7, 10, orange);
+  
+  // Eyes
+  px(6, 7, black);
+  px(9, 7, black);
+  
+  // Border
+  for (let x = 5; x <= 10; x++) { 
+    px(x, 4, black); 
+    px(x, 11, black); 
+  }
+  for (let y = 4; y <= 11; y++) { 
+    px(5, y, black); 
+    px(10, y, black); 
+  }
+}
+
+function drawRobotFace(px) {
+  const silver = '#c0c0c0';
+  const darkGray = '#404040';
+  const red = '#ff0000';
+  const blue = '#0066ff';
+  const black = '#000000';
+
+  // Robot head (silver)
+  for (let y = 4; y <= 11; y++) { 
+    for (let x = 5; x <= 10; x++) {
+      px(x, y, silver); 
+    } 
+  }
+  
+  // Eyes (red LEDs)
+  px(6, 7, red);
+  px(9, 7, red);
+  
+  // Mouth (speaker grille)
+  for (let x = 6; x <= 9; x++) {
+    px(x, 10, darkGray);
+  }
+  px(7, 9, darkGray);
+  px(8, 9, darkGray);
+  
+  // Antenna
+  px(7, 3, darkGray);
+  px(8, 3, darkGray);
+  px(7, 2, blue);
+  px(8, 2, blue);
+  
+  // Border
+  for (let x = 5; x <= 10; x++) { 
+    px(x, 4, black); 
+    px(x, 11, black); 
+  }
+  for (let y = 4; y <= 11; y++) { 
+    px(5, y, black); 
+    px(10, y, black); 
+  }
+}
+
+function drawCatFace(px) {
+  const gray = '#808080';
+  const pink = '#ffb3d9';
+  const black = '#000000';
+  const white = '#ffffff';
+  const green = '#00ff00';
+
+  // Cat head (gray)
+  for (let y = 5; y <= 11; y++) { 
+    for (let x = 5; x <= 10; x++) {
+      px(x, y, gray); 
+    } 
+  }
+  
+  // Ears
+  px(5, 4, gray);
+  px(6, 4, gray);
+  px(9, 4, gray);
+  px(10, 4, gray);
+  px(5, 5, pink);
+  px(10, 5, pink);
+  
+  // Eyes (green)
+  px(6, 7, green);
+  px(9, 7, green);
+  
+  // Nose (pink)
+  px(7, 8, pink);
+  px(8, 8, pink);
+  
+  // Mouth
+  px(7, 9, black);
+  px(8, 9, black);
+  px(6, 10, black);
+  px(9, 10, black);
+  
+  // Whiskers
+  px(4, 8, black);
+  px(3, 9, black);
+  px(11, 8, black);
+  px(12, 9, black);
+  
+  // Border
+  for (let x = 5; x <= 10; x++) { 
+    px(x, 5, black); 
+    px(x, 11, black); 
+  }
+  for (let y = 5; y <= 11; y++) { 
+    px(5, y, black); 
+    px(10, y, black); 
+  }
+}
+
+function drawDragonFace(px) {
+  const darkGreen = '#2d5a2d';
+  const lightGreen = '#4d804d';
+  const red = '#ff0000';
+  const yellow = '#ffff00';
+  const black = '#000000';
+
+  // Dragon head (dark green)
+  for (let y = 4; y <= 11; y++) { 
+    for (let x = 5; x <= 10; x++) {
+      px(x, y, darkGreen); 
+    } 
+  }
+  
+  // Snout extension
+  px(4, 9, darkGreen);
+  px(4, 10, darkGreen);
+  px(3, 10, darkGreen);
+  
+  // Eyes (red)
+  px(6, 6, red);
+  px(9, 6, red);
+  px(6, 7, red);
+  px(9, 7, red);
+  
+  // Nostrils
+  px(5, 9, black);
+  px(5, 10, black);
+  
+  // Scales (light green highlights)
+  px(6, 5, lightGreen);
+  px(8, 5, lightGreen);
+  px(7, 8, lightGreen);
+  px(9, 8, lightGreen);
+  
+  // Fire breath hint
+  px(2, 10, yellow);
+  px(1, 11, red);
+  px(2, 11, yellow);
+  
+  // Border
+  for (let x = 5; x <= 10; x++) { 
+    px(x, 4, black); 
+    px(x, 11, black); 
+  }
+  for (let y = 4; y <= 11; y++) { 
+    px(5, y, black); 
+    px(10, y, black); 
+  }
+}
+
+function drawGhostFace(px) {
+  const paleWhite = '#f0f0f0';
+  const lightGray = '#d0d0d0';
+  const black = '#000000';
+  const darkBlue = '#000080';
+
+  // Ghost body (pale white with wavy bottom)
+  for (let y = 4; y <= 10; y++) { 
+    for (let x = 5; x <= 10; x++) {
+      px(x, y, paleWhite); 
+    } 
+  }
+  
+  // Wavy bottom edge
+  px(5, 11, paleWhite);
+  px(7, 11, paleWhite);
+  px(9, 11, paleWhite);
+  px(6, 12, paleWhite);
+  px(8, 12, paleWhite);
+  
+  // Eyes (dark blue, hollow)
+  px(6, 6, black);
+  px(7, 6, black);
+  px(9, 6, black);
+  px(10, 6, black);
+  px(6, 7, darkBlue);
+  px(9, 7, darkBlue);
+  
+  // Mouth (dark)
+  px(7, 9, black);
+  px(8, 9, black);
+  px(7, 10, black);
+  px(8, 10, black);
+  
+  // Transparency effect (some gray pixels)
+  px(6, 5, lightGray);
+  px(9, 8, lightGray);
+  px(7, 11, lightGray);
+  
+  // Border (partial, since ghosts are ethereal)
+  for (let x = 5; x <= 10; x++) { 
+    px(x, 4, black); 
+  }
+  px(5, 5, black); 
+  px(10, 5, black);
+}
+
+// Regular face generation (extracted from original drawOppFace)
+function drawRegularFace() {
   const S = 6; 
   fctx.clearRect(0, 0, faceCanvas.width, faceCanvas.height);
-  const palSkin = ['#ffcc99','#f6c19a','#eeb290'];
+  // Expanded diverse skin tone palette - readable and distinguishable
+  const palSkin = [
+    '#ffcc99', '#f6c19a', '#eeb290', // Original light tones
+    '#d4a574', '#c89666', '#b8855a', // Medium tones
+    '#9c6d42', '#7a5439', '#5d4037', // Darker tones
+    '#f4c2a1', '#e6a87c', '#d49c6b', // Warm tones
+    '#f2d2a9', '#e8c5a0', '#deb887'  // Additional variety
+  ];
   const palHair = ['#2b1a12','#47311f','#6e3d1a','#111111','#6b2f8a','#0d3b66'];
   const skin = palSkin[rngInt(palSkin.length)];
   const hair = palHair[rngInt(palHair.length)];
@@ -164,8 +495,28 @@ export function drawOppFace() {
   };
 }
 
-export function setOpponentName(persona) {
+export function setOpponentName(persona, features = {}) {
   if (nameEl) {
-    nameEl.textContent = randomName() + (persona ? ' the ' + persona : '');
+    if (features.isEasterEgg) {
+      // Special naming for easter egg faces
+      nameEl.textContent = `${randomName()} the ${persona}`;
+      nameEl.style.color = getRarityColor(features.rarity);
+      nameEl.title = `Special ${features.easterEggType} opponent! Rarity: ${features.rarity}`;
+    } else {
+      // Regular naming
+      nameEl.textContent = randomName() + (persona ? ' the ' + persona : '');
+      nameEl.style.color = '';
+      nameEl.title = '';
+    }
+  }
+}
+
+// Get color based on rarity for visual indication
+function getRarityColor(rarity) {
+  switch (rarity) {
+    case 'legendary': return '#ffd700'; // Gold
+    case 'epic': return '#a335ee';     // Purple
+    case 'rare': return '#0070dd';     // Blue
+    default: return '#ffffff';         // White
   }
 }
