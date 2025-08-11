@@ -1,0 +1,126 @@
+import { icons } from './icons.js';
+
+// Card Database
+export const CARDS = [
+  { 
+    id: 'heart', 
+    sym: icons.heart, 
+    name: 'Heart', 
+    cost: 1, 
+    type: 'skill', 
+    tags: ['heal'],
+    effects: { damage: 0, pierce: false, heal: 3, shield: 0, draw: 0 }, 
+    status: { target: { burn: null, freezeEnergy: 0 }, self: { nextPlus: 0, maxEnergyDelta: 0, energyNowDelta: 0, cleanse: false } }, 
+    scaling: {}, 
+    ai: { role: 'sustain', pri: 40 } 
+  },
+  { 
+    id: 'swords', 
+    sym: icons.swords, 
+    name: 'Strike', 
+    cost: 1, 
+    type: 'attack', 
+    tags: ['attack'],
+    effects: { damage: 3, pierce: false, heal: 0, shield: 0, draw: 0 }, 
+    status: { target: { burn: null, freezeEnergy: 0 }, self: { nextPlus: 0, maxEnergyDelta: 0, energyNowDelta: 0, cleanse: false } }, 
+    scaling: { addToDamageFromSelf: { nextPlus: true } }, 
+    ai: { role: 'tempo', pri: 70 } 
+  },
+  { 
+    id: 'shield', 
+    sym: icons.shield, 
+    name: 'Guard', 
+    cost: 1, 
+    type: 'skill', 
+    tags: ['block'],
+    effects: { damage: 0, pierce: false, heal: 0, shield: 3, draw: 0 }, 
+    status: { target: { burn: null, freezeEnergy: 0 }, self: { nextPlus: 0, maxEnergyDelta: 0, energyNowDelta: 0, cleanse: false } }, 
+    scaling: {}, 
+    ai: { role: 'defend', pri: 60 } 
+  },
+  { 
+    id: 'echo', 
+    sym: icons.echo, 
+    name: 'Echo', 
+    cost: 1, 
+    type: 'skill', 
+    tags: ['echo'],
+    effects: { damage: 0, pierce: false, heal: 0, shield: 0, draw: 0 }, 
+    status: { target: { burn: null, freezeEnergy: 0 }, self: { nextPlus: 0, maxEnergyDelta: 0, energyNowDelta: 0, cleanse: false } }, 
+    conditions: { requireLastNonEcho: true }, 
+    scaling: {}, 
+    ai: { role: 'trick', pri: 65 } 
+  },
+  { 
+    id: 'fire', 
+    sym: icons.fire, 
+    name: 'Ignite', 
+    cost: 2, 
+    type: 'skill', 
+    tags: ['burn'],
+    effects: { damage: 0, pierce: false, heal: 0, shield: 0, draw: 0 }, 
+    status: { target: { burn: { amount: 2, turns: 2 }, freezeEnergy: 0 }, self: { nextPlus: 0, maxEnergyDelta: 0, energyNowDelta: 0, cleanse: false } }, 
+    scaling: { addToBurnFromSelf: { spicyQuirk: 1 } }, 
+    ai: { role: 'attrition', pri: 55 } 
+  },
+  { 
+    id: 'snow', 
+    sym: icons.snow, 
+    name: 'Freeze', 
+    cost: 2, 
+    type: 'skill', 
+    tags: ['tax'],
+    effects: { damage: 0, pierce: false, heal: 0, shield: 0, draw: 0 }, 
+    status: { target: { burn: null, freezeEnergy: 1 }, self: { nextPlus: 0, maxEnergyDelta: 0, energyNowDelta: 0, cleanse: false } }, 
+    scaling: {}, 
+    ai: { role: 'tempo', pri: 60 } 
+  },
+  { 
+    id: 'bolt', 
+    sym: icons.bolt, 
+    name: 'Zap', 
+    cost: 1, 
+    type: 'attack', 
+    tags: ['pierce', 'draw'],
+    effects: { damage: 2, pierce: true, heal: 0, shield: 0, draw: 1 }, 
+    status: { target: { burn: null, freezeEnergy: 0 }, self: { nextPlus: 0, maxEnergyDelta: 0, energyNowDelta: 0, cleanse: false } }, 
+    scaling: { addToDamageFromSelf: { nextPlus: true } }, 
+    ai: { role: 'tempo', pri: 80 } 
+  },
+  { 
+    id: 'star', 
+    sym: icons.star, 
+    name: 'Focus', 
+    cost: 1, 
+    type: 'power', 
+    tags: ['buff'],
+    effects: { damage: 0, pierce: false, heal: 0, shield: 0, draw: 0 }, 
+    status: { target: { burn: null, freezeEnergy: 0 }, self: { nextPlus: 2, maxEnergyDelta: 0, energyNowDelta: 0, cleanse: false } }, 
+    scaling: {}, 
+    ai: { role: 'setup', pri: 50 } 
+  },
+  { 
+    id: 'dagger', 
+    sym: icons.dagger, 
+    name: 'Pierce', 
+    cost: 2, 
+    type: 'attack', 
+    tags: ['pierce'],
+    effects: { damage: 3, pierce: true, heal: 0, shield: 0, draw: 0 }, 
+    status: { target: { burn: null, freezeEnergy: 0 }, self: { nextPlus: 0, maxEnergyDelta: 0, energyNowDelta: 0, cleanse: false } }, 
+    scaling: { addToDamageFromSelf: { nextPlus: true } }, 
+    ai: { role: 'finisher', pri: 85 } 
+  },
+  { 
+    id: 'loop', 
+    sym: icons.loop, 
+    name: 'Surge', 
+    cost: 2, 
+    type: 'power', 
+    tags: ['ramp'],
+    effects: { damage: 0, pierce: false, heal: 0, shield: 0, draw: 0 }, 
+    status: { target: { burn: null, freezeEnergy: 0 }, self: { nextPlus: 0, maxEnergyDelta: 1, energyNowDelta: 1, cleanse: false } }, 
+    scaling: {}, 
+    ai: { role: 'economy', pri: 65 } 
+  },
+];
