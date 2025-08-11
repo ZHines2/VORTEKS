@@ -46,7 +46,6 @@
       <div class="controls">
         <button id="endTurn" class="btn">END TURN</button>
         <button id="restart" class="btn">RESTART</button>
-        <button id="selfTest" class="btn" title="Run built-in tests">SELF‑TESTS</button>
       </div>
     </div>
     <!-- Log Panel -->
@@ -61,6 +60,10 @@
       <div style="display:flex; gap:8px; justify-content:center">
         <button id="startBtn" class="btn">BUILD DECK</button>
         <button id="quickBtn" class="btn">QUICK START</button>
+      </div>
+      <div style="margin-top:16px; display:flex; gap:8px; justify-content:center">
+        <button id="unlocksBtn" class="btn" style="font-size:12px">UNLOCKS</button>
+        <button id="selfTest" class="btn" style="font-size:12px; opacity:0.7" title="Run built-in tests">DEBUG</button>
       </div>
     </div>
   </div>
@@ -104,6 +107,31 @@
         <em>Strategy and timing unlock VORTEKS's true potential...</em>
       </div>
       <button id="helpCloseBtn" class="btn" style="background:var(--good); color:black; font-weight:bold">Got it!</button>
+    </div>
+  </div>
+  <!-- Victory Modal -->
+  <div class="modal" id="victoryModal" hidden>
+    <div class="box" style="text-align:center; width:min(96vw, 480px)">
+      <div style="font-size:20px; color:var(--good); margin:8px 0 16px"><strong>Victory!</strong></div>
+      <div style="margin-bottom:16px">You defeated your opponent and your streak continues!</div>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <button id="nextBattleBtn" class="btn" style="background:var(--good); color:black; font-weight:bold">NEXT BATTLE</button>
+        <div style="display:flex; gap:8px; justify-content:center">
+          <button id="victoryUnlocksBtn" class="btn">UNLOCKS</button>
+          <button id="victoryDeckBtn" class="btn">DECK BUILDER</button>
+          <button id="victoryRestartBtn" class="btn">RESTART</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Unlocks Modal -->
+  <div class="modal" id="unlocksModal" hidden>
+    <div class="box" style="width:min(96vw, 600px)">
+      <div style="font-size:18px; color:var(--accent); margin:8px 0 16px; text-align:center"><strong>Card Unlocks</strong></div>
+      <div id="unlocksGrid" class="qgrid" style="max-height:400px; overflow-y:auto;"></div>
+      <div style="display:flex; justify-content:center; margin-top:16px">
+        <button id="unlocksCloseBtn" class="btn">CLOSE</button>
+      </div>
     </div>
   </div>
   <script type="module" src="src/main.js"></script>

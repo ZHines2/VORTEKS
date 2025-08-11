@@ -1,7 +1,9 @@
-import { clamp, $ } from './utils.js';
+import { clamp, $, shuffle } from './utils.js';
 import { createPlayer } from './player.js';
 import { drawOppFace, setOpponentName } from './face-generator.js';
 import { makePersonaDeck, createAIPlayer } from './ai.js';
+import { checkAchievementUnlocks, checkPersonaDefeatUnlocks, recordBattleResult, getUnlockableCardsInfo, STARTER_CARDS } from './card-unlock.js';
+import { CARDS } from '../data/cards.js';
 
 // Global log function (will be set by main script)
 let log = null;
@@ -35,6 +37,8 @@ export const Game = {
   persona: null,
   ai: null,
   oppFeatures: null, // Store opponent face features for easter eggs
+  turnTypes: new Set(), // Track card types played in current turn
+  playerTurnDamage: 0, // Track cumulative damage dealt by player this turn
   
   // Placeholder mechanics for easter egg faces - to be implemented later
   easterEggMechanics: {
@@ -149,6 +153,12 @@ export const Game = {
     p.energy = p.maxEnergy - (p.energyPenaltyNext || 0);
     p.energyPenaltyNext = 0;
     
+    // Reset per-turn achievement tracking if player's turn
+    if (p === this.you) {
+      this.turnTypes = new Set();
+      this.playerTurnDamage = 0;
+    }
+    
     // Log turn start and draw
     const isPlayer = (p === this.you);
     if (isPlayer) {
@@ -171,13 +181,15 @@ export const Game = {
       logOpp('ends turn');
     }
     
-    // TODO: Call checkAchievementUnlocks with turnEnd context:
-    // checkAchievementUnlocks({
-    //   event: 'turnEnd',
-    //   turnTypes: /* Set of card types played this turn */,
-    //   youShield: this.you.shield,
-    //   youUnspentEnergy: this.you.energy
-    // });
+    // Emit turnEnd event for achievements if player's turn
+    if (me === this.you) {
+      checkAchievementUnlocks({
+        event: 'turnEnd',
+        turnTypes: this.turnTypes,
+        youShield: this.you.shield,
+        youUnspentEnergy: this.you.energy
+      });
+    }
     
     if (me.status.burn && me.status.burnTurns > 0) { 
       this.hit(me, me.status.burn, true, false); 
@@ -208,15 +220,16 @@ export const Game = {
       logOpp(`plays ${cardName}${costStr}`);
     }
     
-    // TODO: Call checkAchievementUnlocks with cardPlayed context:
-    // if (isPlayer) {
-    //   checkAchievementUnlocks({
-    //     event: 'cardPlayed',
-    //     cardId: card.id,
-    //     cardType: card.type,
-    //     youEnergyAfter: p.energy - card.cost
-    //   });
-    // }
+    // Track card types and emit achievement events for player
+    if (isPlayer) {
+      this.turnTypes.add(card.type);
+      checkAchievementUnlocks({
+        event: 'cardPlayed',
+        cardId: card.id,
+        cardType: card.type,
+        youEnergyAfter: p.energy - card.cost
+      });
+    }
     
     // spend cost first
     p.spend(card.cost);
@@ -271,10 +284,20 @@ export const Game = {
       if (!simulate && window.bumpHP) window.bumpHP(target); 
     }
     
-    // Log damage
+    // Log damage and track for achievements
     if (!simulate && originalDmg > 0) {
       const attackerIsPlayer = (atk === this.you);
       const targetIsPlayer = (target === this.you);
+      
+      // Track player damage for achievements
+      if (attackerIsPlayer && dmg > 0) {
+        this.playerTurnDamage += dmg;
+        checkAchievementUnlocks({
+          event: 'damage',
+          source: 'you',
+          amount: dmg
+        });
+      }
       
       let msg = '';
       if (pierce && extraPierce > 0) {
@@ -292,13 +315,11 @@ export const Game = {
       } else {
         logOpp(msg);
       }
-      
-      // TODO: Call checkAchievementUnlocks with damage context:
-      // checkAchievementUnlocks({
-      //   event: 'damage',
-      //   source: attackerIsPlayer ? 'you' : 'opp',
-      //   amount: dmg
-      // });
+    }
+    
+    // Check for win after any damage that could be lethal
+    if (!simulate && dmg > 0) {
+      this.checkWin();
     }
     
     if (!simulate && !atk.status.firstAttackUsed && (dmg > 0 || pierce || extraPierce > 0)) {
@@ -434,14 +455,166 @@ export const Game = {
         this.streak = 0; 
       }
       
-      // TODO: Call card unlock functions after battle end:
-      // recordBattleResult(youWin ? 'win' : 'loss');
-      // checkAchievementUnlocks({
-      //   event: 'battleEnd',
-      //   result: youWin ? 'win' : 'loss'
-      // });
-      // checkPersonaDefeatUnlocks(youWin ? this.persona : null);
+      // Record battle results and emit achievement events
+      recordBattleResult(youWin ? 'win' : 'loss');
+      checkAchievementUnlocks({
+        event: 'battleEnd',
+        result: youWin ? 'win' : 'loss'
+      });
+      if (youWin) {
+        checkPersonaDefeatUnlocks(this.persona);
+        this.showVictoryModal();
+      }
     }
+  },
+
+  // Show victory modal with action buttons
+  showVictoryModal() {
+    const modal = $('#victoryModal');
+    modal.hidden = false;
+  },
+
+  // Next battle: new opponent, reset stats, preserve deck and quirk
+  nextBattle() {
+    const modal = $('#victoryModal');
+    modal.hidden = true;
+    
+    // Reset player stats
+    this.you.hp = this.you.maxHP;
+    this.you.shield = 0;
+    this.you.energy = this.you.maxEnergy;
+    this.you.status = { nextPlus: 0, firstAttackUsed: false };
+    
+    // Shuffle deck back together
+    this.you.deck = shuffle([...this.you.hand, ...this.you.discard]);
+    this.you.hand = [];
+    this.you.discard = [];
+    this.you.draw(5);
+    
+    // Generate new opponent
+    this.generateNewOpponent();
+    
+    // Reset game state
+    this.over = false;
+    this.turn = 'you';
+    this.turnTypes = new Set();
+    this.playerTurnDamage = 0;
+    
+    logAction('system', 'Next battle begins.');
+    if (window.render) window.render();
+  },
+
+  // Generate new opponent with different face and deck
+  generateNewOpponent() {
+    // Generate new face and persona
+    const faceInfo = drawOppFace();
+    this.persona = faceInfo.persona;
+    this.oppFeatures = faceInfo.features;
+    setOpponentName(this.persona, this.oppFeatures);
+    
+    // Reset opponent stats  
+    this.opp.hp = this.opp.maxHP;
+    this.opp.shield = 0;
+    this.opp.energy = this.opp.maxEnergy;
+    this.opp.status = { nextPlus: 0, firstAttackUsed: false };
+    
+    // Create new AI deck based on current opponent persona
+    this.opp.deck = makePersonaDeck(this.persona);
+    this.opp.hand = [];
+    this.opp.discard = [];
+    this.opp.draw(5);
+    
+    // Log the new opponent
+    let logMessage = 'New opponent: ' + this.persona + ' appears!';
+    if (this.oppFeatures.isEasterEgg) {
+      logMessage = `✨ RARE OPPONENT! ${this.oppFeatures.easterEggType} ${this.persona} appears! ✨ [${this.oppFeatures.rarity.toUpperCase()}]`;
+      this.activateEasterEggMechanic(this.oppFeatures.placeholderMechanic);
+    }
+    if (log) log(logMessage);
+  },
+
+  // Clear log function for restart
+  clearLog() {
+    const logElement = $('#log');
+    if (logElement) {
+      logElement.innerHTML = '';
+    }
+  },
+
+  // Open unlocks modal and populate with card info
+  openUnlocks() {
+    const modal = $('#unlocksModal');
+    const grid = $('#unlocksGrid');
+    
+    // Clear existing content
+    grid.innerHTML = '';
+    
+    // Create card lookup map
+    const cardMap = {};
+    CARDS.forEach(card => {
+      cardMap[card.id] = card;
+    });
+    
+    // Add starter cards (always unlocked)
+    STARTER_CARDS.forEach(id => {
+      const card = cardMap[id];
+      if (card) {
+        const cardEl = document.createElement('div');
+        cardEl.className = 'qcard';
+        cardEl.style.opacity = '1';
+        cardEl.innerHTML = `
+          <div style="font-size:20px">${card.sym}</div>
+          <div><strong>${card.name}</strong></div>
+          <div style="font-size:12px; color:var(--good)">STARTER</div>
+        `;
+        grid.appendChild(cardEl);
+      }
+    });
+    
+    // Add unlockable cards
+    const unlockableCards = getUnlockableCardsInfo();
+    unlockableCards.forEach(info => {
+      const card = cardMap[info.id];
+      if (card) {
+        const cardEl = document.createElement('div');
+        cardEl.className = 'qcard';
+        cardEl.style.opacity = info.unlocked ? '1' : '0.4';
+        
+        let statusText = info.unlocked ? 
+          '<div style="font-size:12px; color:var(--good)">UNLOCKED</div>' :
+          '<div style="font-size:12px; color:var(--bad)">LOCKED</div>';
+        
+        cardEl.innerHTML = `
+          <div style="font-size:20px">${card.sym}</div>
+          <div><strong>${card.name}</strong></div>
+          ${statusText}
+          <div style="font-size:10px; margin-top:4px">${info.description}</div>
+          ${info.progress ? `<div style="font-size:10px; color:var(--accent)">${info.progress}</div>` : ''}
+        `;
+        
+        if (!info.unlocked) {
+          cardEl.style.position = 'relative';
+          cardEl.innerHTML += '<div style="position:absolute; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center; font-size:12px; color:white; font-weight:bold">LOCKED</div>';
+        }
+        
+        grid.appendChild(cardEl);
+      }
+    });
+    
+    modal.hidden = false;
+  },
+
+  // Restart to start screen
+  resetGameToStart() {
+    this.clearLog();
+    this.streak = 0;
+    this.over = false;
+    
+    // Hide victory modal and show start modal
+    $('#victoryModal').hidden = true;
+    $('#startModal').hidden = false;
+    
+    logAction('system', 'Game restarted.');
   },
 
   // Placeholder mechanic activation for easter egg faces

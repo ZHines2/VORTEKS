@@ -140,8 +140,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Controls
   document.getElementById('endTurn').onclick = () => Game.endTurn();
-  document.getElementById('restart').onclick = () => { document.getElementById('startModal').hidden = false; };
+  document.getElementById('restart').onclick = () => { 
+    Game.clearLog();
+    document.getElementById('startModal').hidden = false; 
+  };
   document.getElementById('selfTest').onclick = () => runSelfTests(Game, window.log, showStart);
+
+  // Victory modal event handlers
+  document.getElementById('nextBattleBtn').onclick = () => Game.nextBattle();
+  document.getElementById('victoryUnlocksBtn').onclick = () => Game.openUnlocks();
+  document.getElementById('victoryDeckBtn').onclick = () => {
+    document.getElementById('victoryModal').hidden = true;
+    Game.init(); // Return to deck builder flow
+  };
+  document.getElementById('victoryRestartBtn').onclick = () => Game.resetGameToStart();
+
+  // Unlocks modal event handlers
+  document.getElementById('unlocksBtn').onclick = () => Game.openUnlocks();
+  document.getElementById('unlocksCloseBtn').onclick = () => {
+    document.getElementById('unlocksModal').hidden = true;
+  };
 
   // Reroll Face button handler
   document.getElementById('rerollFace').onclick = () => {
@@ -174,6 +192,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('quickBtn').onclick = ()=>{ modal.hidden=true; Game.initQuick(); };
   }
   window.showStart = showStart;
+
+  // Expose Game functions for UI event handlers
+  window.Game = Game;
 
   showStart();
 });
