@@ -21,7 +21,35 @@ html,body {
   max-width:980px;
   margin:0 auto;
   padding:18px;
+  position: relative; /* ensure muteBtn overlays relative to this */
 }
+
+/* --- Mute button --- */
+#muteBtn {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 50;
+  background: var(--panel);
+  color: var(--ink);
+  border: 2px solid var(--border);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  font-size: 20px;
+  cursor: pointer;
+  opacity: 0.85;
+  transition: opacity 0.2s;
+}
+#muteBtn:hover,
+#muteBtn:focus {
+  opacity: 1;
+  outline: 2px solid var(--accent);
+}
+
+/* ... rest of your CSS unchanged ... */
+
+/* Existing styles below, unchanged: */
 
 h1 {
   font-size:14px; 
