@@ -23,9 +23,11 @@
             <div class="pill">OPP ❤<span id="oppHP"></span></div>
             <div class="pill sh">🛡<span id="oppSH"></span></div>
             <div class="pill en">⚡<span id="oppEN"></span></div>
-            <button id="rerollFace" class="btn">REROLL FACE</button>
           </div>
           <div class="status" id="oppStatus"></div>
+          <div class="controls">
+            <button id="rerollFace" class="btn">REROLL FACE</button>
+          </div>
         </div>
       </div>
     </div>
@@ -36,7 +38,7 @@
         <div class="pill">YOU ❤<span id="youHP"></span></div>
         <div class="pill sh">🛡<span id="youSH"></span></div>
         <div class="pill en">⚡<span id="youEN"></span></div>
-        <div class="pill">STREAK <span id="streak"></span></div>
+        <div class="pill" id="streakPill" title="Win streak">STREAK <span id="streak"></span></div>
       </div>
       <div class="status" id="youStatus"></div>
       <div class="hand" id="hand"></div>
@@ -92,81 +94,6 @@
     </div>
   </div>
 
-  <!-- Import modules and initialize game -->
-  <script type="module">
-    import { $ } from './src/utils.js';
-    import { initFaceGenerator, drawOppFace, setOpponentName } from './src/face-generator.js';
-    import { Game, setLogFunction } from './src/game.js';
-    import { createRenderFunction, bump, bumpHP, bumpShield } from './src/ui.js';
-    import { openDeckBuilder, buildRandomDeck } from './src/deck-builder.js';
-    import { makePersonaDeck } from './src/ai.js';
-    import { runSelfTests } from './src/tests.js';
-
-    // Initialize game components
-    (() => {
-      // DOM helpers
-      const logBox = $('#log');
-      const log = (t) => { 
-        const p = document.createElement('div'); 
-        p.textContent = '> ' + t; 
-        logBox.prepend(p);
-      };
-
-      // Set up logging
-      setLogFunction(log);
-
-      // Initialize face generator
-      initFaceGenerator();
-
-      // Create render function and make it globally available
-      const render = createRenderFunction(Game);
-      window.render = render;
-
-      // Make functions globally available for game logic
-      window.openDeckBuilder = openDeckBuilder;
-      window.buildRandomDeck = buildRandomDeck;
-      window.bump = bump;
-      window.bumpHP = bumpHP;
-      window.bumpShield = bumpShield;
-
-      // Start Screen functionality
-      function showStart() {
-        const modal = document.getElementById('startModal');
-        modal.hidden = false;
-        document.getElementById('startBtn').onclick = () => { 
-          modal.hidden = true; 
-          Game.init(); 
-        };
-        document.getElementById('quickBtn').onclick = () => { 
-          modal.hidden = true; 
-          Game.initQuick(); 
-        };
-      }
-
-      // Controls
-      $('#endTurn').onclick = () => Game.endTurn();
-      $('#restart').onclick = () => { 
-        log('—'); 
-        showStart(); 
-      };
-      $('#rerollFace').onclick = () => {
-        const faceInfo = drawOppFace();
-        Game.persona = faceInfo.persona;
-        setOpponentName(Game.persona);
-        // Rebuild opponent deck to match new face/persona and redraw their hand to same size
-        const keepN = Game.opp.hand ? Game.opp.hand.length : 5;
-        Game.opp.deck = makePersonaDeck(Game.persona);
-        Game.opp.hand = [];
-        Game.opp.discard = [];
-        Game.opp.draw(keepN || 5);
-        log('Opponent shifts to ' + Game.persona + ' persona. Deck re-tuned.');
-        render();
-      };
-      $('#selfTest')?.addEventListener('click', () => runSelfTests(Game, log, showStart));
-
-      // Boot
-      showStart();
-    })();
-  </script>
+  <script type="module" src="src/main.js"></script>
 </body>
 </html>
