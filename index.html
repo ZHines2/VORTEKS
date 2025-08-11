@@ -5,63 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
   <title>VORTEKS — Unicode Card Battler</title>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --bg: #1b0f2f;
-      --panel: #4b2366;
-      --border: #ffdd77;
-      --ink: #ffffff;
-      --accent: #77ffdd;
-      --good: #00ff99;
-      --bad: #ff4477;
-    }
-    html,body {height:100%; margin:0; background:var(--bg); font-family: 'Press Start 2P', monospace; font-size: 12px; color: var(--ink);}    
-    .wrap {max-width:980px;margin:0 auto;padding:18px;}
-    h1 {font-size:14px; color:var(--accent); margin-bottom: 10px;}
-    .panel {background: var(--panel); border: 3px solid var(--border); padding: 10px;}
-    .hud {background: black; border: 2px solid var(--border); padding: 6px; display:flex; align-items:center; gap:10px; justify-content:space-between;}
-    .pill {background:black; border:1px solid var(--border); padding:4px 6px;}
-    .hp {color: var(--bad);} .sh {color: var(--good);} .en {color: var(--accent);}    
-    .status {margin-top:6px; display:flex; gap:6px; flex-wrap:wrap}
-    .status .tag {border:1px solid var(--border); padding:2px 4px;}
-    .hand {display:flex;gap:8px;flex-wrap:wrap;}
-
-    /* Card look */
-    button.card {position:relative; background:black; color:var(--ink); border:3px solid var(--border); padding:10px 8px 18px; width:124px; text-align:left; cursor:pointer; box-shadow:0 0 0 2px #000 inset}
-    button.card:disabled {opacity:.55;}
-    .card .sym {font-size:18px; display:inline-block; margin-right:6px}
-    .card .nm {display:inline-block; font-weight:700}
-    .card .ct {font-size:8px; color: var(--accent); margin-top:6px; min-height:22px}
-    .card .pv {position:absolute; bottom:4px; left:8px; right:8px; font-size:8px; color:#fff; opacity:.95}
-    .cost {position:absolute; top:6px; right:6px; width:22px; height:22px; border:2px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:10px}
-    .cost::before{content:'⚡'; margin-right:2px; font-size:10px}
-    .insufficient{filter:grayscale(1)}
-
-    .controls {display:flex; gap:8px; margin-top:8px}
-    .btn { background:black; color:var(--ink); border:2px solid var(--border); padding:6px 10px; cursor:pointer; }
-    .btn:disabled{ opacity:.5; cursor:not-allowed; }
-    .log {height:220px;overflow:auto;background:black;border:2px solid var(--border);padding:8px;}
-
-    /* Opp face */
-    #oppFace{ image-rendering: pixelated; image-rendering: crisp-edges; border:2px solid var(--border); background:black; display:block }
-    .opp-box{ display:grid; grid-template-columns:96px 1fr; gap:8px; align-items:start }
-    #oppName {margin-top:4px; font-size:10px; color:var(--accent); text-align:center}
-
-    @keyframes shake { 0%,100% { transform: translate(0, 0); } 25% { transform: translate(-2px, 1px); } 50% { transform: translate(2px, -1px); } 75% { transform: translate(-1px, 2px); } }
-    .hit {animation: shake 0.22s}
-    @keyframes flash { from { opacity: 1; } to { opacity: 0.4; } }
-    .flash {animation: flash 0.35s 2}
-    .hpflash {animation: flash 0.35s 1}
-    .shieldhit {animation: flash 0.25s 1}
-
-    /* Modals */
-    .modal{position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:#000a}
-    .modal[hidden]{ display:none !important }
-    .modal .box{ background:var(--panel); border:3px solid var(--border); padding:12px; max-width:640px }
-    .qgrid{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:8px}
-    .qcard{background:black; border:2px solid var(--border); padding:8px; cursor:pointer}
-    .qcard:hover{filter:brightness(1.1)}
-  </style>
+  <link rel="stylesheet" href="styles/main.css">
 </head>
 <body>
   <div class="wrap">
@@ -79,11 +23,9 @@
             <div class="pill">OPP ❤<span id="oppHP"></span></div>
             <div class="pill sh">🛡<span id="oppSH"></span></div>
             <div class="pill en">⚡<span id="oppEN"></span></div>
-          </div>
-          <div class="status" id="oppStatus"></div>
-          <div class="controls">
             <button id="rerollFace" class="btn">REROLL FACE</button>
           </div>
+          <div class="status" id="oppStatus"></div>
         </div>
       </div>
     </div>
@@ -94,7 +36,7 @@
         <div class="pill">YOU ❤<span id="youHP"></span></div>
         <div class="pill sh">🛡<span id="youSH"></span></div>
         <div class="pill en">⚡<span id="youEN"></span></div>
-        <div class="pill" id="streakPill" title="Win streak">STREAK <span id="streak"></span></div>
+        <div class="pill">STREAK <span id="streak"></span></div>
       </div>
       <div class="status" id="youStatus"></div>
       <div class="hand" id="hand"></div>
@@ -150,480 +92,81 @@
     </div>
   </div>
 
-<script>
-(() => {
-  // ---------- DOM Helpers ----------
-  const $ = sel => document.querySelector(sel);
-  const logBox = $('#log');
-  const log = (t)=>{ const p=document.createElement('div'); p.textContent = '> ' + t; logBox.prepend(p) };
+  <!-- Import modules and initialize game -->
+  <script type="module">
+    import { $ } from './src/utils.js';
+    import { initFaceGenerator, drawOppFace, setOpponentName } from './src/face-generator.js';
+    import { Game, setLogFunction } from './src/game.js';
+    import { createRenderFunction, bump, bumpHP, bumpShield } from './src/ui.js';
+    import { openDeckBuilder, buildRandomDeck } from './src/deck-builder.js';
+    import { makePersonaDeck } from './src/ai.js';
+    import { runSelfTests } from './src/tests.js';
 
-  // ---------- Opponent Face (declare BEFORE any use) ----------
-  const faceCanvas = document.getElementById('oppFace');
-  const fctx = faceCanvas.getContext('2d');
-  const rngInt = (n)=>Math.floor(Math.random()*n);
-  const nameEl = $('#oppName');
+    // Initialize game components
+    (() => {
+      // DOM helpers
+      const logBox = $('#log');
+      const log = (t) => { 
+        const p = document.createElement('div'); 
+        p.textContent = '> ' + t; 
+        logBox.prepend(p);
+      };
 
-  function randomName(){
-    const syllA = ["Bo","Cha","Mo","Lu","Pe","Za","Ti","Gro","Mi","Lo","Ka","Quo","Fi","Ra","Sn","We","Zo","Do","Ni","Ju","Pe","Ro","Ta","Zu"];
-    const syllB = ["bby","nky","bbit","mp","ggle","rk","zzle","mmy","nk","cko","ff","zz","bo","ppy","x","tron","floo","puff","dle","zzo","bug","snax","mancer","tune"];
-    return syllA[rngInt(syllA.length)] + syllB[rngInt(syllB.length)];
-  }
+      // Set up logging
+      setLogFunction(log);
 
-  function drawOppFace(){
-    const S=6; 
-    fctx.clearRect(0,0,faceCanvas.width, faceCanvas.height);
-    const palSkin = ['#ffcc99','#f6c19a','#eeb290'];
-    const palHair = ['#2b1a12','#47311f','#6e3d1a','#111111','#6b2f8a','#0d3b66'];
-    const skin = palSkin[rngInt(palSkin.length)];
-    const hair = palHair[rngInt(palHair.length)];
-    const white = '#ffffff';
-    const black = '#000000';
-    const blush = ['#ff7799','#ff88aa','#ff6f7d'][rngInt(3)];
-    const mouthPal = ['#990000','#aa1133','#551122'];
-    const mouth = mouthPal[rngInt(3)];
-    const px = (x,y,c)=>{ fctx.fillStyle=c; fctx.fillRect(x*S,y*S,S,S); };
+      // Initialize face generator
+      initFaceGenerator();
 
-    // background
-    for(let y=0;y<16;y++) for(let x=0;x<16;x++) px(x,y, '#000000');
-    // head
-    for(let y=3;y<=12;y++){ for(let x=4;x<=11;x++) px(x,y,skin); }
-    for(let x=4;x<=11;x++){ px(x,3,black); px(x,12,black); }
-    for(let y=3;y<=12;y++){ px(4,y,black); px(11,y,black); }
-    // hair
-    const bangs = 3 + rngInt(3);
-    for(let y=2;y<=4;y++){ for(let x=4;x<=11;x++) px(x,y, hair); }
-    for(let i=0;i<bangs;i++){ px(4+2*i,5,hair); px(5+2*i,5,hair); }
-    // eyes
-    const eyeY = 7; const eyeLx = 6 - rngInt(1); const eyeRx = 9 + rngInt(1);
-    px(eyeLx,eyeY,white); px(eyeLx+1,eyeY,white); px(eyeRx,eyeY,white); px(eyeRx+1,eyeY,white);
-    px(eyeLx+rngInt(2),eyeY,black); px(eyeRx+rngInt(2),eyeY,black);
-    const browL = Math.random()<0.8; const browR = Math.random()<0.8;
-    if(browL){ px(eyeLx,eyeY-1,black); px(eyeLx+1,eyeY-1,black); }
-    if(browR){ px(eyeRx,eyeY-1,black); px(eyeRx+1,eyeY-1,black); }
-    // blush
-    const hasBlushL = Math.random()<0.7; const hasBlushR = Math.random()<0.7;
-    if(hasBlushL){ px(5,9,blush); } if(hasBlushR){ px(10,9,blush); }
-    // nose
-    px(8,9,black);
-    // mouth style
-    const style = rngInt(3);
-    if(style===0){ for(let x=6;x<=9;x++) px(x,11,mouth); px(6,10,mouth); px(9,10,mouth); }
-    else if(style===1){ px(7,11,mouth); px(8,11,mouth); px(7,10,mouth); px(8,10,mouth); }
-    else { for(let x=6;x<=9;x++) px(x,11,black); px(7,11,white); px(8,11,white); }
-    // mustache
-    const hasStache = Math.random()<0.35; if(hasStache){ for(let x=6;x<=9;x++) px(x,10, hair); }
-    // hat stripe
-    const hasHat = Math.random()<0.5; if(hasHat){ for(let x=5;x<=10;x++) px(x,2, white); }
-    // mole
-    const hasMole = Math.random()<0.4; if(hasMole){ px(10,8, black); }
+      // Create render function and make it globally available
+      const render = createRenderFunction(Game);
+      window.render = render;
 
-    // Derive persona from features
-    let persona = 'Bruiser';
-    if(style===1) persona = 'Doctor';
-    if(style===2) persona = 'Trickster';
-    if(hasHat && persona!=='Trickster') persona = 'Trickster';
-    if(hasStache && persona!=='Doctor' && style!==2) persona = 'Doctor';
+      // Make functions globally available for game logic
+      window.openDeckBuilder = openDeckBuilder;
+      window.buildRandomDeck = buildRandomDeck;
+      window.bump = bump;
+      window.bumpHP = bumpHP;
+      window.bumpShield = bumpShield;
 
-    return { persona, features:{style,hasHat,hasStache,browL,browR,hasBlushL,hasBlushR,hair} };
-  }
-
-  // persona label helper
-  function setOpponentName(persona){
-    nameEl.textContent = randomName() + (persona? ' the ' + persona : '');
-  }
-
-  // ---------- Core Game Data ----------
-  const icons = { heart:'♥', swords:'⚔', shield:'🛡', echo:'🔁', fire:'🔥', snow:'❄', bolt:'⚡', star:'✨', dagger:'🗡', loop:'⟳' };
-  const clamp = (n,min,max)=>Math.max(min,Math.min(max,n));
-  const rng = (n)=>Math.floor(Math.random()*n);
-  const shuffle = a => { for(let i=a.length-1;i>0;i--){ const j=rng(i+1); [a[i],a[j]]=[a[j],a[i]] } return a };
-
-  // ---------- Data-driven cards ----------
-  const CARDS = [
-    { id:'heart', sym:icons.heart, name:'Heart', cost:1, type:'skill', tags:['heal'],
-      effects:{damage:0,pierce:false,heal:3,shield:0,draw:0}, status:{ target:{burn:null,freezeEnergy:0}, self:{nextPlus:0,maxEnergyDelta:0,energyNowDelta:0,cleanse:false} }, scaling:{} , ai:{role:'sustain',pri:40} },
-    { id:'swords', sym:icons.swords, name:'Strike', cost:1, type:'attack', tags:['attack'],
-      effects:{damage:3,pierce:false,heal:0,shield:0,draw:0}, status:{ target:{burn:null,freezeEnergy:0}, self:{nextPlus:0,maxEnergyDelta:0,energyNowDelta:0,cleanse:false} }, scaling:{ addToDamageFromSelf:{ nextPlus:true } }, ai:{role:'tempo',pri:70} },
-    { id:'shield', sym:icons.shield, name:'Guard', cost:1, type:'skill', tags:['block'],
-      effects:{damage:0,pierce:false,heal:0,shield:3,draw:0}, status:{ target:{burn:null,freezeEnergy:0}, self:{nextPlus:0,maxEnergyDelta:0,energyNowDelta:0,cleanse:false} }, scaling:{}, ai:{role:'defend',pri:60} },
-    { id:'echo', sym:icons.echo, name:'Echo', cost:1, type:'skill', tags:['echo'],
-      effects:{damage:0,pierce:false,heal:0,shield:0,draw:0}, status:{ target:{burn:null,freezeEnergy:0}, self:{nextPlus:0,maxEnergyDelta:0,energyNowDelta:0,cleanse:false} }, conditions:{ requireLastNonEcho:true }, scaling:{}, ai:{role:'trick',pri:65} },
-    { id:'fire', sym:icons.fire, name:'Ignite', cost:2, type:'skill', tags:['burn'],
-      effects:{damage:0,pierce:false,heal:0,shield:0,draw:0}, status:{ target:{burn:{amount:2,turns:2},freezeEnergy:0}, self:{nextPlus:0,maxEnergyDelta:0,energyNowDelta:0,cleanse:false} }, scaling:{ addToBurnFromSelf:{ spicyQuirk:1 } }, ai:{role:'attrition',pri:55} },
-    { id:'snow', sym:icons.snow, name:'Freeze', cost:2, type:'skill', tags:['tax'],
-      effects:{damage:0,pierce:false,heal:0,shield:0,draw:0}, status:{ target:{burn:null,freezeEnergy:1}, self:{nextPlus:0,maxEnergyDelta:0,energyNowDelta:0,cleanse:false} }, scaling:{}, ai:{role:'tempo',pri:60} },
-    { id:'bolt', sym:icons.bolt, name:'Zap', cost:1, type:'attack', tags:['pierce','draw'],
-      effects:{damage:2,pierce:true,heal:0,shield:0,draw:1}, status:{ target:{burn:null,freezeEnergy:0}, self:{nextPlus:0,maxEnergyDelta:0,energyNowDelta:0,cleanse:false} }, scaling:{ addToDamageFromSelf:{ nextPlus:true } }, ai:{role:'tempo',pri:80} },
-    { id:'star', sym:icons.star, name:'Focus', cost:1, type:'power', tags:['buff'],
-      effects:{damage:0,pierce:false,heal:0,shield:0,draw:0}, status:{ target:{burn:null,freezeEnergy:0}, self:{nextPlus:2,maxEnergyDelta:0,energyNowDelta:0,cleanse:false} }, scaling:{}, ai:{role:'setup',pri:50} },
-    { id:'dagger', sym:icons.dagger, name:'Pierce', cost:2, type:'attack', tags:['pierce'],
-      effects:{damage:3,pierce:true,heal:0,shield:0,draw:0}, status:{ target:{burn:null,freezeEnergy:0}, self:{nextPlus:0,maxEnergyDelta:0,energyNowDelta:0,cleanse:false} }, scaling:{ addToDamageFromSelf:{ nextPlus:true } }, ai:{role:'finisher',pri:85} },
-    { id:'loop', sym:icons.loop, name:'Surge', cost:2, type:'power', tags:['ramp'],
-      effects:{damage:0,pierce:false,heal:0,shield:0,draw:0}, status:{ target:{burn:null,freezeEnergy:0}, self:{nextPlus:0,maxEnergyDelta:1,energyNowDelta:1,cleanse:false} }, scaling:{}, ai:{role:'economy',pri:65} },
-  ];
-
-  function createPlayer(isAI=false){
-    return {
-      isAI,
-      hp:20, maxHP:20,
-      shield:0,
-      deck:[], hand:[], discard:[],
-      energy:0, maxEnergy:3,
-      lastPlayed:null,
-      status:{ burn:0, burnTurns:0, frozenNext:0, nextPlus:0, firstAttackUsed:false },
-      quirk:null,
-      draw(n=1){ while(n-->0){ if(!this.deck.length){ this.deck = shuffle(this.discard.splice(0)); if(this.deck.length) log((this.isAI?'AI':'You')+' reshuffle.'); } if(this.deck.length){ this.hand.push(this.deck.pop()); } } },
-      canAfford(card){ return this.energy >= card.cost },
-      spend(cost){ this.energy = Math.max(0,this.energy-cost) },
-      removeFromHand(idx){ return this.hand.splice(idx,1)[0] },
-    }
-  }
-
-  // ---------- Game Controller ----------
-  const Game = {
-    you:null, opp:null, turn:'you', over:false, streak:0, persona:null,
-    init(){
-      this.you = createPlayer(false);
-      this.opp = createPlayer(true);
-      // Face first → persona → AI deck
-      const faceInfo = drawOppFace();
-      this.persona = faceInfo.persona;
-      setOpponentName(this.persona);
-      this.opp.deck = makePersonaDeck(this.persona);
-      // Player builds deck, then picks quirk, then start
-      openDeckBuilder((yourDeck)=>{
-        this.you.deck = yourDeck;
-        this.you.draw(5); this.opp.draw(5);
-        this.turn = 'you'; this.over=false;
-        log('New game. You start.');
-        this.pickQuirk(()=>{ this.startTurn(this.you); render(); });
-      });
-    },
-    initQuick(){
-      this.you = createPlayer(false);
-      this.opp = createPlayer(true);
-      const faceInfo = drawOppFace();
-      this.persona = faceInfo.persona; setOpponentName(this.persona);
-      this.opp.deck = makePersonaDeck(this.persona);
-      this.you.deck = buildRandomDeck(20,4);
-      this.you.draw(5); this.opp.draw(5);
-      this.turn='you'; this.over=false; log('Quick Start. You start.');
-      this.pickQuirk(()=>{ this.startTurn(this.you); render(); });
-    },
-    pickQuirk(done){
-      const modal = $('#quirkModal');
-      modal.hidden = false;
-      modal.querySelectorAll('.qcard').forEach(el=>{
-        el.onclick = ()=>{
-          const q = el.getAttribute('data-quirk');
-          this.you.quirk = q;
-          if(q==='minty'){ this.you.maxEnergy = clamp(this.you.maxEnergy+1,1,6); this.you.energy = clamp(this.you.energy+1,0,this.you.maxEnergy); }
-          modal.hidden = true;
-          log('Quirk: '+q.toUpperCase());
-          done();
-        }
-      });
-    },
-    startTurn(p){
-      p.status.firstAttackUsed = false;
-      if(p.status.frozenNext){ p.energyPenaltyNext = 1; p.status.frozenNext = 0; $('#'+(p.isAI?'opp':'you')+'Panel').classList.add('flash'); setTimeout(()=>$('#'+(p.isAI?'opp':'you')+'Panel').classList.remove('flash'), 250); }
-      p.energy = p.maxEnergy - (p.energyPenaltyNext||0);
-      p.energyPenaltyNext = 0;
-      p.draw(1);
-      render();
-    },
-    endTurn(){
-      const me = this.turn==='you'?this.you:this.opp;
-      if(me.status.burn && me.status.burnTurns>0){ this.hit(me, me.status.burn, true, false); me.status.burnTurns--; log(`${me.isAI?'AI':'You'} take burn.`) }
-      if(me.status.burnTurns===0) me.status.burn=0;
-      this.turn = this.turn==='you'?'opp':'you';
-      const now = this.turn==='you'?this.you:this.opp;
-      this.startTurn(now);
-      if(this.turn==='opp' && !this.over){ setTimeout(()=>this.aiPlay(), 500) }
-    },
-    playCard(p, idx){ if(this.over) return; const card = p.hand[idx]; if(!card) return; if(!p.canAfford(card)) return;
-      // spend cost first
-      p.spend(card.cost);
-      p.lastPlayed = card;
-      // remove from hand and send to discard BEFORE resolving effect
-      p.removeFromHand(idx);
-      p.discard.push(card);
-      // apply via interpreter
-      this.applyCard(card, p, (p===this.you?this.opp:this.you), false);
-      this.checkWin();
-      render();
-    },
-    hit(target, dmg, pierce=false, simulate=false){
-      const atk = this.turn==='you'?this.you:this.opp;
-      let extraPierce = 0;
-      if(!atk.isAI && atk.quirk==='piercer' && !atk.status.firstAttackUsed){ extraPierce = 1; }
-      if(!pierce){
-        if(extraPierce>0){ const used = Math.min(target.shield, extraPierce); target.shield -= used; }
-        const used = Math.min(target.shield, dmg); if(used>0){ target.shield -= used; if(!simulate) bumpShield(target); dmg -= used; }
+      // Start Screen functionality
+      function showStart() {
+        const modal = document.getElementById('startModal');
+        modal.hidden = false;
+        document.getElementById('startBtn').onclick = () => { 
+          modal.hidden = true; 
+          Game.init(); 
+        };
+        document.getElementById('quickBtn').onclick = () => { 
+          modal.hidden = true; 
+          Game.initQuick(); 
+        };
       }
-      if(dmg>0){ target.hp=Math.max(0,target.hp-dmg); if(!simulate) bumpHP(target); }
-      if(!simulate && !atk.status.firstAttackUsed && (dmg>0 || pierce || extraPierce>0)) atk.status.firstAttackUsed = true;
-      if(!simulate){ const panel = target.isAI? $('#oppPanel') : $('#youPanel'); bump(panel,'hit'); }
-    },
-    // Card interpreter (simulate=false mutates; true returns a diff)
-    applyCard(card, me, them, simulate=false){
-      const state = { me, them };
-      const effects = card.effects || {};
-      const status = card.status || { target:{}, self:{} };
-      // 1) scaling & additive modifiers
-      let dmg = effects.damage||0;
-      if(card.scaling && card.scaling.addToDamageFromSelf && state.me.status.nextPlus){ dmg += state.me.status.nextPlus; if(!simulate){ state.me.status.nextPlus=0; } }
-      // spicy burn
-      let burnObj = status.target && status.target.burn ? { ...status.target.burn } : null;
-      if(burnObj && card.scaling && card.scaling.addToBurnFromSelf && state.me.quirk==='spicy'){ burnObj.amount += (card.scaling.addToBurnFromSelf.spicyQuirk||0); }
-      // 2) primary numeric effects
-      if(effects.heal){ state.me.hp = clamp(state.me.hp + effects.heal, 0, state.me.maxHP); }
-      if(effects.shield){ state.me.shield += effects.shield; }
-      if(effects.pierce){ this.hit(state.them, dmg, true, simulate); } else if(dmg>0){ this.hit(state.them, dmg, false, simulate); }
-      if(effects.draw){ if(!simulate){ state.me.draw(effects.draw); } }
-      // 3) statuses
-      if(burnObj){ state.them.status.burn = burnObj.amount; state.them.status.burnTurns = burnObj.turns; }
-      if(status.target && status.target.freezeEnergy){ state.them.status.frozenNext = (state.them.status.frozenNext||0) + status.target.freezeEnergy; }
-      if(status.self){
-        if(status.self.nextPlus){ state.me.status.nextPlus = (state.me.status.nextPlus||0) + status.self.nextPlus; }
-        if(status.self.maxEnergyDelta){ state.me.maxEnergy = clamp(state.me.maxEnergy + status.self.maxEnergyDelta, 1, 6); }
-        if(status.self.energyNowDelta){ state.me.energy = clamp(state.me.energy + status.self.energyNowDelta, 0, state.me.maxEnergy); }
-      }
-      // 4) special: Echo
-      if(card.id==='echo'){
-        const last = me.lastPlayed && me.lastPlayed.id!=='echo' ? me.lastPlayed : null;
-        if(last){
-          // Echo repeats last card without paying its cost
-          this.applyCard(last, me, them, simulate);
-        } else {
-          if(!simulate){ me.draw(1); }
-        }
-      }
-      if(simulate){ return { me: state.me, them: state.them }; }
-    },
-    aiPlay(){
-      if(this.over) return;
-      const ai=this.opp; const playable = ai.hand.map((c,i)=>({c,i})).filter(x=>ai.canAfford(x.c));
-      if(!playable.length){ this.endTurn(); return }
-      // lethal check using interpreter
-      const lethal = playable.find(x=> this.simDamage(ai, this.you, x.c) >= this.you.hp );
-      if(lethal){ this.playCard(ai, lethal.i); return this.aiPlay(); }
-      const healLow = ai.hp<=8 && playable.find(x=>x.c.id==='heart'); if(healLow){ this.playCard(ai, healLow.i); return this.aiPlay(); }
-      const surgeEarly = ai.maxEnergy<5 && playable.find(x=>x.c.id==='loop'); if(surgeEarly){ this.playCard(ai, surgeEarly.i); return this.aiPlay(); }
-      // prefer highest dmg attack first
-      const attacks = playable.filter(x=> x.c.type==='attack').sort((a,b)=> this.simDamage(ai, this.you, b.c) - this.simDamage(ai, this.you, a.c));
-      if(attacks[0]){ this.playCard(ai, attacks[0].i); return this.aiPlay(); }
-      const prio=['fire','snow','star','shield','echo'];
-      for(const id of prio){ const pick = playable.find(x=>x.c.id===id); if(pick){ this.playCard(ai,pick.i); return this.aiPlay(); } }
-      this.playCard(ai, playable[0].i); return this.aiPlay();
-    },
-    simDamage(attacker, defender, card){
-      const a = JSON.parse(JSON.stringify(attacker));
-      const d = JSON.parse(JSON.stringify(defender));
-      const g = Object.create(Game); g.you=a; g.opp=d; g.turn = (attacker===this.you?'you':'opp');
-      const before = d.hp; g.applyCard(card, a, d, true); return Math.max(0, before - d.hp);
-    },
-    checkWin(){
-      if(this.you.hp<=0 || this.opp.hp<=0){
-        this.over=true; const youWin = this.opp.hp<=0 && this.you.hp>0;
-        log(youWin? 'You win!':'AI wins!');
-        if(youWin){ this.streak++; } else { this.streak=0; }
-      }
-    }
-  };
 
-  // ---------- Deck builders ----------
-  function makePersonaDeck(kind){
-    const counts = { heart:2, swords:2, shield:2, echo:2, fire:2, snow:2, bolt:2, star:2, dagger:2, loop:2 };
-    if(kind==='Doctor'){ counts.heart+=2; counts.shield+=1; counts.dagger-=1; }
-    if(kind==='Bruiser'){ counts.swords+=2; counts.dagger+=1; counts.heart-=1; }
-    if(kind==='Trickster'){ counts.echo+=2; counts.snow+=1; counts.swords-=1; }
-    const deck=[]; for(const id in counts){ for(let i=0;i<counts[id];i++){ deck.push(CARDS.find(c=>c.id===id)); } }
-    return shuffle(deck);
-  }
+      // Controls
+      $('#endTurn').onclick = () => Game.endTurn();
+      $('#restart').onclick = () => { 
+        log('—'); 
+        showStart(); 
+      };
+      $('#rerollFace').onclick = () => {
+        const faceInfo = drawOppFace();
+        Game.persona = faceInfo.persona;
+        setOpponentName(Game.persona);
+        // Rebuild opponent deck to match new face/persona and redraw their hand to same size
+        const keepN = Game.opp.hand ? Game.opp.hand.length : 5;
+        Game.opp.deck = makePersonaDeck(Game.persona);
+        Game.opp.hand = [];
+        Game.opp.discard = [];
+        Game.opp.draw(keepN || 5);
+        log('Opponent shifts to ' + Game.persona + ' persona. Deck re-tuned.');
+        render();
+      };
+      $('#selfTest')?.addEventListener('click', () => runSelfTests(Game, log, showStart));
 
-  // ---------- Animations ----------
-  function bump(el, cls){ el.classList.add(cls); setTimeout(()=>el.classList.remove(cls), 240) }
-  function bumpHP(p){ const span = p.isAI? $('#oppHP') : $('#youHP'); span.classList.add('hpflash'); setTimeout(()=>span.classList.remove('hpflash'), 260) }
-  function bumpShield(p){ const span = p.isAI? $('#oppSH') : $('#youSH'); span.classList.add('shieldhit'); setTimeout(()=>span.classList.remove('shieldhit'), 220) }
-
-  // ---------- Render ----------
-  function renderStatuses(p, nodeId){
-    const el = $(nodeId); el.innerHTML='';
-    if(p.status.burn) addTag('🔥 '+p.status.burn+' ('+(p.status.burnTurns||0)+')');
-    if(p.status.nextPlus) addTag('✨ +'+p.status.nextPlus+' atk');
-    if(!p.isAI && p.quirk==='piercer' && !p.status.firstAttackUsed) addTag('⟂ pierce 1 ready');
-    function addTag(txt){ const s=document.createElement('span'); s.className='tag'; s.textContent=txt; el.appendChild(s) }
-  }
-
-  function cardText(c){
-    const parts=[]; const e=c.effects||{}; const s=c.status||{}; const st=s.target||{}; const self=s.self||{};
-    if(e.damage){ parts.push(`Deal ${e.damage} dmg${e.pierce?' (pierce)':''}.`); }
-    if(e.shield){ parts.push(`Gain ${e.shield} shield.`); }
-    if(e.heal){ parts.push(`Heal ${e.heal}.`); }
-    if(e.draw){ parts.push(`Draw ${e.draw}.`); }
-    if(st.burn){ parts.push(`Burn ${st.burn.amount} for ${st.burn.turns}.`); }
-    if(st.freezeEnergy){ parts.push(`Foe -${st.freezeEnergy} ⚡ next.`); }
-    if(self.nextPlus){ parts.push(`+${self.nextPlus} next atk.`); }
-    if(self.maxEnergyDelta){ parts.push(`+${self.maxEnergyDelta} max ⚡.`); }
-    if(self.energyNowDelta){ parts.push(`+${self.energyNowDelta} ⚡ now.`); }
-    if(c.id==='echo'){ parts.push('Repeat last non‑Echo, else draw 1.'); }
-    return parts.join(' ');
-  }
-
-  function predictCard(card, me, them){
-    const meClone = JSON.parse(JSON.stringify(me));
-    const themClone = JSON.parse(JSON.stringify(them));
-    const g = Object.create(Game);
-    g.you = meClone; g.opp = themClone; g.turn = (me===Game.you?'you':'opp');
-    const beforeHP = themClone.hp; const beforeSh = themClone.shield; const beforeMeHP = meClone.hp; const beforeMeSh = meClone.shield;
-    g.applyCard(card, meClone, themClone, true);
-    const dmg = Math.max(0, beforeHP - themClone.hp);
-    const shGain = Math.max(0, meClone.shield - beforeMeSh);
-    const heal = Math.max(0, meClone.hp - beforeMeHP);
-    let out=[]; if(dmg) out.push(`${dmg} dmg`); if(shGain) out.push(`+${shGain} sh`); if(heal) out.push(`+${heal} hp`);
-    if(card.id==='fire'){ out.push(`burn ${(themClone.status.burn||0)}`); }
-    if(card.id==='snow'){ out.push(`-1⚡ next`); }
-    if(card.id==='star'){ out.push(`next +2`); }
-    if(card.id==='loop'){ out.push(`+1⚡ max`); }
-    if(card.id==='echo' && (!me.lastPlayed || me.lastPlayed.id==='echo')) out = ['draw 1'];
-    return '→ ' + (out.join(', ')||'');
-  }
-
-  const render=()=>{
-    $('#youHP').textContent = Game.you.hp;
-    $('#youSH').textContent = Game.you.shield;
-    $('#youEN').textContent = `${Game.you.energy}/${Game.you.maxEnergy}`;
-    $('#oppHP').textContent = Game.opp.hp;
-    $('#oppSH').textContent = Game.opp.shield;
-    $('#oppEN').textContent = `${Game.opp.energy}/${Game.opp.maxEnergy}`;
-    $('#streak').textContent = Game.streak;
-    renderStatuses(Game.you,'#youStatus');
-    renderStatuses(Game.opp,'#oppStatus');
-    const handEl=$('#hand'); handEl.innerHTML='';
-    Game.you.hand.forEach((card,idx)=>{
-      const b=document.createElement('button');
-      b.className='card';
-      const pv = predictCard(card, Game.you, Game.opp);
-      const cost = `<div class=\"cost\">${card.cost}</div>`;
-      b.innerHTML=`${cost}<div class=\"sym\">${card.sym}</div><div class=\"nm\">${card.name}</div><div class=\"ct\">${cardText(card)}</div><div class=\"pv\">${pv}</div>`;
-      const affordable = Game.you.canAfford(card);
-      b.disabled=Game.turn!=='you' || !affordable || Game.over;
-      if(!affordable) b.classList.add('insufficient');
-      if(!b.disabled) b.onclick=()=>{Game.playCard(Game.you,idx)};
-      handEl.appendChild(b);
-    });
-    $('#endTurn').disabled=Game.turn!=='you' || Game.over;
-  };
-
-  // ---------- Controls ----------
-  $('#endTurn').onclick=()=>Game.endTurn();
-  $('#restart').onclick=()=>{ log('—'); showStart(); };
-  $('#rerollFace').onclick = () => {
-    const faceInfo = drawOppFace();
-    Game.persona = faceInfo.persona;
-    setOpponentName(Game.persona);
-    // Rebuild opponent deck to match new face/persona and redraw their hand to same size
-    const keepN = Game.opp.hand ? Game.opp.hand.length : 5;
-    Game.opp.deck = makePersonaDeck(Game.persona);
-    Game.opp.hand = [];
-    Game.opp.discard = [];
-    Game.opp.draw(keepN || 5);
-    log('Opponent shifts to '+Game.persona+' persona. Deck re-tuned.');
-    render();
-  };
-  $('#selfTest')?.addEventListener('click', runSelfTests);
-
-  // ---------- Deck Builder ----------
-  function openDeckBuilder(done){
-    const modal=$('#deckModal');
-    const grid=$('#deckGrid');
-    const cntEl=$('#deckCount');
-    const need=20; $('#deckNeed').textContent=need;
-    const counts={}; CARDS.forEach(c=>counts[c.id]=0);
-    function deckSize(){ return Object.values(counts).reduce((a,b)=>a+b,0); }
-    function rebuild(){
-      grid.innerHTML='';
-      CARDS.forEach(c=>{
-        const card=document.createElement('div'); card.className='qcard';
-        card.innerHTML=`<div style=\"display:flex;justify-content:space-between;align-items:center\"><div><span style=\"margin-right:6px\">${c.sym}</span>${c.name}</div><div class=\"cost\">${c.cost}</div></div><div style=\"margin-top:6px;font-size:10px\">${cardText(c)}</div><div style=\"display:flex;gap:6px;margin-top:6px;align-items:center\"><button class=\"btn\" data-act=\"sub\" data-id=\"${c.id}\">-</button><div>${counts[c.id]}</div><button class=\"btn\" data-act=\"add\" data-id=\"${c.id}\">+</button></div>`;
-        grid.appendChild(card);
-      });
-      cntEl.textContent = deckSize();
-      $('#deckConfirm').disabled = deckSize()!==need;
-    }
-    grid.onclick=(e)=>{
-      const b=e.target.closest('button.btn'); if(!b) return; const id=b.getAttribute('data-id'); const act=b.getAttribute('data-act');
-      if(act==='add'){ if(counts[id]<4 && deckSize()<need) counts[id]++; }
-      if(act==='sub'){ if(counts[id]>0) counts[id]--; }
-      rebuild();
-    };
-    $('#deckClear').onclick=()=>{ Object.keys(counts).forEach(k=>counts[k]=0); rebuild(); };
-    $('#deckConfirm').onclick=()=>{
-      const deck=[]; for(const id in counts){ for(let i=0;i<counts[id];i++){ deck.push(CARDS.find(c=>c.id===id)); } }
-      modal.hidden=true; done(shuffle(deck));
-    };
-    $('#deckQuick').onclick=()=>{ modal.hidden=true; done(buildRandomDeck(20,4)); };
-    modal.hidden=false; rebuild();
-  }
-
-  // ---------- Self Tests ----------
-  function assertEqual(name, a, b){ const ok = JSON.stringify(a)===JSON.stringify(b); log((ok?'PASS':'FAIL')+': '+name+' → '+JSON.stringify(a)); if(!ok) console.warn('Test failed:', name, 'expected', b, 'got', a); }
-  function runSelfTests(){
-    log('Running self-tests…');
-    // Original tests (unchanged)
-    { const t={hp:10,shield:3,isAI:true}; const atk={status:{nextPlus:0,firstAttackUsed:false}, isAI:false, quirk:null}; Game.hit.call({turn:'you',you:atk,opp:t}, t, 4, false); assertEqual('Shield absorbs first', {hp:t.hp,sh:t.shield}, {hp:9,sh:0}); }
-    { const t={hp:10,shield:5,isAI:true}; const atk={status:{nextPlus:0,firstAttackUsed:false}, isAI:false, quirk:null}; Game.hit.call({turn:'you',you:atk,opp:t}, t, 3, true); assertEqual('Pierce ignores shield', {hp:t.hp,sh:t.shield}, {hp:7,sh:5}); }
-    { const t={hp:10,shield:0,isAI:true}; const atk={status:{nextPlus:2,firstAttackUsed:false}, isAI:false, quirk:null}; Game.hit.call({turn:'you',you:atk,opp:t}, t, 3, true); assertEqual('Focus adds +2 once', {hp:t.hp,next:atk.status.nextPlus}, {hp:5,next:0}); }
-    { const t={hp:10,shield:2,isAI:true}; const atk={status:{nextPlus:0,firstAttackUsed:false}, isAI:false, quirk:'piercer'}; Game.hit.call({turn:'you',you:atk,opp:t}, t, 3, false); assertEqual('Piercer first hit', {hp:t.hp,sh:t.shield,used:atk.status.firstAttackUsed}, {hp:9,sh:0,used:true}); }
-    { const p=createPlayer(false); p.status.frozenNext=1; const ctx=Object.create(Game); ctx.startTurn=Game.startTurn; ctx.render=()=>{}; ctx.startTurn(p); assertEqual('Freeze energy penalty', p.energy, 2); }
-    // Added tests (new)
-    { // Echo repeats last
-      const me=createPlayer(false); const foe=createPlayer(true);
-      me.lastPlayed = CARDS.find(c=>c.id==='swords');
-      Game.applyCard(CARDS.find(c=>c.id==='echo'), me, foe, false);
-      assertEqual('Echo repeats last attack', foe.hp<=17, true);
-    }
-    { // Discard/reshuffle behavior
-      const p=createPlayer(false); p.deck=[CARDS.find(c=>c.id==='swords')]; p.hand=[]; p.discard=[]; p.draw(1); Game.playCard.call(Game,p,0); assertEqual('Card moved to discard', {deck:p.deck.length, hand:p.hand.length, disc:p.discard.length}, {deck:0,hand:0,disc:1}); p.draw(1); assertEqual('Reshuffle pulls from discard', {deck:p.deck.length, hand:p.hand.length, disc:p.discard.length}, {deck:0,hand:1,disc:0});
-    }
-    { // Sanity: Game has init functions
-      assertEqual('Game.init exists', typeof Game.init, 'function');
-      assertEqual('Game.initQuick exists', typeof Game.initQuick, 'function');
-    }
-    { // Preview equals real damage for a basic attack
-      const me=createPlayer(false); const foe=createPlayer(true); const c=CARDS.find(c=>c.id==='swords');
-      const g=Object.create(Game); g.you=me; g.opp=foe; g.turn='you';
-      const sim=g.simDamage(me,foe,c); g.applyCard(c, me, foe, false);
-      assertEqual('Preview equals result (swords)', sim, 3);
-    }
-    { assertEqual('showStart exists', typeof showStart, 'function'); }
-    log('Self-tests complete.');
-  }
-
-  // ---------- Start Screen (Minimal) ----------
-  function showStart(){
-    const modal = document.getElementById('startModal');
-    modal.hidden = false;
-    document.getElementById('startBtn').onclick = ()=>{ modal.hidden=true; Game.init(); };
-    document.getElementById('quickBtn').onclick = ()=>{ modal.hidden=true; Game.initQuick(); };
-  }
-
-  // ---------- Quick Start Helpers ----------
-  function buildRandomDeck(size=20, maxCopies=4){
-    const pool = CARDS.map(c=>c.id);
-    const counts={}; pool.forEach(id=>counts[id]=0);
-    const deck=[];
-    while(deck.length<size){
-      const id = pool[Math.floor(Math.random()*pool.length)];
-      if(counts[id] < maxCopies){ counts[id]++; deck.push(CARDS.find(c=>c.id===id)); }
-    }
-    return shuffle(deck);
-  }
-
-  // ---------- Boot ----------
-  showStart();
-})();
-</script>
+      // Boot
+      showStart();
+    })();
+  </script>
 </body>
 </html>
