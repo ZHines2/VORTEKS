@@ -135,4 +135,16 @@ export const CARDS = [
     scaling: {}, 
     ai: { role: 'setup', pri: 45 } 
   },
+  { 
+    id: 'droid', 
+    sym: '🤖', 
+    name: '🤖 Droid Protocol', 
+    cost: 1, 
+    type: 'power', 
+    tags: ['droid'],
+    effects: { damage: 0, pierce: false, heal: 0, shield: 0, draw: 0 }, 
+    status: { target: { burn: null, freezeEnergy: 0 }, self: { nextPlus: 0, maxEnergyDelta: 0, energyNowDelta: 0, cleanse: false, droidProcArm: true } }, 
+    scaling: {}, 
+    ai: { role: 'setup', pri: 48 } 
+  },
 ];

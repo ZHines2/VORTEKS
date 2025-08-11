@@ -186,6 +186,42 @@ export function runSelfTests(Game, log, showStart) {
     assertEqual('Placeholder mechanic activates', isActive, true, log);
     assertEqual('Placeholder mechanic logs', mechanicLogged, true, log);
   }
+
+  {
+    // Test Droid Protocol card functionality
+    const me = createPlayer(false);
+    const droidCard = CARDS.find(c => c.id === 'droid');
+    if (droidCard) {
+      // Test that playing droid card arms the next-turn effect
+      const testGame = Object.create(Game);
+      testGame.you = me;
+      testGame.opp = createPlayer(true);
+      testGame.over = false;
+      
+      // Apply droid card (not simulated)
+      testGame.applyCard(droidCard, me, testGame.opp, false);
+      assertEqual('Droid card arms next-turn effect', me.status.droidProcNext, true, log);
+      
+      // Test that startTurn triggers and clears the effect
+      const originalHP = me.hp;
+      const originalShield = me.shield;
+      const originalEnergy = me.energy;
+      const originalNextPlus = me.status.nextPlus || 0;
+      
+      testGame.startTurn(me);
+      
+      // At least one of the bonuses should have triggered and flag should be cleared
+      const hpChanged = me.hp !== originalHP;
+      const shieldChanged = me.shield !== originalShield;
+      const energyChanged = me.energy !== originalEnergy;
+      const nextPlusChanged = (me.status.nextPlus || 0) !== originalNextPlus;
+      const flagCleared = !me.status.droidProcNext;
+      
+      const effectTriggered = hpChanged || shieldChanged || energyChanged || nextPlusChanged;
+      assertEqual('Droid Protocol triggers an effect', effectTriggered, true, log);
+      assertEqual('Droid Protocol flag cleared', flagCleared, true, log);
+    }
+  }
   
   log('Self-tests complete.');
 }

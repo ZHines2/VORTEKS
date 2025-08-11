@@ -23,6 +23,7 @@ const HELP_SHOWN_KEY = 'vorteks-help-shown';
 let music;
 const muteBtn = document.getElementById('muteBtn');
 const helpBtn = document.getElementById('helpBtn');
+const unlocksBtn = document.getElementById('unlocksBtn');
 
 function setupMusic() {
   music = new Audio(MUSIC_FILE);

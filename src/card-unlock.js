@@ -100,6 +100,13 @@ const UNLOCK_META = [
     description: 'Defeat a Cat opponent.',
     progressHint: () => 'Find and defeat a rare Cat opponent.',
     check: () => false // Handled by persona defeat system
+  },
+  {
+    id: 'droid',
+    kind: 'persona',
+    description: 'Defeat a Robot opponent.',
+    progressHint: () => 'Find and defeat a rare Robot opponent.',
+    check: () => false // Handled by persona defeat system
   }
 ];
 
@@ -107,7 +114,9 @@ const UNLOCK_META = [
 // personaName -> cardId
 const PERSONA_UNLOCKS = {
   // Cat persona unlocks Curiosity card
-  'cat': 'curiosity'
+  'cat': 'curiosity',
+  // Robot persona unlocks Droid Protocol card
+  'robot': 'droid'
   // Example future entries:
   // 'Glacier': 'snow',
   // 'Assassin': 'dagger'

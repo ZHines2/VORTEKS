@@ -69,6 +69,11 @@ export function drawOppFace() {
     return buildCatFace();
   }
 
+  // Check for Robot generation (5.55% chance)
+  if (Math.random() < 0.0555) {
+    return buildRobotFace();
+  }
+
   // Check for easter egg generation (5% chance)
   if (Math.random() < EASTER_EGG_CHANCE) {
     const easterEgg = EASTER_EGG_FACES[rngInt(EASTER_EGG_FACES.length)];
@@ -218,6 +223,120 @@ export function buildCatFace() {
       isCat: true,
       coat,
       eyes: eyeColor,
+      accessory,
+      isEasterEgg: false
+    }
+  };
+}
+
+// Build Robot face with variants as specified in requirements
+export function buildRobotFace() {
+  const S = 6;
+  fctx.clearRect(0, 0, faceCanvas.width, faceCanvas.height);
+  const px = (x, y, c) => { fctx.fillStyle = c; fctx.fillRect(x * S, y * S, S, S); };
+
+  // Robot variants
+  const chassis = ['steel', 'gunmetal', 'copper', 'midnight'];
+  const eyeLeds = ['red', 'blue', 'green', 'amber'];
+  const antennas = ['none', 'single', 'twin'];
+  const accessories = [null, 'visor', 'shoulder panel'];
+  
+  const chassisType = chassis[rngInt(chassis.length)];
+  const ledColor = eyeLeds[rngInt(eyeLeds.length)];
+  const antenna = antennas[rngInt(antennas.length)];
+  const accessory = Math.random() < 0.12 ? accessories[1 + rngInt(accessories.length - 1)] : null;
+
+  // Robot color mapping
+  const chassisColors = {
+    steel: '#c0c0c0',
+    gunmetal: '#2f4f4f', 
+    copper: '#b87333',
+    midnight: '#2c2c54'
+  };
+
+  const ledColors = {
+    red: '#ff0000',
+    blue: '#0066ff',
+    green: '#00ff00',
+    amber: '#ffbf00'
+  };
+
+  const mainColor = chassisColors[chassisType];
+  const eyeColor = ledColors[ledColor];
+  const black = '#000000';
+  const darkGray = '#404040';
+  const white = '#ffffff';
+
+  // background
+  for (let y = 0; y < 16; y++) {
+    for (let x = 0; x < 16; x++) {
+      px(x, y, black);
+    }
+  }
+
+  // Robot head 
+  for (let y = 5; y <= 11; y++) { 
+    for (let x = 5; x <= 10; x++) {
+      px(x, y, mainColor); 
+    } 
+  }
+  
+  // Eyes (LED style)
+  px(6, 7, eyeColor);
+  px(9, 7, eyeColor);
+  
+  // Mouth (speaker grille)
+  for (let x = 6; x <= 9; x++) {
+    px(x, 10, darkGray);
+  }
+  px(7, 9, darkGray);
+  px(8, 9, darkGray);
+
+  // Antenna variants
+  if (antenna === 'single') {
+    px(7, 4, darkGray);
+    px(7, 3, eyeColor); // LED tip
+  } else if (antenna === 'twin') {
+    px(6, 4, darkGray);
+    px(9, 4, darkGray);
+    px(6, 3, eyeColor); // LED tips
+    px(9, 3, eyeColor);
+  }
+
+  // Accessories
+  if (accessory === 'visor') {
+    for (let x = 5; x <= 10; x++) {
+      px(x, 6, darkGray); // Dark visor over eyes
+    }
+  } else if (accessory === 'shoulder panel') {
+    px(4, 8, eyeColor); // Side panel with LED
+    px(11, 8, eyeColor);
+  }
+  
+  // Border
+  for (let x = 5; x <= 10; x++) { 
+    px(x, 5, black); 
+    px(x, 11, black); 
+  }
+  for (let y = 5; y <= 11; y++) { 
+    px(5, y, black); 
+    px(10, y, black); 
+  }
+
+  // Log appearance
+  let logMessage = `A Robot appears (${chassisType} / ${ledColor} LED).`;
+  if (accessory) {
+    logMessage = `✨ A Fancy Robot appears (${accessory}).`;
+  }
+  if (window.log) window.log(logMessage);
+
+  return { 
+    persona: 'robot',
+    features: { 
+      isRobot: true,
+      chassis: chassisType,
+      eyeLeds: ledColor,
+      antenna,
       accessory,
       isEasterEgg: false
     }

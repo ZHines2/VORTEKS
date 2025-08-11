@@ -161,6 +161,22 @@ export const Game = {
       p.status.curiosityNextDraw = false;
     }
     
+    // Handle Droid Protocol next-turn random bonus
+    if (p.status.droidProcNext) {
+      const actorName = p === this.you ? '[YOU]' : '[ROBOT]';
+      const bonuses = [
+        () => { p.shield += 1; return '+1 shield'; },
+        () => { p.hp = clamp(p.hp + 1, 0, p.maxHP); return 'Heal 1'; },
+        () => { p.draw(1); return 'Draw 1'; },
+        () => { p.energy = clamp(p.energy + 1, 0, p.maxEnergy); return '+1 energy'; },
+        () => { p.status.nextPlus = (p.status.nextPlus||0)+1; return '+1 next atk'; }
+      ];
+      const randomBonus = bonuses[Math.floor(Math.random() * bonuses.length)];
+      const description = randomBonus();
+      if (log) log(`${actorName} Droid Protocol: ${description}`);
+      p.status.droidProcNext = false;
+    }
+    
     // Reset per-turn achievement tracking if player's turn
     if (p === this.you) {
       this.turnTypes = new Set();
@@ -429,6 +445,9 @@ export const Game = {
       }
       if (status.self.curiosityPower && !simulate) { 
         state.me.status.curiosityPower = true; 
+      }
+      if (status.self.droidProcArm && !simulate) { 
+        state.me.status.droidProcNext = true; 
       }
     }
     
