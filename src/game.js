@@ -34,6 +34,16 @@ export const Game = {
   streak: 0, 
   persona: null,
   ai: null,
+  oppFeatures: null, // Store opponent face features for easter eggs
+  
+  // Placeholder mechanics for easter egg faces - to be implemented later
+  easterEggMechanics: {
+    water_immunity: { active: false, description: "Immune to water-based attacks" },
+    electric_resistance: { active: false, description: "Reduced damage from electric attacks" },
+    stealth_ability: { active: false, description: "Can avoid attacks with stealth" },
+    fire_mastery: { active: false, description: "Enhanced fire-based abilities" },
+    phase_through: { active: false, description: "Can phase through physical attacks" }
+  },
   
   setLogFunction(logFn) {
     setLogFunction(logFn);
@@ -47,8 +57,16 @@ export const Game = {
     // Face first → persona → AI deck
     const faceInfo = drawOppFace();
     this.persona = faceInfo.persona;
-    setOpponentName(this.persona);
+    this.oppFeatures = faceInfo.features; // Store features for logging
+    setOpponentName(this.persona, this.oppFeatures);
     this.opp.deck = makePersonaDeck(this.persona);
+    
+    // Log easter egg appearance
+    if (this.oppFeatures.isEasterEgg) {
+      if (log) log(`✨ RARE FACE ENCOUNTERED! ${this.oppFeatures.easterEggType} ${this.persona} appears! ✨`);
+      if (log) log(`[${this.oppFeatures.rarity.toUpperCase()} RARITY] Special abilities may activate later...`);
+      this.activateEasterEggMechanic(this.oppFeatures.placeholderMechanic);
+    }
     
     // Player builds deck, then picks quirk, then start
     // This will be called from UI module
@@ -75,8 +93,16 @@ export const Game = {
     
     const faceInfo = drawOppFace();
     this.persona = faceInfo.persona; 
-    setOpponentName(this.persona);
+    this.oppFeatures = faceInfo.features; // Store features for logging
+    setOpponentName(this.persona, this.oppFeatures);
     this.opp.deck = makePersonaDeck(this.persona);
+    
+    // Log easter egg appearance
+    if (this.oppFeatures.isEasterEgg) {
+      if (log) log(`✨ RARE FACE ENCOUNTERED! ${this.oppFeatures.easterEggType} ${this.persona} appears! ✨`);
+      if (log) log(`[${this.oppFeatures.rarity.toUpperCase()} RARITY] Special abilities may activate later...`);
+      this.activateEasterEggMechanic(this.oppFeatures.placeholderMechanic);
+    }
     
     // Build random deck for quick start
     if (window.buildRandomDeck) {
@@ -369,6 +395,15 @@ export const Game = {
       } else { 
         this.streak = 0; 
       }
+    }
+  },
+
+  // Placeholder mechanic activation for easter egg faces
+  activateEasterEggMechanic(mechanicName) {
+    if (this.easterEggMechanics[mechanicName]) {
+      this.easterEggMechanics[mechanicName].active = true;
+      if (log) log(`[MECHANIC PLACEHOLDER] ${this.easterEggMechanics[mechanicName].description}`);
+      // TODO: Implement actual mechanics in future updates
     }
   }
 };

@@ -123,14 +123,22 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('rerollFace').onclick = () => {
     const faceInfo = drawOppFace();
     Game.persona = faceInfo.persona;
-    setOpponentName(Game.persona);
+    Game.oppFeatures = faceInfo.features; // Store features for logging
+    setOpponentName(Game.persona, Game.oppFeatures);
     // Rebuild opponent deck to match new face/persona and redraw their hand to same size
     const keepN = Game.opp.hand ? Game.opp.hand.length : 5;
     Game.opp.deck = makePersonaDeck(Game.persona);
     Game.opp.hand = [];
     Game.opp.discard = [];
     Game.opp.draw(keepN || 5);
-    if (window.log) window.log('Opponent shifts to ' + Game.persona + ' persona. Deck re-tuned.');
+    
+    // Enhanced logging for easter eggs
+    let logMessage = 'Opponent shifts to ' + Game.persona + ' persona. Deck re-tuned.';
+    if (Game.oppFeatures.isEasterEgg) {
+      logMessage = `✨ RARE FACE! ${Game.oppFeatures.easterEggType} ${Game.persona} appears! ✨ [${Game.oppFeatures.rarity.toUpperCase()}] Deck re-tuned.`;
+      Game.activateEasterEggMechanic(Game.oppFeatures.placeholderMechanic);
+    }
+    if (window.log) window.log(logMessage);
     if (window.render) window.render();
   };
 
