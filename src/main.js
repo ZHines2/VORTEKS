@@ -7,9 +7,11 @@ import { makePersonaDeck } from './ai.js';
 
 const MUSIC_FILE = 'VORTEKS.mp3';
 const LS_KEY = 'vorteks-muted';
+const HELP_SHOWN_KEY = 'vorteks-help-shown';
 
 let music;
 const muteBtn = document.getElementById('muteBtn');
+const helpBtn = document.getElementById('helpBtn');
 
 function setupMusic() {
   music = new Audio(MUSIC_FILE);
@@ -42,6 +44,44 @@ function updateMuteBtn(muted) {
   muteBtn.setAttribute('aria-label', muted ? 'Unmute music' : 'Mute music');
 }
 
+function setupHelp() {
+  const helpModal = document.getElementById('helpModal');
+  const helpCloseBtn = document.getElementById('helpCloseBtn');
+
+  // Help button click handler
+  helpBtn.addEventListener('click', () => {
+    helpModal.hidden = false;
+  });
+
+  // Close button handler
+  helpCloseBtn.addEventListener('click', () => {
+    helpModal.hidden = true;
+    // Mark help as shown for future visits
+    localStorage.setItem(HELP_SHOWN_KEY, '1');
+  });
+
+  // Close modal on ESC key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !helpModal.hidden) {
+      helpModal.hidden = true;
+      localStorage.setItem(HELP_SHOWN_KEY, '1');
+    }
+  });
+
+  // Auto-show for first-time players
+  const hasSeenHelp = localStorage.getItem(HELP_SHOWN_KEY) === '1';
+  if (!hasSeenHelp) {
+    // Delay to ensure all modals are ready
+    setTimeout(() => {
+      const startModal = document.getElementById('startModal');
+      // Only show if start modal is not visible
+      if (startModal && startModal.hidden) {
+        helpModal.hidden = false;
+      }
+    }, 500);
+  }
+}
+
 // --- Attach to window for modularity (if needed) ---
 window.bump = bump;
 window.bumpHP = bumpHP;
@@ -52,6 +92,7 @@ window.buildRandomDeck = buildRandomDeck;
 // --- Game boot logic ---
 document.addEventListener('DOMContentLoaded', () => {
   setupMusic();
+  setupHelp();
 
   // Initialize face generator
   initFaceGenerator();
