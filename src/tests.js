@@ -63,11 +63,17 @@ export function runSelfTests(Game, log, showStart) {
   { 
     // Discard/reshuffle behavior
     const p = createPlayer(false); 
+    const opp = createPlayer(true);
     p.deck = [CARDS.find(c => c.id === 'swords')]; 
     p.hand = []; 
     p.discard = []; 
+    p.energy = 3; // Give enough energy to play the card
     p.draw(1); 
-    Game.playCard.call(Game, p, 0); 
+    const testGame = Object.create(Game);
+    testGame.you = p;
+    testGame.opp = opp;
+    testGame.over = false;
+    testGame.playCard(p, 0); 
     assertEqual('Card moved to discard', {deck: p.deck.length, hand: p.hand.length, disc: p.discard.length}, {deck: 0, hand: 0, disc: 1}, log); 
     p.draw(1); 
     assertEqual('Reshuffle pulls from discard', {deck: p.deck.length, hand: p.hand.length, disc: p.discard.length}, {deck: 0, hand: 1, disc: 0}, log);
