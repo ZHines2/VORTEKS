@@ -53,6 +53,12 @@ export function cardText(c) {
   if (c.id === 'echo') { 
     parts.push('Repeat last non‑Echo, else draw 1.'); 
   }
+  if (c.id === 'curiosity') {
+    parts.push('End: If you bank energy, next start draw +1.');
+  }
+  if (c.id === 'droid' || self.droidProcArm) {
+    parts.push('Start of next turn: random +1 (draw, energy, shield, heal, next atk).');
+  }
   return parts.join(' ');
 }
 

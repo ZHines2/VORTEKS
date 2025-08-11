@@ -33,6 +33,17 @@ export function makePersonaDeck(kind) {
     counts.dagger -= 1;  // Fewer expensive cards
     counts.loop -= 1;    // Fewer expensive cards
   }
+  if (kind === 'robot') {
+    // Robot deck: 3 copies of Droid Protocol + bias toward low-cost tempo/control
+    counts.droid = 3;
+    counts.bolt += 2;    // More low-cost tempo
+    counts.snow += 1;    // Control elements
+    counts.star += 1;    // Setup power
+    counts.shield += 1;  // Defense
+    counts.dagger -= 1;  // Fewer expensive finishers
+    counts.loop -= 1;    // Fewer expensive ramp
+    counts.fire -= 1;    // Less attrition
+  }
   
   const deck = []; 
   for (const id in counts) { 
@@ -76,6 +87,13 @@ export function createAIPlayer(game) {
       if (surgeEarly) { 
         game.playCard(ai, surgeEarly.i); 
         return this.aiPlay(); 
+      }
+      
+      // Play curiosity or droid early to showcase the powers
+      const setupCard = playable.find(x => x.c.id === 'curiosity' || x.c.id === 'droid');
+      if (setupCard) {
+        game.playCard(ai, setupCard.i);
+        return this.aiPlay();
       }
       
       // prefer highest dmg attack first
