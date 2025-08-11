@@ -64,7 +64,12 @@ export function drawOppFace() {
     return { persona: 'Bruiser', features: {} };
   }
 
-  // Check for easter egg generation first
+  // Check for Cat generation first (9% chance)
+  if (Math.random() < 0.09) {
+    return buildCatFace();
+  }
+
+  // Check for easter egg generation (5% chance)
   if (Math.random() < EASTER_EGG_CHANCE) {
     const easterEgg = EASTER_EGG_FACES[rngInt(EASTER_EGG_FACES.length)];
     return drawEasterEggFace(easterEgg);
@@ -72,6 +77,151 @@ export function drawOppFace() {
 
   // Generate regular face
   return drawRegularFace();
+}
+
+// Build Cat face with variants as specified in requirements
+export function buildCatFace() {
+  const S = 6;
+  fctx.clearRect(0, 0, faceCanvas.width, faceCanvas.height);
+  const px = (x, y, c) => { fctx.fillStyle = c; fctx.fillRect(x * S, y * S, S, S); };
+
+  // Cat variants
+  const coats = ['black', 'white', 'ginger', 'tabby', 'calico', 'grey'];
+  const eyes = ['green', 'amber', 'blue', 'odd'];
+  const accessories = [null, 'collar', 'bell', 'bandana', 'visor'];
+  
+  const coat = coats[rngInt(coats.length)];
+  const eyeColor = eyes[rngInt(eyes.length)];
+  const accessory = Math.random() < 0.12 ? accessories[1 + rngInt(accessories.length - 1)] : null;
+
+  // Cat color mapping
+  const coatColors = {
+    black: '#2c2c2c',
+    white: '#f5f5f5', 
+    ginger: '#d2691e',
+    tabby: '#8b7355',
+    calico: '#d2691e', // Will add patches
+    grey: '#808080'
+  };
+
+  const eyeColors = {
+    green: '#00ff00',
+    amber: '#ffbf00',
+    blue: '#4169e1',
+    odd: ['#00ff00', '#4169e1'] // Different colors for each eye
+  };
+
+  const mainColor = coatColors[coat];
+  const black = '#000000';
+  const pink = '#ffb3d9';
+  const white = '#ffffff';
+
+  // background
+  for (let y = 0; y < 16; y++) {
+    for (let x = 0; x < 16; x++) {
+      px(x, y, black);
+    }
+  }
+
+  // Cat head 
+  for (let y = 5; y <= 11; y++) { 
+    for (let x = 5; x <= 10; x++) {
+      px(x, y, mainColor); 
+    } 
+  }
+  
+  // Ears
+  px(5, 4, mainColor);
+  px(6, 4, mainColor);
+  px(9, 4, mainColor);
+  px(10, 4, mainColor);
+  px(5, 5, pink);
+  px(10, 5, pink);
+  
+  // Calico patches if calico coat
+  if (coat === 'calico') {
+    px(6, 6, '#2c2c2c'); // black patch
+    px(9, 9, '#ffffff');  // white patch
+  }
+
+  // Tabby stripes if tabby coat
+  if (coat === 'tabby') {
+    px(6, 6, '#654321');
+    px(8, 8, '#654321');
+    px(7, 10, '#654321');
+  }
+
+  // Eyes
+  const leftEyeColor = eyeColor === 'odd' ? eyeColors.odd[0] : eyeColors[eyeColor];
+  const rightEyeColor = eyeColor === 'odd' ? eyeColors.odd[1] : eyeColors[eyeColor];
+  px(6, 7, leftEyeColor);
+  px(9, 7, rightEyeColor);
+  
+  // Nose (pink)
+  px(7, 8, pink);
+  px(8, 8, pink);
+  
+  // Mouth
+  px(7, 9, black);
+  px(8, 9, black);
+  px(6, 10, black);
+  px(9, 10, black);
+  
+  // Whiskers
+  px(4, 8, black);
+  px(3, 9, black);
+  px(11, 8, black);
+  px(12, 9, black);
+
+  // Accessories
+  if (accessory === 'collar') {
+    for (let x = 5; x <= 10; x++) {
+      px(x, 12, '#ff0000'); // Red collar
+    }
+  } else if (accessory === 'bell') {
+    for (let x = 5; x <= 10; x++) {
+      px(x, 12, '#ff0000'); // Red collar
+    }
+    px(7, 13, '#ffff00'); // Yellow bell
+    px(8, 13, '#ffff00');
+  } else if (accessory === 'bandana') {
+    px(5, 3, '#0000ff'); // Blue bandana
+    px(6, 3, '#0000ff');
+    px(9, 3, '#0000ff');
+    px(10, 3, '#0000ff');
+  } else if (accessory === 'visor') {
+    for (let x = 5; x <= 10; x++) {
+      px(x, 6, '#404040'); // Dark visor
+    }
+  }
+  
+  // Border
+  for (let x = 5; x <= 10; x++) { 
+    px(x, 5, black); 
+    px(x, 11, black); 
+  }
+  for (let y = 5; y <= 11; y++) { 
+    px(5, y, black); 
+    px(10, y, black); 
+  }
+
+  // Log appearance
+  let logMessage = `A Cat appears (${coat} / ${eyeColor} eyes).`;
+  if (accessory) {
+    logMessage = `✨ A Fancy Cat appears (${accessory}).`;
+  }
+  if (window.log) window.log(logMessage);
+
+  return { 
+    persona: 'cat',
+    features: { 
+      isCat: true,
+      coat,
+      eyes: eyeColor,
+      accessory,
+      isEasterEgg: false
+    }
+  };
 }
 
 // Draw special easter egg faces
