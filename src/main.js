@@ -8,11 +8,56 @@ import { $ } from './utils.js';
 
 // Log setup
 const logBox = $('#log');
-function log(t) {
-  const p = document.createElement('div');
-  p.textContent = '> ' + t;
-  logBox.prepend(p);
+
+function getOppName() {
+  const el = document.getElementById('oppName');
+  return (el?.textContent || 'OPP').trim();
 }
+
+// Backward-compatible log renderer with actor support.
+// Accepts either a string, or an object: { actor: 'you' | 'opp' | string, text: string }
+function log(entry) {
+  // Normalize
+  let actor, text;
+  if (typeof entry === 'string') {
+    text = entry;
+  } else if (entry && typeof entry === 'object') {
+    actor = entry.actor;
+    text = entry.text ?? '';
+  } else {
+    text = String(entry ?? '');
+  }
+
+  const row = document.createElement('div');
+  row.className = 'log-entry';
+
+  if (actor) {
+    const label = document.createElement('span');
+    const you = actor === 'you';
+    const opp = actor === 'opp';
+    const name = you ? 'YOU' : (opp ? getOppName() : String(actor));
+
+    label.className = 'actor ' + (you ? 'you' : (opp ? 'opp' : 'other'));
+    label.textContent = name + ' — ';
+    row.appendChild(label);
+
+    const msg = document.createElement('span');
+    msg.textContent = text;
+    row.appendChild(msg);
+  } else {
+    // Fallback: old simple lines
+    row.textContent = '> ' + text;
+  }
+
+  logBox.prepend(row);
+
+  // Cap log length to keep DOM lean
+  const MAX = 150;
+  while (logBox.children.length > MAX) {
+    logBox.removeChild(logBox.lastChild);
+  }
+}
+
 setLogFunction(log);
 
 // Face generator must be initialized once
@@ -45,7 +90,7 @@ $('#rerollFace').onclick = () => {
     Game.opp.discard = [];
     Game.opp.draw(keepN || 5);
   }
-  log('Opponent shifts to ' + Game.persona + ' persona. Deck re-tuned.');
+  log({ actor: 'opp', text: 'shifts persona. Deck re-tuned.' });
   if (Game.you && Game.opp) render();
 };
 $('#selfTest')?.addEventListener('click', () => runSelfTests(Game, log, showStart));
