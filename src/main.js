@@ -4,6 +4,16 @@ import { openDeckBuilder, buildRandomDeck } from './deck-builder.js';
 import { runSelfTests } from './tests.js';
 import { initFaceGenerator, drawOppFace, setOpponentName } from './face-generator.js';
 import { makePersonaDeck } from './ai.js';
+import { 
+  getUnlockedCards, 
+  isCardUnlocked, 
+  unlockCard, 
+  getUnlockableCardsInfo, 
+  resetUnlocks, 
+  debugUnlock,
+  checkPersonaDefeatUnlocks,
+  checkAchievementUnlocks 
+} from './card-unlock.js';
 
 const MUSIC_FILE = 'VORTEKS.mp3';
 const LS_KEY = 'vorteks-muted';
@@ -88,6 +98,18 @@ window.bumpHP = bumpHP;
 window.bumpShield = bumpShield;
 window.openDeckBuilder = openDeckBuilder;
 window.buildRandomDeck = buildRandomDeck;
+
+// --- Expose unlock system for debugging ---
+window.CardUnlock = {
+  getUnlockedCards,
+  isCardUnlocked,
+  unlockCard,
+  getUnlockableCardsInfo,
+  resetUnlocks,
+  debugUnlock,
+  checkPersonaDefeatUnlocks,
+  checkAchievementUnlocks
+};
 
 // --- Game boot logic ---
 document.addEventListener('DOMContentLoaded', () => {
