@@ -51,7 +51,7 @@ html,body {
 #unlocksBtn {
   position: absolute;
   top: 18px;
-  right: 106px; /* Position left of Help button with gap */
+  right: 194px; /* Position left of Glossary button with gap */
   z-index: 50;
   background: var(--panel);
   color: var(--accent);
@@ -68,6 +68,56 @@ html,body {
 }
 #unlocksBtn:hover,
 #unlocksBtn:focus {
+  opacity: 1;
+  outline: 2px solid var(--accent);
+}
+
+/* --- Glossary button --- */
+#glossaryBtn {
+  position: absolute;
+  top: 18px;
+  right: 150px; /* Position left of Defeated button with gap */
+  z-index: 50;
+  background: var(--panel);
+  color: var(--accent);
+  border: 2px solid var(--border);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  opacity: 0.85;
+  transition: opacity 0.2s;
+  font-family: 'Press Start 2P', monospace;
+}
+#glossaryBtn:hover,
+#glossaryBtn:focus {
+  opacity: 1;
+  outline: 2px solid var(--accent);
+}
+
+/* --- Defeated Opponents button --- */
+#defeatedBtn {
+  position: absolute;
+  top: 18px;
+  right: 106px; /* Position left of Help button with gap */
+  z-index: 50;
+  background: var(--panel);
+  color: var(--accent);
+  border: 2px solid var(--border);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  opacity: 0.85;
+  transition: opacity 0.2s;
+  font-family: 'Press Start 2P', monospace;
+}
+#defeatedBtn:hover,
+#defeatedBtn:focus {
   opacity: 1;
   outline: 2px solid var(--accent);
 }
@@ -344,7 +394,7 @@ button.card:disabled {
 .dim-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.75);
   pointer-events: none;
   z-index: 1;
   /* Optional blur effect - commented out by default for performance */
@@ -364,21 +414,23 @@ button.card:disabled {
   content: '';
   position: absolute;
   inset: 0;
-  opacity: 0.35;
+  opacity: 0.45;
   will-change: transform;
 }
 
 .fog-layer::before {
-  background: radial-gradient(circle at 20% 30%, rgba(119, 255, 221, 0.3) 0%, transparent 50%),
-              radial-gradient(circle at 80% 70%, rgba(255, 221, 119, 0.2) 0%, transparent 50%),
-              radial-gradient(circle at 40% 80%, rgba(119, 255, 221, 0.2) 0%, transparent 50%);
+  background: radial-gradient(circle at 20% 30%, rgba(119, 255, 221, 0.4) 0%, rgba(119, 255, 221, 0.1) 25%, transparent 50%),
+              radial-gradient(circle at 80% 70%, rgba(255, 221, 119, 0.3) 0%, rgba(255, 221, 119, 0.1) 25%, transparent 50%),
+              radial-gradient(circle at 40% 80%, rgba(119, 255, 221, 0.35) 0%, rgba(119, 255, 221, 0.1) 25%, transparent 50%),
+              radial-gradient(circle at 60% 10%, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 30%, transparent 60%);
   animation: fog-shift-a 120s infinite linear;
 }
 
 .fog-layer::after {
-  background: radial-gradient(circle at 60% 20%, rgba(255, 221, 119, 0.25) 0%, transparent 50%),
-              radial-gradient(circle at 30% 60%, rgba(119, 255, 221, 0.2) 0%, transparent 50%),
-              radial-gradient(circle at 70% 90%, rgba(255, 221, 119, 0.3) 0%, transparent 50%);
+  background: radial-gradient(circle at 60% 20%, rgba(255, 221, 119, 0.35) 0%, rgba(255, 221, 119, 0.1) 25%, transparent 50%),
+              radial-gradient(circle at 30% 60%, rgba(119, 255, 221, 0.3) 0%, rgba(119, 255, 221, 0.1) 25%, transparent 50%),
+              radial-gradient(circle at 70% 90%, rgba(255, 221, 119, 0.4) 0%, rgba(255, 221, 119, 0.1) 25%, transparent 50%),
+              radial-gradient(circle at 15% 85%, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.03) 30%, transparent 60%);
   animation: fog-shift-b 160s infinite linear reverse;
 }
 
@@ -466,6 +518,7 @@ button.card:disabled {
   width: 100vw;
   padding: 0 20px;
   box-sizing: border-box;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8), 0 0 6px rgba(0, 0, 0, 0.6);
 }
 
 /* Responsive adjustments for splash screen */

@@ -9,9 +9,10 @@
 </head>
 <body>
   <div class="wrap">
-    <!-- Top-right buttons: unlocks, glossary, mute, and help -->
+    <!-- Top-right buttons: unlocks, glossary, defeated, mute, and help -->
     <button id="unlocksBtn" aria-label="Unlocks" title="View unlocked cards and achievements">🏆</button>
     <button id="glossaryBtn" aria-label="Glossary" title="View card glossary">📖</button>
+    <button id="defeatedBtn" aria-label="Defeated Opponents" title="View defeated opponents history">🏴</button>
     <button id="muteBtn" aria-label="Mute music" title="Mute/unmute music">🔊</button>
     <button id="helpBtn" aria-label="Help" title="How to play VORTEKS">?</button>
     <h1>VORTEKS</h1>
@@ -153,6 +154,19 @@
       <div id="glossaryGrid" class="qgrid" style="max-height:400px; overflow-y:auto;"></div>
       <div style="display:flex; justify-content:center; margin-top:16px">
         <button id="glossaryCloseBtn" class="btn">CLOSE</button>
+      </div>
+    </div>
+  </div>
+  <!-- Defeated Opponents Modal -->
+  <div class="modal" id="defeatedModal" hidden>
+    <div class="box" style="width:min(96vw, 500px)">
+      <div style="font-size:18px; color:var(--accent); margin:8px 0 16px; text-align:center"><strong>Defeated Opponents</strong></div>
+      <div id="defeatedList" style="max-height:300px; overflow-y:auto; margin-bottom:16px;">
+        <div style="text-align:center; color:var(--ink); opacity:0.7; padding:20px;">No opponents defeated yet.</div>
+      </div>
+      <div style="display:flex; justify-content:center; gap:8px">
+        <button id="defeatedCloseBtn" class="btn">CLOSE</button>
+        <button id="defeatedClearBtn" class="btn" style="background:var(--bad); color:white">CLEAR HISTORY</button>
       </div>
     </div>
   </div>

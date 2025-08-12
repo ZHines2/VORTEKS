@@ -17,21 +17,44 @@ let log = null;
 
 export function setLogFunction(logFn) {
   log = logFn;
-  // Also make it available globally for player.js
-  window.log = logFn;
+  // Only set window.log if it's not already set
+  if (!window.log) {
+    window.log = logFn;
+  }
+  // Ensure it's available to the Game object
+  if (typeof Game !== 'undefined') {
+    Game.log = logFn;
+  }
 }
 
 // Helper functions for actor-aware logging
 function logYou(text) {
-  if (log) log({ actor: 'you', text });
+  const logFn = log || window.log;
+  if (logFn && typeof logFn === 'function') {
+    logFn({ actor: 'you', text });
+  }
 }
 
 function logOpp(text) {
-  if (log) log({ actor: 'opp', text });
+  const logFn = log || window.log;
+  if (logFn && typeof logFn === 'function') {
+    logFn({ actor: 'opp', text });
+  }
 }
 
 function logAction(actor, text) {
-  if (log) log({ actor, text });
+  const logFn = log || window.log;
+  if (logFn && typeof logFn === 'function') {
+    logFn({ actor, text });
+  }
+}
+
+// Generic logging helper
+function logMessage(text) {
+  const logFn = log || window.log;
+  if (logFn && typeof logFn === 'function') {
+    logFn(text);
+  }
 }
 
 // Game state and logic
@@ -87,8 +110,8 @@ export const Game = {
     
     // Log easter egg appearance
     if (this.oppFeatures.isEasterEgg) {
-      if (log) log(`✨ RARE FACE ENCOUNTERED! ${this.oppFeatures.easterEggType} ${this.persona} appears! ✨`);
-      if (log) log(`[${this.oppFeatures.rarity.toUpperCase()} RARITY] Special abilities may activate later...`);
+      logMessage(`✨ RARE FACE ENCOUNTERED! ${this.oppFeatures.easterEggType} ${this.persona} appears! ✨`);
+      logMessage(`[${this.oppFeatures.rarity.toUpperCase()} RARITY] Special abilities may activate later...`);
       this.activateEasterEggMechanic(this.oppFeatures.placeholderMechanic);
     }
     
@@ -101,7 +124,10 @@ export const Game = {
         this.opp.draw(5);
         this.turn = 'you'; 
         this.over = false;
-        if (log) log('New game. You start.');
+        if (log || window.log) {
+          const logFn = log || window.log;
+          if (typeof logFn === 'function') logFn('New game. You start.');
+        }
         this.pickQuirk(() => { 
           this.startTurn(this.you); 
           if (window.render) window.render(); 
@@ -123,8 +149,8 @@ export const Game = {
     
     // Log easter egg appearance
     if (this.oppFeatures.isEasterEgg) {
-      if (log) log(`✨ RARE FACE ENCOUNTERED! ${this.oppFeatures.easterEggType} ${this.persona} appears! ✨`);
-      if (log) log(`[${this.oppFeatures.rarity.toUpperCase()} RARITY] Special abilities may activate later...`);
+      logMessage(`✨ RARE FACE ENCOUNTERED! ${this.oppFeatures.easterEggType} ${this.persona} appears! ✨`);
+      logMessage(`[${this.oppFeatures.rarity.toUpperCase()} RARITY] Special abilities may activate later...`);
       this.activateEasterEggMechanic(this.oppFeatures.placeholderMechanic);
     }
     
@@ -137,7 +163,10 @@ export const Game = {
     this.opp.draw(5);
     this.turn = 'you'; 
     this.over = false; 
-    if (log) log('Quick Start. You start.');
+    if (log || window.log) {
+      const logFn = log || window.log;
+      if (typeof logFn === 'function') logFn('Quick Start. You start.');
+    }
     this.pickQuirk(() => { 
       this.startTurn(this.you); 
       if (window.render) window.render(); 
@@ -156,7 +185,10 @@ export const Game = {
         this.you.energy = this.applyEnergyGain(this.you, 1); 
       }
       modal.hidden = true;
-      if (log) log('Quirk: ' + quirkId.toUpperCase());
+      if (log || window.log) {
+        const logFn = log || window.log;
+        if (typeof logFn === 'function') logFn('Quirk: ' + quirkId.toUpperCase());
+      }
       this.applyQuirkBattleStart(this.you);
       done();
     };
@@ -234,7 +266,7 @@ export const Game = {
     // Handle Curiosity next-turn draw effect
     if (p.status.curiosityNextDraw) {
       const actorName = p === this.you ? '[YOU]' : '[CAT]';
-      if (log) log(`${actorName} Curiosity triggers (+1 draw).`);
+      logMessage(`${actorName} Curiosity triggers (+1 draw).`);
       p.draw(1);
       p.status.curiosityNextDraw = false;
     }
@@ -251,7 +283,7 @@ export const Game = {
       ];
       const randomBonus = bonuses[Math.floor(Math.random() * bonuses.length)];
       const description = randomBonus();
-      if (log) log(`${actorName} Droid Protocol: ${description}`);
+      logMessage(`${actorName} Droid Protocol: ${description}`);
       p.status.droidProcNext = false;
     }
     
@@ -308,7 +340,7 @@ export const Game = {
     if (me.status.curiosityPower && me.energy > 0) {
       me.status.curiosityNextDraw = true;
       const actorName = me === this.you ? '[YOU]' : '[CAT]';
-      if (log) log(`${actorName} Curiosity stores potential.`);
+      logMessage(`${actorName} Curiosity stores potential.`);
     }
     
     if (me.status.burn && me.status.burnTurns > 0) { 
@@ -752,7 +784,7 @@ export const Game = {
       logMessage = `✨ RARE OPPONENT! ${this.oppFeatures.easterEggType} ${this.persona} appears! ✨ [${this.oppFeatures.rarity.toUpperCase()}]`;
       this.activateEasterEggMechanic(this.oppFeatures.placeholderMechanic);
     }
-    if (log) log(logMessage);
+    logMessage(logMessage);
   },
 
   // Clear log function for restart
@@ -843,7 +875,7 @@ export const Game = {
   activateEasterEggMechanic(mechanicName) {
     if (this.easterEggMechanics[mechanicName]) {
       this.easterEggMechanics[mechanicName].active = true;
-      if (log) log(`[MECHANIC PLACEHOLDER] ${this.easterEggMechanics[mechanicName].description}`);
+      logMessage(`[MECHANIC PLACEHOLDER] ${this.easterEggMechanics[mechanicName].description}`);
       // TODO: Implement actual mechanics in future updates
     }
   }
