@@ -201,6 +201,12 @@ h1 {
   font-weight: bold;
 }
 
+.status .tag.energy-info {
+  background: var(--panel);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
 .hand {
   display:flex;
   gap:8px;
