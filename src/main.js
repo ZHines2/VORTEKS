@@ -272,7 +272,7 @@ function setupGlossary() {
           const cardName = card.name.startsWith(card.sym) ? card.name.substring(card.sym.length).trim() : card.name;
           const title = `${card.sym} ${cardName}`;
           const costText = ` (${renderCost(card)}⚡)`;
-          const description = unlocked ? getCardDescription(card) : (cardMeta?.progress || 'Locked');
+          const description = getCardDescription(card);
           
           div.innerHTML = `<strong>${title}${costText}</strong><br/><small>${description}</small>`;
           glossaryGrid.appendChild(div);
