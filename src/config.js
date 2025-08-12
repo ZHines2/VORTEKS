@@ -15,12 +15,12 @@ export const MIN_BURN_TICK = 1; // Minimum burn damage per tick
 // Storage & Migration
 export const MIGRATION_VERSION = 2; // Increment for new storage schema
 
-// Achievement Thresholds
+// Achievement Thresholds - Rebalanced for better progression
 export const ACHIEVEMENTS = {
-  MINTY_ENERGY_THRESHOLD: 10, // Energy spent in single turn for Minty unlock
-  SPICY_BURN_THRESHOLD: 10, // Cumulative burn damage in battle for Spicy unlock
-  PIERCER_DAMAGE_THRESHOLD: 10, // Cumulative pierce damage in battle for Piercer unlock
-  SCHOLAR_DRAW_THRESHOLD: 5, // Cards drawn in single turn for Scholar unlock
+  MINTY_ENERGY_THRESHOLD: 7, // Reduced from 10 - Energy spent in single turn for Minty unlock
+  SPICY_BURN_THRESHOLD: 8, // Reduced from 10 - Cumulative burn damage in battle for Spicy unlock
+  PIERCER_DAMAGE_THRESHOLD: 8, // Reduced from 10 - Cumulative pierce damage in battle for Piercer unlock
+  SCHOLAR_DRAW_THRESHOLD: 4, // Reduced from 5 - Cards drawn in single turn for Scholar unlock
   HEARTY_HP_THRESHOLD: 1, // Max HP to win battle for Hearty unlock
 };
 

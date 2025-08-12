@@ -405,7 +405,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const logBox = document.getElementById('log');
     if (typeof entry === 'string') {
       const p = document.createElement('div');
-      p.textContent = '> ' + entry;
+      
+      // Make unlock notifications more prominent
+      if (entry.includes('UNLOCKED')) {
+        p.classList.add('unlock-notification');
+        p.textContent = '🎉 ' + entry + ' 🎉';
+      } else {
+        p.textContent = '> ' + entry;
+      }
+      
       logBox.prepend(p);
     } else if (entry && typeof entry === 'object') {
       // actor-aware - map opponent logs to current opponent name
