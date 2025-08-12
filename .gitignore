@@ -20,3 +20,8 @@ node_modules/
 # Build artifacts (if any build system is added later)
 dist/
 build/
+
+# Backup files
+*_old.*
+*.bak
+README_old.md

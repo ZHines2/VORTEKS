@@ -24,12 +24,120 @@ import {
 const MUSIC_FILE = 'VORTEKS.mp3';
 const LS_KEY = 'vorteks-muted';
 const HELP_SHOWN_KEY = 'vorteks-help-shown';
+const DEFEATED_KEY = 'vorteks-defeated';
+const QUIRK_KEY = 'vorteks-selected-quirk';
 
 let music;
 const muteBtn = document.getElementById('muteBtn');
 const helpBtn = document.getElementById('helpBtn');
 const unlocksBtn = document.getElementById('unlocksBtn');
 const glossaryBtn = document.getElementById('glossaryBtn');
+const defeatedBtn = document.getElementById('defeatedBtn');
+
+// Defeated opponents helper functions
+function loadDefeatedOpponents() {
+  try {
+    const data = localStorage.getItem(DEFEATED_KEY);
+    return data ? JSON.parse(data) : [];
+  } catch (e) {
+    console.warn('Failed to load defeated opponents:', e);
+    return [];
+  }
+}
+
+function saveDefeatedOpponents(list) {
+  try {
+    localStorage.setItem(DEFEATED_KEY, JSON.stringify(list));
+  } catch (e) {
+    console.warn('Failed to save defeated opponents:', e);
+  }
+}
+
+function recordDefeatedOpponent(name, persona) {
+  if (!name || !persona || name === 'NAME') return;
+  
+  const defeated = loadDefeatedOpponents();
+  const timestamp = new Date().toISOString();
+  
+  // Check for duplicates (same name and persona)
+  const exists = defeated.some(entry => entry.name === name && entry.persona === persona);
+  if (!exists) {
+    defeated.push({ name, persona, timestamp });
+    saveDefeatedOpponents(defeated);
+  }
+}
+
+function clearDefeatedOpponents() {
+  saveDefeatedOpponents([]);
+}
+
+// Quirk persistence helper functions
+function loadSelectedQuirk() {
+  try {
+    return localStorage.getItem(QUIRK_KEY);
+  } catch (e) {
+    console.warn('Failed to load selected quirk:', e);
+    return null;
+  }
+}
+
+function saveSelectedQuirk(quirkId) {
+  try {
+    if (quirkId) {
+      localStorage.setItem(QUIRK_KEY, quirkId);
+    } else {
+      localStorage.removeItem(QUIRK_KEY);
+    }
+  } catch (e) {
+    console.warn('Failed to save selected quirk:', e);
+  }
+}
+
+function setupDefeatedOpponents() {
+  const defeatedModal = document.getElementById('defeatedModal');
+  const defeatedCloseBtn = document.getElementById('defeatedCloseBtn');
+  const defeatedClearBtn = document.getElementById('defeatedClearBtn');
+
+  // Defeated button click handler
+  defeatedBtn.addEventListener('click', () => {
+    renderDefeatedOpponents();
+    defeatedModal.hidden = false;
+  });
+
+  // Close button handler
+  defeatedCloseBtn.addEventListener('click', () => {
+    defeatedModal.hidden = true;
+  });
+
+  // Clear button handler
+  defeatedClearBtn.addEventListener('click', () => {
+    const confirmed = confirm('Clear defeated opponents history? This cannot be undone.');
+    if (confirmed) {
+      clearDefeatedOpponents();
+      renderDefeatedOpponents();
+    }
+  });
+
+  function renderDefeatedOpponents() {
+    const defeatedList = document.getElementById('defeatedList');
+    const defeated = loadDefeatedOpponents();
+    
+    if (defeated.length === 0) {
+      defeatedList.innerHTML = '<div style="text-align:center; color:var(--ink); opacity:0.7; padding:20px;">No opponents defeated yet.</div>';
+      return;
+    }
+    
+    defeated.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)); // Sort by newest first
+    
+    defeatedList.innerHTML = defeated.map(entry => {
+      const date = new Date(entry.timestamp).toLocaleDateString();
+      return `<div style="border:1px solid var(--border); padding:8px; margin-bottom:8px; background:black;">
+        <div style="color:var(--accent); font-weight:bold;">${entry.name}</div>
+        <div style="color:var(--ink); opacity:0.8; font-size:10px;">${entry.persona} • ${date}</div>
+      </div>`;
+    }).join('');
+  }
+}
 
 function setupMusic() {
   music = new Audio(MUSIC_FILE);
@@ -88,7 +196,8 @@ function setupHelp() {
         'quirkModal',
         'unlocksModal',
         'glossaryModal',
-        'victoryModal'
+        'victoryModal',
+        'defeatedModal'
       ];
       
       modals.forEach(modalId => {
@@ -233,11 +342,16 @@ window.GameStats = {
   }
 };
 
+function clearSelectedQuirk() {
+  saveSelectedQuirk(null);
+}
+
 // --- Game boot logic ---
 document.addEventListener('DOMContentLoaded', () => {
   setupMusic();
   setupHelp();
   setupGlossary();
+  setupDefeatedOpponents();
 
   // Initialize face generator
   initFaceGenerator();
@@ -249,19 +363,29 @@ document.addEventListener('DOMContentLoaded', () => {
   setupClearUnlocks();
 
   // Usual game boot
-  setLogFunction(function log(entry){
+  const logFunction = function log(entry){
     const logBox = document.getElementById('log');
     if (typeof entry === 'string') {
       const p = document.createElement('div');
       p.textContent = '> ' + entry;
       logBox.prepend(p);
     } else if (entry && typeof entry === 'object') {
-      // actor-aware
+      // actor-aware - map opponent logs to current opponent name
+      let actor = entry.actor;
+      if (actor === 'OPP' || actor === 'opp') {
+        const oppNameEl = document.getElementById('oppName');
+        if (oppNameEl && oppNameEl.textContent !== 'NAME') {
+          actor = oppNameEl.textContent;
+        }
+      }
       const p = document.createElement('div');
-      p.textContent = `[${entry.actor}] ${entry.text}`;
+      p.textContent = `[${actor}] ${entry.text}`;
       logBox.prepend(p);
     }
-  });
+  };
+  
+  setLogFunction(logFunction);
+  window.log = logFunction;
 
   window.render = createRenderFunction(Game);
 
@@ -269,21 +393,47 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('endTurn').onclick = () => Game.endTurn();
   document.getElementById('restart').onclick = () => { 
     Game.clearLog();
+    clearSelectedQuirk(); // Clear selected quirk on restart
     document.getElementById('startModal').hidden = false; 
   };
-  document.getElementById('selfTest').onclick = () => runSelfTests(Game, window.log, showStart);
+  document.getElementById('selfTest').onclick = () => runSelfTests(Game, logFunction, showStart);
+
+  // Quirk selection handler
+  window.onQuirkSelected = function(quirkId) {
+    saveSelectedQuirk(quirkId);
+    if (window.Game) {
+      window.Game.selectedQuirk = quirkId;
+    }
+  };
 
   // Victory modal event handlers
-  document.getElementById('nextBattleBtn').onclick = () => Game.nextBattle();
+  document.getElementById('nextBattleBtn').onclick = () => {
+    recordCurrentDefeatedOpponent();
+    Game.nextBattle();
+  };
   document.getElementById('victoryUnlocksBtn').onclick = () => {
     renderUnlocksModal();
     document.getElementById('unlocksModal').hidden = false;
   };
   document.getElementById('victoryDeckBtn').onclick = () => {
+    recordCurrentDefeatedOpponent();
     document.getElementById('victoryModal').hidden = true;
     Game.init(); // Return to deck builder flow
   };
-  document.getElementById('victoryRestartBtn').onclick = () => Game.resetGameToStart();
+  document.getElementById('victoryRestartBtn').onclick = () => {
+    recordCurrentDefeatedOpponent();
+    Game.resetGameToStart();
+  };
+
+  function recordCurrentDefeatedOpponent() {
+    if (Game && Game.persona) {
+      const oppNameEl = document.getElementById('oppName');
+      const oppName = oppNameEl ? oppNameEl.textContent : null;
+      if (oppName && oppName !== 'NAME') {
+        recordDefeatedOpponent(oppName, Game.persona);
+      }
+    }
+  }
 
   // Unlocks modal event handlers
   document.getElementById('unlocksBtn').onclick = () => {
@@ -452,6 +602,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const confirmed = confirm('Clear ALL unlocks and achievements? This cannot be undone.');
       if (confirmed) {
         resetUnlocks();
+        clearSelectedQuirk(); // Clear selected quirk
         renderUnlocksModal();
       }
     });
@@ -462,10 +613,69 @@ document.addEventListener('DOMContentLoaded', () => {
     const modal = document.getElementById('startModal');
     modal.hidden = false;
     
-    // Set random motto
+    // Append additional mottos at runtime for more variety
+    const additionalMottos = [
+      // Song lyric puns
+      "Don't stop believin' in your deck composition!",
+      "Sweet child o' mine... energy management",
+      "We will, we will, VORTEKS you!",
+      "Stayin' alive with 1 HP clutch plays",
+      "Another one bites the... shield",
+      "Bohemian Rhapsody: Is this the real life? Is this just strategy?",
+      "Can't touch this! (Overhealed beyond belief)",
+      "Eye of the Tiger: Rising up to the challenge of RNG",
+      "We are the champions... of Unicode cards",
+      "Poker Face: Keep them guessing your next move",
+
+      // Literary and philosophical riffs  
+      "To be or not to be... that is the mulligan",
+      "I think, therefore I draw",
+      "The pen is mightier than the sword... but cards beat both",
+      "In the beginning was the Word... and the Word was VORTEKS",
+      "All roads lead to victory... eventually",
+      "Fortune favors the bold... and the well-constructed deck",
+      "The die is cast... wait, wrong game",
+      "Et tu, Brute? Et tu, energy shortage?",
+      "Cogito ergo sum... cogito ergo I need more energy",
+      "The unexamined deck is not worth playing",
+
+      // More VORTEKS puns and mechanics
+      "Energy efficiency: it's not just for appliances anymore",
+      "Deck diversity: the spice of tactical life",
+      "Mulligan decisions: harder than quantum physics",
+      "RNG stands for 'Really Nice Gameplay' (citation needed)",
+      "Status effects: because vanilla damage is so yesterday",
+      "Card synergy: when 1+1 = VICTORY",
+      "Hand management: like life management, but with more pixels",
+      "Turn order: civilized combat since ancient times",
+      "Resource allocation: MBA not required",
+      "Meta gaming: thinking about thinking about playing",
+      "Deck construction: building tomorrow's victory today",
+      "Strategic depth: deeper than your average Unicode ocean",
+      "Tactical brilliance: 99% preparation, 1% clicking buttons",
+      "Victory conditions: clear as crystal, elusive as shadows",
+      "Game balance: the eternal quest for perfect imperfection",
+
+      // Additional classic references with VORTEKS twist
+      "May the cards be with you",
+      "Live long and prosper... with energy management",
+      "Houston, we have a... perfect hand",
+      "One small step for player, one giant leap for streak-kind",
+      "That's one small mulligan for a player...",
+      "Frankly my dear, I don't give a damn... about energy caps",
+      "I'll be back... after this deck rebuild",
+      "Show me the money... I mean, show me the energy",
+      "You can't handle the truth... about optimal play",
+      "Elementary, my dear Watson... always draw first"
+    ];
+    
+    // Add the additional mottos to the existing array
+    const allMottos = [...MOTTOS, ...additionalMottos];
+    
+    // Set random motto from expanded list
     const mottoElement = document.getElementById('motto');
-    if (mottoElement && MOTTOS.length > 0) {
-      const randomMotto = MOTTOS[Math.floor(Math.random() * MOTTOS.length)];
+    if (mottoElement && allMottos.length > 0) {
+      const randomMotto = allMottos[Math.floor(Math.random() * allMottos.length)];
       mottoElement.textContent = randomMotto;
     }
     
