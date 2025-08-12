@@ -83,15 +83,6 @@ export const Game = {
     firstPerfectWin: false
   },
   
-  // Placeholder mechanics for easter egg faces - to be implemented later
-  easterEggMechanics: {
-    water_immunity: { active: false, description: "Immune to water-based attacks" },
-    electric_resistance: { active: false, description: "Reduced damage from electric attacks" },
-    stealth_ability: { active: false, description: "Can avoid attacks with stealth" },
-    fire_mastery: { active: false, description: "Enhanced fire-based abilities" },
-    phase_through: { active: false, description: "Can phase through physical attacks" }
-  },
-  
   setLogFunction(logFn) {
     setLogFunction(logFn);
   },
@@ -112,7 +103,6 @@ export const Game = {
     if (this.oppFeatures.isEasterEgg) {
       logMessage(`✨ RARE FACE ENCOUNTERED! ${this.oppFeatures.easterEggType} ${this.persona} appears! ✨`);
       logMessage(`[${this.oppFeatures.rarity.toUpperCase()} RARITY] Special abilities may activate later...`);
-      this.activateEasterEggMechanic(this.oppFeatures.placeholderMechanic);
     }
     
     // Player builds deck, then picks quirk, then start
@@ -151,7 +141,6 @@ export const Game = {
     if (this.oppFeatures.isEasterEgg) {
       logMessage(`✨ RARE FACE ENCOUNTERED! ${this.oppFeatures.easterEggType} ${this.persona} appears! ✨`);
       logMessage(`[${this.oppFeatures.rarity.toUpperCase()} RARITY] Special abilities may activate later...`);
-      this.activateEasterEggMechanic(this.oppFeatures.placeholderMechanic);
     }
     
     // Build random deck for quick start
@@ -782,7 +771,6 @@ export const Game = {
     let logMessage = 'New opponent: ' + this.persona + ' appears!';
     if (this.oppFeatures.isEasterEgg) {
       logMessage = `✨ RARE OPPONENT! ${this.oppFeatures.easterEggType} ${this.persona} appears! ✨ [${this.oppFeatures.rarity.toUpperCase()}]`;
-      this.activateEasterEggMechanic(this.oppFeatures.placeholderMechanic);
     }
     logMessage(logMessage);
   },
@@ -869,14 +857,5 @@ export const Game = {
     $('#startModal').hidden = false;
     
     logAction('system', 'Game restarted.');
-  },
-
-  // Placeholder mechanic activation for easter egg faces
-  activateEasterEggMechanic(mechanicName) {
-    if (this.easterEggMechanics[mechanicName]) {
-      this.easterEggMechanics[mechanicName].active = true;
-      logMessage(`[MECHANIC PLACEHOLDER] ${this.easterEggMechanics[mechanicName].description}`);
-      // TODO: Implement actual mechanics in future updates
-    }
   }
 };

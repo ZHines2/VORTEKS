@@ -26,32 +26,27 @@ const EASTER_EGG_FACES = [
   { 
     name: 'Duck', 
     persona: 'Quacker', 
-    rarity: 'legendary',
-    placeholderMechanic: 'water_immunity' 
+    rarity: 'legendary'
   },
   { 
     name: 'Robot', 
     persona: 'Automaton', 
-    rarity: 'epic',
-    placeholderMechanic: 'electric_resistance' 
+    rarity: 'epic'
   },
   { 
     name: 'Cat', 
     persona: 'Feline', 
-    rarity: 'rare',
-    placeholderMechanic: 'stealth_ability' 
+    rarity: 'rare'
   },
   { 
     name: 'Dragon', 
     persona: 'Wyrm', 
-    rarity: 'legendary',
-    placeholderMechanic: 'fire_mastery' 
+    rarity: 'legendary'
   },
   { 
     name: 'Ghost', 
     persona: 'Specter', 
-    rarity: 'epic',
-    placeholderMechanic: 'phase_through' 
+    rarity: 'epic'
   }
 ];
 
@@ -383,8 +378,7 @@ function drawEasterEggFace(easterEgg) {
     features: { 
       isEasterEgg: true,
       easterEggType: easterEgg.name,
-      rarity: easterEgg.rarity,
-      placeholderMechanic: easterEgg.placeholderMechanic
+      rarity: easterEgg.rarity
     }
   };
 }
