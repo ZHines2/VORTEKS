@@ -325,70 +325,115 @@ button.card:disabled {
   overflow-y:auto;
 }
 
-/* Start Modal Styles */
+/* Splash - Start Modal Styles */
 #startModal {
   background: transparent;
 }
 
-.start-container {
-  position: relative;
-  width: 100vw;
-  height: 100vh;
+#startModal .start-container {
+  position: fixed;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  pointer-events: auto;
+  z-index: 1000;
   overflow: hidden;
 }
 
+.dim-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+  z-index: 1;
+  /* Optional blur effect - commented out by default for performance */
+  /* backdrop-filter: blur(2px); */
+}
+
+.fog-layer {
+  position: absolute;
+  inset: -12%;
+  pointer-events: none;
+  z-index: 2;
+  overflow: hidden;
+}
+
+.fog-layer::before,
+.fog-layer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.35;
+  will-change: transform;
+}
+
+.fog-layer::before {
+  background: radial-gradient(circle at 20% 30%, rgba(119, 255, 221, 0.3) 0%, transparent 50%),
+              radial-gradient(circle at 80% 70%, rgba(255, 221, 119, 0.2) 0%, transparent 50%),
+              radial-gradient(circle at 40% 80%, rgba(119, 255, 221, 0.2) 0%, transparent 50%);
+  animation: fog-shift-a 120s infinite linear;
+}
+
+.fog-layer::after {
+  background: radial-gradient(circle at 60% 20%, rgba(255, 221, 119, 0.25) 0%, transparent 50%),
+              radial-gradient(circle at 30% 60%, rgba(119, 255, 221, 0.2) 0%, transparent 50%),
+              radial-gradient(circle at 70% 90%, rgba(255, 221, 119, 0.3) 0%, transparent 50%);
+  animation: fog-shift-b 160s infinite linear reverse;
+}
+
+@keyframes fog-shift-a {
+  0%, 100% { transform: translate(-10%, -10%) rotate(0deg) scale(1); }
+  25% { transform: translate(5%, -5%) rotate(90deg) scale(1.1); }
+  50% { transform: translate(-5%, 10%) rotate(180deg) scale(0.9); }
+  75% { transform: translate(10%, 5%) rotate(270deg) scale(1.05); }
+}
+
+@keyframes fog-shift-b {
+  0%, 100% { transform: translate(8%, 8%) rotate(0deg) scale(1.05); }
+  25% { transform: translate(-8%, 12%) rotate(-90deg) scale(0.95); }
+  50% { transform: translate(12%, -8%) rotate(-180deg) scale(1.1); }
+  75% { transform: translate(-12%, -12%) rotate(-270deg) scale(0.9); }
+}
+
+@keyframes fog-shift-c {
+  0%, 100% { transform: translate(0%, -12%) rotate(45deg) scale(1); }
+  33% { transform: translate(-8%, 6%) rotate(165deg) scale(1.08); }
+  66% { transform: translate(8%, 8%) rotate(285deg) scale(0.92); }
+}
+
 .title-image {
-  width: auto;
-  height: auto;
-  max-width: min(90vw, 800px);
-  max-height: min(90vh, 800px);
   object-fit: contain;
-  image-rendering: auto;
+  max-width: min(92vw, 980px);
+  max-height: 80vh;
+  position: relative;
+  z-index: 5;
   animation: none !important;
   transition: none !important;
-  z-index: 1;
 }
 
 .title-fallback {
   position: absolute;
-  top: 50%;
+  top: 10vh;
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translateX(-50%);
   font-size: clamp(32px, 8vw, 64px);
   color: var(--accent);
-  z-index: 1;
+  z-index: 5;
   display: none;
+  text-align: center;
 }
 
 .content-overlay {
   position: absolute;
-  bottom: 10vh;
   left: 50%;
+  bottom: clamp(32px, 10vh, 160px);
   transform: translateX(-50%);
   z-index: 10;
-  text-align: center;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 10px;
   align-items: center;
-}
-
-.motto {
-  position: absolute;
-  top: 10vh;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 12px;
-  color: var(--accent);
-  z-index: 10;
-  pointer-events: none;
-  text-align: center;
-  width: 100vw;
-  padding: 0 20px;
-  box-sizing: border-box;
 }
 
 .button-group {
@@ -408,10 +453,25 @@ button.card:disabled {
   padding: 4px 8px;
 }
 
-/* Responsive adjustments */
+.motto {
+  position: absolute;
+  top: clamp(16px, 8vh, 80px);
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 12px;
+  color: var(--accent);
+  z-index: 10;
+  pointer-events: none;
+  text-align: center;
+  width: 100vw;
+  padding: 0 20px;
+  box-sizing: border-box;
+}
+
+/* Responsive adjustments for splash screen */
 @media (max-width: 768px) {
-  .content-overlay {
-    bottom: 8vh;
+  #startModal .content-overlay {
+    bottom: clamp(24px, 8vh, 120px);
   }
   
   .button-group {
@@ -420,44 +480,67 @@ button.card:disabled {
   }
   
   .motto {
-    top: 8vh;
+    top: clamp(12px, 6vh, 60px);
     font-size: 11px;
   }
   
   .title-image {
-    max-width: 95vw;
-    max-height: 70vh;
+    max-width: min(95vw, 900px);
+    max-height: 75vh;
   }
 }
 
 @media (max-width: 480px) {
-  .content-overlay {
-    bottom: 6vh;
+  #startModal .content-overlay {
+    bottom: clamp(20px, 6vh, 100px);
   }
   
   .motto {
-    top: 6vh;
+    top: clamp(8px, 4vh, 40px);
     font-size: 10px;
   }
   
   .title-image {
-    max-width: 98vw;
-    max-height: 60vh;
+    max-width: min(98vw, 850px);
+    max-height: 65vh;
+  }
+}
+
+@media (max-height: 640px) {
+  #startModal .content-overlay {
+    bottom: clamp(20px, 8vh, 100px);
+  }
+  
+  .motto {
+    top: clamp(8px, 4vh, 40px);
+  }
+  
+  .title-image {
+    max-height: 65vh;
   }
 }
 
 @media (max-height: 600px) {
-  .content-overlay {
-    bottom: 5vh;
+  #startModal .content-overlay {
+    bottom: clamp(16px, 6vh, 80px);
   }
   
   .motto {
-    top: 5vh;
+    top: clamp(6px, 3vh, 30px);
   }
   
   .title-image {
-    max-height: 70vh;
+    max-height: 60vh;
   }
+}
+
+/* Disable fog animations for users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .fog-layer::before,
+  .fog-layer::after {
+    animation: none;
+  }
+}
 }
 
 .qgrid{
