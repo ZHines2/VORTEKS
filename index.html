@@ -61,6 +61,8 @@
     .qgrid{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:8px}
     .qcard{background:black; border:2px solid var(--border); padding:8px; cursor:pointer}
     .qcard:hover{filter:brightness(1.1)}
+    .qcard.locked{opacity:0.6}
+    .qcard .status{font-size:8px; color:var(--accent); margin-top:4px}
   </style>
 </head>
 <body>
@@ -101,6 +103,7 @@
       <div class="controls">
         <button id="endTurn" class="btn">END TURN</button>
         <button id="restart" class="btn">RESTART</button>
+        <button id="glossary" class="btn">GLOSSARY</button>
         <button id="selfTest" class="btn" title="Run built-in tests">SELF‑TESTS</button>
       </div>
     </div>
@@ -132,6 +135,7 @@
         <div>
           <button id="deckQuick" class="btn" title="Fill a random valid deck">QUICK PLAY</button>
           <button id="deckClear" class="btn">CLEAR</button>
+          <button id="deckCancel" class="btn">CANCEL</button>
           <button id="deckConfirm" class="btn" disabled>CONFIRM</button>
         </div>
       </div>
@@ -147,6 +151,17 @@
         <div class="qcard" data-quirk="spicy">SPICY<br/><small>Your Burns deal +1.</small></div>
         <div class="qcard" data-quirk="piercer">PIERCER<br/><small>Your first attack each turn pierces 1.</small></div>
       </div>
+    </div>
+  </div>
+
+  <!-- Glossary Modal -->
+  <div class="modal" id="glossaryModal" hidden>
+    <div class="box" style="max-width:800px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <strong>Card Glossary</strong>
+        <button id="glossaryClose" class="btn">CLOSE</button>
+      </div>
+      <div class="qgrid" id="glossaryGrid" style="grid-template-columns:1fr 1fr"></div>
     </div>
   </div>
 
@@ -239,7 +254,8 @@
   const shuffle = a => { for(let i=a.length-1;i>0;i--){ const j=rng(i+1); [a[i],a[j]]=[a[j],a[i]] } return a };
 
   // ---------- Data-driven cards ----------
-  const CARDS = [
+  // Starter cards (always available)
+  const STARTER_CARDS = [
     { id:'heart', sym:icons.heart, name:'Heart', cost:1, type:'skill', tags:['heal'],
       effects:{damage:0,pierce:false,heal:3,shield:0,draw:0}, status:{ target:{burn:null,freezeEnergy:0}, self:{nextPlus:0,maxEnergyDelta:0,energyNowDelta:0,cleanse:false} }, scaling:{} , ai:{role:'sustain',pri:40} },
     { id:'swords', sym:icons.swords, name:'Strike', cost:1, type:'attack', tags:['attack'],
@@ -261,6 +277,91 @@
     { id:'loop', sym:icons.loop, name:'Surge', cost:2, type:'power', tags:['ramp'],
       effects:{damage:0,pierce:false,heal:0,shield:0,draw:0}, status:{ target:{burn:null,freezeEnergy:0}, self:{nextPlus:0,maxEnergyDelta:1,energyNowDelta:1,cleanse:false} }, scaling:{}, ai:{role:'economy',pri:65} },
   ];
+
+  // Unlockable cards
+  const UNLOCKABLE_CARDS = [
+    { id:'curiosity', sym:'🔮', name:'Curiosity', cost:1, type:'skill', tags:['draw'],
+      effects:{damage:0,pierce:false,heal:0,shield:0,draw:2}, status:{ target:{burn:null,freezeEnergy:0}, self:{nextPlus:0,maxEnergyDelta:0,energyNowDelta:0,cleanse:false} }, scaling:{}, ai:{role:'economy',pri:55} },
+    { id:'droidProtocol', sym:'🤖', name:'Droid Protocol', cost:2, type:'power', tags:['ramp'],
+      effects:{damage:0,pierce:false,heal:0,shield:0,draw:0}, status:{ target:{burn:null,freezeEnergy:0}, self:{nextPlus:0,maxEnergyDelta:0,energyNowDelta:2,cleanse:false} }, scaling:{}, ai:{role:'economy',pri:70} },
+    { id:'reconsider', sym:'🔄', name:'Reconsider', cost:0, type:'power', tags:['reshuffle'],
+      effects:{reconsider:true}, status:{ target:{burn:null,freezeEnergy:0}, self:{nextPlus:0,maxEnergyDelta:0,energyNowDelta:0,cleanse:false} }, scaling:{}, ai:{role:'trick',pri:30} },
+  ];
+
+  // Combined cards list
+  const CARDS = [...STARTER_CARDS, ...UNLOCKABLE_CARDS];
+
+  // ---------- Unlock System ----------
+  const UNLOCKS = {
+    cards: new Set(['curiosity', 'droidProtocol', 'reconsider']), // Cards unlocked by default for now
+    quirks: new Set(['minty', 'spicy', 'piercer', 'scholar']) // Include scholar in unlocked quirks
+  };
+
+  // Tracking for unlock conditions
+  const UNLOCK_PROGRESS = {
+    energySpentInTurn: 0,
+    cardsDrawnInTurn: 0,
+    maxEnergySpentInTurn: 0,
+    maxCardsDrawnInTurn: 0
+  };
+
+  // Quirk metadata for unlock conditions and descriptions
+  const QUIRKS_META = {
+    minty: {
+      name: 'MINTY',
+      description: 'Start with +1 max ⚡ (and +1 now).',
+      hint: 'Spend 6+ ⚡ in a single turn.',
+      unlocked: true,
+      check: () => UNLOCK_PROGRESS.maxEnergySpentInTurn >= 6
+    },
+    spicy: {
+      name: 'SPICY', 
+      description: 'Your Burns deal +1.',
+      hint: 'Win 3 games in a row.',
+      unlocked: true,
+      check: () => Game.streak >= 3
+    },
+    piercer: {
+      name: 'PIERCER',
+      description: 'Your first attack each turn pierces 1.',
+      hint: 'Deal 15+ damage in a single turn.',
+      unlocked: true,
+      check: () => false // Will implement damage tracking later
+    },
+    scholar: {
+      name: 'SCHOLAR',
+      description: 'Start with +1 card draw each turn.',
+      hint: 'Draw 5+ cards in a single turn.',
+      unlocked: true,
+      check: () => UNLOCK_PROGRESS.maxCardsDrawnInTurn >= 5
+    }
+  };
+
+  // Utility function to format card names and avoid emoji duplication
+  function formatCardName(card) {
+    if (!card || !card.name || !card.sym) return card?.name || '';
+    // Check if name already starts with the symbol
+    if (card.name.startsWith(card.sym)) {
+      return card.name;
+    }
+    return card.sym + ' ' + card.name;
+  }
+
+  // Function to get cost display for cards (handles "ALL" for Reconsider)
+  function getCardCostDisplay(card) {
+    if (card.effects && card.effects.reconsider) {
+      return 'ALL';
+    }
+    return card.cost.toString();
+  }
+
+  // Function to get available cards (starters + unlocked)
+  function getAvailableCards() {
+    return CARDS.filter(card => 
+      STARTER_CARDS.some(sc => sc.id === card.id) || 
+      UNLOCKS.cards.has(card.id)
+    );
+  }
 
   function createPlayer(isAI=false){
     return {
@@ -329,7 +430,17 @@
       if(p.status.frozenNext){ p.energyPenaltyNext = 1; p.status.frozenNext = 0; $('#'+(p.isAI?'opp':'you')+'Panel').classList.add('flash'); setTimeout(()=>$('#'+(p.isAI?'opp':'you')+'Panel').classList.remove('flash'), 250); }
       p.energy = p.maxEnergy - (p.energyPenaltyNext||0);
       p.energyPenaltyNext = 0;
+      // Reset turn counters at start of player's turn
+      if(!p.isAI) {
+        UNLOCK_PROGRESS.energySpentInTurn = 0;
+        UNLOCK_PROGRESS.cardsDrawnInTurn = 0;
+      }
       p.draw(1);
+      // Track card draw for unlocks
+      if(!p.isAI) {
+        UNLOCK_PROGRESS.cardsDrawnInTurn += 1;
+        UNLOCK_PROGRESS.maxCardsDrawnInTurn = Math.max(UNLOCK_PROGRESS.maxCardsDrawnInTurn, UNLOCK_PROGRESS.cardsDrawnInTurn);
+      }
       render();
     },
     endTurn(){
@@ -341,9 +452,20 @@
       this.startTurn(now);
       if(this.turn==='opp' && !this.over){ setTimeout(()=>this.aiPlay(), 500) }
     },
-    playCard(p, idx){ if(this.over) return; const card = p.hand[idx]; if(!card) return; if(!p.canAfford(card)) return;
-      // spend cost first
-      p.spend(card.cost);
+    playCard(p, idx){ if(this.over) return; const card = p.hand[idx]; if(!card) return; 
+      // Special handling for Reconsider - spend ALL energy
+      if(card.effects && card.effects.reconsider) {
+        const energyToSpend = p.energy;
+        p.energy = 0; // Spend all energy
+        UNLOCK_PROGRESS.energySpentInTurn += energyToSpend;
+        UNLOCK_PROGRESS.maxEnergySpentInTurn = Math.max(UNLOCK_PROGRESS.maxEnergySpentInTurn, UNLOCK_PROGRESS.energySpentInTurn);
+      } else {
+        if(!p.canAfford(card)) return;
+        // spend cost first
+        p.spend(card.cost);
+        UNLOCK_PROGRESS.energySpentInTurn += card.cost;
+        UNLOCK_PROGRESS.maxEnergySpentInTurn = Math.max(UNLOCK_PROGRESS.maxEnergySpentInTurn, UNLOCK_PROGRESS.energySpentInTurn);
+      }
       p.lastPlayed = card;
       // remove from hand and send to discard BEFORE resolving effect
       p.removeFromHand(idx);
@@ -380,7 +502,20 @@
       if(effects.heal){ state.me.hp = clamp(state.me.hp + effects.heal, 0, state.me.maxHP); }
       if(effects.shield){ state.me.shield += effects.shield; }
       if(effects.pierce){ this.hit(state.them, dmg, true, simulate); } else if(dmg>0){ this.hit(state.them, dmg, false, simulate); }
-      if(effects.draw){ if(!simulate){ state.me.draw(effects.draw); } }
+      if(effects.draw){ 
+        if(!simulate){ 
+          state.me.draw(effects.draw); 
+          UNLOCK_PROGRESS.cardsDrawnInTurn += effects.draw;
+          UNLOCK_PROGRESS.maxCardsDrawnInTurn = Math.max(UNLOCK_PROGRESS.maxCardsDrawnInTurn, UNLOCK_PROGRESS.cardsDrawnInTurn);
+        } 
+      }
+      // Handle Reconsider effect
+      if(effects.reconsider && !simulate){
+        // Reshuffle deck: move discard to deck and shuffle
+        state.me.deck = shuffle([...state.me.deck, ...state.me.discard]);
+        state.me.discard = [];
+        log((state.me.isAI?'AI':'You')+' reshuffle via Reconsider.');
+      }
       // 3) statuses
       if(burnObj){ state.them.status.burn = burnObj.amount; state.them.status.burnTurns = burnObj.turns; }
       if(status.target && status.target.freezeEnergy){ state.them.status.frozenNext = (state.them.status.frozenNext||0) + status.target.freezeEnergy; }
@@ -468,6 +603,7 @@
     if(self.maxEnergyDelta){ parts.push(`+${self.maxEnergyDelta} max ⚡.`); }
     if(self.energyNowDelta){ parts.push(`+${self.energyNowDelta} ⚡ now.`); }
     if(c.id==='echo'){ parts.push('Repeat last non‑Echo, else draw 1.'); }
+    if(e.reconsider){ parts.push('Spend all remaining energy. Reshuffle your deck.'); }
     return parts.join(' ');
   }
 
@@ -505,9 +641,12 @@
       const b=document.createElement('button');
       b.className='card';
       const pv = predictCard(card, Game.you, Game.opp);
-      const cost = `<div class=\"cost\">${card.cost}</div>`;
+      const costDisplay = getCardCostDisplay(card);
+      const cost = `<div class=\"cost\">${costDisplay}</div>`;
+      const cardName = formatCardName(card);
       b.innerHTML=`${cost}<div class=\"sym\">${card.sym}</div><div class=\"nm\">${card.name}</div><div class=\"ct\">${cardText(card)}</div><div class=\"pv\">${pv}</div>`;
-      const affordable = Game.you.canAfford(card);
+      // For Reconsider, can always afford it since cost is 0
+      const affordable = card.effects && card.effects.reconsider ? true : Game.you.canAfford(card);
       b.disabled=Game.turn!=='you' || !affordable || Game.over;
       if(!affordable) b.classList.add('insufficient');
       if(!b.disabled) b.onclick=()=>{Game.playCard(Game.you,idx)};
@@ -533,6 +672,39 @@
     render();
   };
   $('#selfTest')?.addEventListener('click', runSelfTests);
+  $('#glossary').onclick = () => openGlossary();
+
+  // ---------- Glossary ----------
+  function openGlossary(){
+    const modal = $('#glossaryModal');
+    const grid = $('#glossaryGrid');
+    grid.innerHTML = '';
+    
+    // Show all cards with unlock status
+    CARDS.forEach(card => {
+      const isStarter = STARTER_CARDS.some(sc => sc.id === card.id);
+      const isUnlocked = isStarter || UNLOCKS.cards.has(card.id);
+      const cardDiv = document.createElement('div');
+      cardDiv.className = 'qcard' + (isUnlocked ? '' : ' locked');
+      
+      const costDisplay = getCardCostDisplay(card);
+      const status = isUnlocked ? 'Unlocked' : 'Locked';
+      
+      cardDiv.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div><span style="margin-right:6px">${card.sym}</span>${card.name}</div>
+          <div class="cost">${costDisplay}</div>
+        </div>
+        <div style="margin-top:6px;font-size:10px">${cardText(card)}</div>
+        <div class="status">${status}</div>
+      `;
+      
+      grid.appendChild(cardDiv);
+    });
+    
+    $('#glossaryClose').onclick = () => { modal.hidden = true; };
+    modal.hidden = false;
+  }
 
   // ---------- Deck Builder ----------
   function openDeckBuilder(done){
@@ -540,13 +712,15 @@
     const grid=$('#deckGrid');
     const cntEl=$('#deckCount');
     const need=20; $('#deckNeed').textContent=need;
-    const counts={}; CARDS.forEach(c=>counts[c.id]=0);
+    const availableCards = getAvailableCards();
+    const counts={}; availableCards.forEach(c=>counts[c.id]=0);
     function deckSize(){ return Object.values(counts).reduce((a,b)=>a+b,0); }
     function rebuild(){
       grid.innerHTML='';
-      CARDS.forEach(c=>{
+      availableCards.forEach(c=>{
         const card=document.createElement('div'); card.className='qcard';
-        card.innerHTML=`<div style=\"display:flex;justify-content:space-between;align-items:center\"><div><span style=\"margin-right:6px\">${c.sym}</span>${c.name}</div><div class=\"cost\">${c.cost}</div></div><div style=\"margin-top:6px;font-size:10px\">${cardText(c)}</div><div style=\"display:flex;gap:6px;margin-top:6px;align-items:center\"><button class=\"btn\" data-act=\"sub\" data-id=\"${c.id}\">-</button><div>${counts[c.id]}</div><button class=\"btn\" data-act=\"add\" data-id=\"${c.id}\">+</button></div>`;
+        const costDisplay = getCardCostDisplay(c);
+        card.innerHTML=`<div style=\"display:flex;justify-content:space-between;align-items:center\"><div><span style=\"margin-right:6px\">${c.sym}</span>${c.name}</div><div class=\"cost\">${costDisplay}</div></div><div style=\"margin-top:6px;font-size:10px\">${cardText(c)}</div><div style=\"display:flex;gap:6px;margin-top:6px;align-items:center\"><button class=\"btn\" data-act=\"sub\" data-id=\"${c.id}\">-</button><div>${counts[c.id]}</div><button class=\"btn\" data-act=\"add\" data-id=\"${c.id}\">+</button></div>`;
         grid.appendChild(card);
       });
       cntEl.textContent = deckSize();
@@ -559,11 +733,23 @@
       rebuild();
     };
     $('#deckClear').onclick=()=>{ Object.keys(counts).forEach(k=>counts[k]=0); rebuild(); };
+    $('#deckCancel').onclick=()=>{ modal.hidden=true; showStart(); };
     $('#deckConfirm').onclick=()=>{
-      const deck=[]; for(const id in counts){ for(let i=0;i<counts[id];i++){ deck.push(CARDS.find(c=>c.id===id)); } }
+      const deck=[]; for(const id in counts){ for(let i=0;i<counts[id];i++){ deck.push(availableCards.find(c=>c.id===id)); } }
       modal.hidden=true; done(shuffle(deck));
     };
     $('#deckQuick').onclick=()=>{ modal.hidden=true; done(buildRandomDeck(20,4)); };
+    
+    // ESC key handler
+    const escHandler = (e) => {
+      if (e.key === 'Escape' && !modal.hidden) {
+        modal.hidden = true;
+        showStart();
+        document.removeEventListener('keydown', escHandler);
+      }
+    };
+    document.addEventListener('keydown', escHandler);
+    
     modal.hidden=false; rebuild();
   }
 
@@ -611,12 +797,13 @@
 
   // ---------- Quick Start Helpers ----------
   function buildRandomDeck(size=20, maxCopies=4){
-    const pool = CARDS.map(c=>c.id);
+    const availableCards = getAvailableCards();
+    const pool = availableCards.map(c=>c.id);
     const counts={}; pool.forEach(id=>counts[id]=0);
     const deck=[];
     while(deck.length<size){
       const id = pool[Math.floor(Math.random()*pool.length)];
-      if(counts[id] < maxCopies){ counts[id]++; deck.push(CARDS.find(c=>c.id===id)); }
+      if(counts[id] < maxCopies){ counts[id]++; deck.push(availableCards.find(c=>c.id===id)); }
     }
     return shuffle(deck);
   }
