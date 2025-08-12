@@ -375,6 +375,61 @@ button.card:disabled {
   overflow-y:auto;
 }
 
+/* Help Modal Tab System */
+.help-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  border-bottom: 2px solid var(--border);
+}
+
+.help-tab {
+  background: transparent;
+  border: none;
+  padding: 8px 16px;
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 14px;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.help-tab:hover {
+  background: var(--border);
+  color: var(--accent);
+}
+
+.help-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  font-weight: bold;
+}
+
+.help-content h3 {
+  color: var(--accent);
+  margin: 16px 0 8px 0;
+  font-size: 16px;
+}
+
+.help-content h4 {
+  color: var(--accent);
+  margin: 12px 0 6px 0;
+  font-size: 14px;
+}
+
+.help-content p {
+  margin: 6px 0;
+  font-size: 13px;
+}
+
+.help-panel {
+  display: block;
+}
+
+.help-panel[style*="display:none"] {
+  display: none !important;
+}
+
 /* Splash - Start Modal Styles */
 #startModal {
   background: transparent;
@@ -594,7 +649,31 @@ button.card:disabled {
     animation: none;
   }
 }
-}
+
+/* FX microinteraction animations */
+.ignite { animation: ignite 0.5s ease-in-out; }
+@keyframes ignite { 0% { box-shadow: 0 0 0px rgba(255,68,0,0); } 40% { box-shadow: 0 0 16px rgba(255,68,0,0.6); } 100% { box-shadow: 0 0 0px rgba(255,68,0,0); } }
+
+.freeze { animation: freeze 0.6s ease-in-out; }
+@keyframes freeze { 0% { box-shadow: 0 0 0 rgba(0,136,255,0); } 50% { box-shadow: 0 0 18px rgba(0,136,255,0.55); } 100% { box-shadow: 0 0 0 rgba(0,136,255,0); } }
+
+.zap { animation: zap 0.25s ease-in-out; }
+@keyframes zap { 0%,100% { filter: none; } 50% { filter: drop-shadow(0 0 8px #4df); } }
+
+.twinkle { animation: twinkle 0.6s ease-in-out; }
+@keyframes twinkle { 0% { text-shadow: none; } 50% { text-shadow: 0 0 8px #fff, 0 0 12px #7fd; } 100% { text-shadow: none; } }
+
+.slash { animation: slash 0.22s ease-in-out; }
+@keyframes slash { 0% { clip-path: polygon(0 0, 0 0, 0 100%, 0 100%); background: linear-gradient(45deg, transparent 45%, rgba(255,255,255,0.8) 50%, transparent 55%); } 100% { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); background: none; } }
+
+.surge { animation: surge 0.6s ease-in-out; }
+@keyframes surge { 0% { box-shadow: 0 0 0 rgba(119,255,221,0); } 50% { box-shadow: 0 0 14px rgba(119,255,221,0.75); } 100% { box-shadow: 0 0 0 rgba(119,255,221,0); } }
+
+.ripple { animation: ripple 0.6s ease-out; }
+@keyframes ripple { 0% { outline: 0 solid rgba(255,255,255,0); } 50% { outline: 3px solid rgba(255,255,255,0.5); } 100% { outline: 0 solid rgba(255,255,255,0); } }
+
+.swirl { animation: swirl 0.5s ease-in-out; }
+@keyframes swirl { 0% { transform: rotate(0deg); } 50% { transform: rotate(2deg); } 100% { transform: rotate(0deg); } }
 
 .qgrid{
   display:grid; 

@@ -1,5 +1,5 @@
 import { Game, setLogFunction } from './game.js';
-import { createRenderFunction, bump, bumpHP, bumpShield } from './ui.js';
+import { createRenderFunction, bump, bumpHP, bumpShield, fxBurn, fxFreeze, fxZap, fxFocus, fxSlash, fxSurge, fxEcho, fxReconsider } from './ui.js';
 import { openDeckBuilder, buildRandomDeck } from './deck-builder.js';
 import { runSelfTests } from './tests.js';
 import { initFaceGenerator, drawOppFace, setOpponentName } from './face-generator.js';
@@ -173,10 +173,38 @@ function updateMuteBtn(muted) {
 function setupHelp() {
   const helpModal = document.getElementById('helpModal');
   const helpCloseBtn = document.getElementById('helpCloseBtn');
+  
+  // Tab switching functionality
+  function setupHelpTabs() {
+    const tabs = helpModal.querySelectorAll('.help-tab');
+    const panels = helpModal.querySelectorAll('.help-panel');
+    
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const targetTab = tab.dataset.tab;
+        
+        // Remove active class from all tabs and hide all panels
+        tabs.forEach(t => t.classList.remove('active'));
+        panels.forEach(p => p.style.display = 'none');
+        
+        // Activate clicked tab and show corresponding panel
+        tab.classList.add('active');
+        const targetPanel = helpModal.querySelector(`[data-panel="${targetTab}"]`);
+        if (targetPanel) {
+          targetPanel.style.display = 'block';
+        }
+      });
+    });
+  }
 
   // Help button click handler
   helpBtn.addEventListener('click', () => {
     helpModal.hidden = false;
+    // Initialize tabs if not already done
+    if (!helpModal.dataset.tabsInitialized) {
+      setupHelpTabs();
+      helpModal.dataset.tabsInitialized = 'true';
+    }
   });
 
   // Close button handler
@@ -272,7 +300,7 @@ function setupGlossary() {
           const cardName = card.name.startsWith(card.sym) ? card.name.substring(card.sym.length).trim() : card.name;
           const title = `${card.sym} ${cardName}`;
           const costText = ` (${renderCost(card)}⚡)`;
-          const description = unlocked ? getCardDescription(card) : (cardMeta?.progress || 'Locked');
+          const description = getCardDescription(card);
           
           div.innerHTML = `<strong>${title}${costText}</strong><br/><small>${description}</small>`;
           glossaryGrid.appendChild(div);
@@ -305,6 +333,16 @@ window.bumpHP = bumpHP;
 window.bumpShield = bumpShield;
 window.openDeckBuilder = openDeckBuilder;
 window.buildRandomDeck = buildRandomDeck;
+
+// --- FX microinteraction helpers ---
+window.fxBurn = fxBurn;
+window.fxFreeze = fxFreeze;
+window.fxZap = fxZap;
+window.fxFocus = fxFocus;
+window.fxSlash = fxSlash;
+window.fxSurge = fxSurge;
+window.fxEcho = fxEcho;
+window.fxReconsider = fxReconsider;
 
 // --- Expose unlock system for debugging ---
 window.CardUnlock = {

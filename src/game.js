@@ -545,7 +545,12 @@ export const Game = {
       state.me.shield += effects.shield; 
     }
     if (effects.pierce) { 
-      this.hit(state.them, dmg, true, simulate); 
+      this.hit(state.them, dmg, true, simulate);
+      // FX: Pierce effects for specific cards
+      if (!simulate) {
+        if (card.id === 'bolt' && window.fxZap) window.fxZap(state.them);
+        if (card.id === 'dagger' && window.fxSlash) window.fxSlash(state.them);
+      }
     } else if (dmg > 0) { 
       this.hit(state.them, dmg, false, simulate); 
     }
@@ -573,6 +578,9 @@ export const Game = {
       } else {
         logOpp(`spends ${energySpent}⚡ and reshuffles deck`);
       }
+      
+      // FX: Reconsider effect
+      if (window.fxReconsider) window.fxReconsider();
     }
     
     // 3) statuses
@@ -584,6 +592,8 @@ export const Game = {
         logOpp(`applies Burn (${burnObj.amount})`);
       }
       this.applyBurn(state.them, burnObj.amount, burnObj.turns);
+      // FX: Burn effect
+      if (window.fxBurn) window.fxBurn(state.them);
     }
     if (status.target && status.target.freezeEnergy && !simulate) { 
       const isPlayer = (state.me === this.you);
@@ -592,17 +602,23 @@ export const Game = {
       } else {
         logOpp(`freezes opponent`);
       }
-      state.them.status.frozenNext = (state.them.status.frozenNext || 0) + status.target.freezeEnergy; 
+      state.them.status.frozenNext = (state.them.status.frozenNext || 0) + status.target.freezeEnergy;
+      // FX: Freeze effect
+      if (window.fxFreeze) window.fxFreeze(state.them);
     }
     if (status.self) {
       if (status.self.nextPlus) { 
-        state.me.status.nextPlus = (state.me.status.nextPlus || 0) + status.self.nextPlus; 
+        state.me.status.nextPlus = (state.me.status.nextPlus || 0) + status.self.nextPlus;
+        // FX: Focus effect
+        if (!simulate && window.fxFocus) window.fxFocus(state.me);
       }
       if (status.self.maxEnergyDelta) { 
         state.me.maxEnergy = Math.max(state.me.maxEnergy + status.self.maxEnergyDelta, 1); // Remove cap
       }
       if (status.self.energyNowDelta) { 
-        state.me.energy = this.applyEnergyGain(state.me, status.self.energyNowDelta); 
+        state.me.energy = this.applyEnergyGain(state.me, status.self.energyNowDelta);
+        // FX: Surge effect for Loop card
+        if (!simulate && card.id === 'loop' && window.fxSurge) window.fxSurge(state.me);
       }
       if (status.self.curiosityPower && !simulate) { 
         state.me.status.curiosityPower = true; 
@@ -627,6 +643,8 @@ export const Game = {
           me.draw(1); 
         }
       }
+      // FX: Echo effect
+      if (!simulate && window.fxEcho) window.fxEcho(state.me);
     }
     
     if (simulate) { 
@@ -669,9 +687,8 @@ export const Game = {
         logYou('MY FIRST QUIRK: drew +1 opening hand card');
         break;
       case 'hearty':
-        const hpGain = Math.min(5, p.maxHP - p.hp);
-        p.hp += hpGain;
-        logYou(`Hearty: gained ${hpGain} HP`);
+        p.hp = this.applyHeal(p, 5);
+        logYou('Hearty: +5 HP');
         break;
       // Other quirks don't have battle start effects
     }
@@ -768,11 +785,11 @@ export const Game = {
     this.opp.draw(5);
     
     // Log the new opponent
-    let logMessage = 'New opponent: ' + this.persona + ' appears!';
+    let msg = 'New opponent: ' + this.persona + ' appears!';
     if (this.oppFeatures.isEasterEgg) {
-      logMessage = `✨ RARE OPPONENT! ${this.oppFeatures.easterEggType} ${this.persona} appears! ✨ [${this.oppFeatures.rarity.toUpperCase()}]`;
+      msg = `✨ RARE OPPONENT! ${this.oppFeatures.easterEggType} ${this.persona} appears! ✨ [${this.oppFeatures.rarity.toUpperCase()}]`;
     }
-    logMessage(logMessage);
+    logMessage(msg);
   },
 
   // Clear log function for restart
