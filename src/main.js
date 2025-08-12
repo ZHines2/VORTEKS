@@ -245,8 +245,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Setup title image fallback logic
   setupTitleImage();
 
-  // Setup hidden clear unlocks functionality
-  setupHiddenClearUnlocks();
+  // Setup clear unlocks functionality
+  setupClearUnlocks();
 
   // Usual game boot
   setLogFunction(function log(entry){
@@ -277,7 +277,6 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('nextBattleBtn').onclick = () => Game.nextBattle();
   document.getElementById('victoryUnlocksBtn').onclick = () => {
     renderUnlocksModal();
-    document.getElementById('unlocksClearBtn').hidden = true; // Ensure button starts hidden
     document.getElementById('unlocksModal').hidden = false;
   };
   document.getElementById('victoryDeckBtn').onclick = () => {
@@ -289,7 +288,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // Unlocks modal event handlers
   document.getElementById('unlocksBtn').onclick = () => {
     renderUnlocksModal();
-    document.getElementById('unlocksClearBtn').hidden = true; // Ensure button starts hidden
     document.getElementById('unlocksModal').hidden = false;
   };
   document.getElementById('unlocksCloseBtn').onclick = () => {
@@ -443,29 +441,11 @@ document.addEventListener('DOMContentLoaded', () => {
     tryNextImage();
   }
 
-  // Setup hidden clear unlocks functionality
-  function setupHiddenClearUnlocks() {
-    const unlocksTitle = document.getElementById('unlocksTitle');
+  // Setup clear unlocks functionality
+  function setupClearUnlocks() {
     const unlocksClearBtn = document.getElementById('unlocksClearBtn');
-    const unlocksModal = document.getElementById('unlocksModal');
     
-    if (!unlocksTitle || !unlocksClearBtn || !unlocksModal) return;
-    
-    // Alt+click on unlocks title to reveal button
-    unlocksTitle.addEventListener('click', (e) => {
-      if (e.altKey) {
-        unlocksClearBtn.hidden = false;
-        e.preventDefault();
-      }
-    });
-    
-    // Ctrl+Alt+U keyboard shortcut to reveal button when unlocks modal is open
-    document.addEventListener('keydown', (e) => {
-      if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'u' && !unlocksModal.hidden) {
-        unlocksClearBtn.hidden = false;
-        e.preventDefault();
-      }
-    });
+    if (!unlocksClearBtn) return;
     
     // Clear unlocks button functionality
     unlocksClearBtn.addEventListener('click', () => {
@@ -474,11 +454,6 @@ document.addEventListener('DOMContentLoaded', () => {
         resetUnlocks();
         renderUnlocksModal();
       }
-    });
-    
-    // Hide the button when unlocks modal is closed
-    document.getElementById('unlocksCloseBtn').addEventListener('click', () => {
-      unlocksClearBtn.hidden = true;
     });
   }
 
