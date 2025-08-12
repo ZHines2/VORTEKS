@@ -342,6 +342,10 @@ window.GameStats = {
   }
 };
 
+function clearSelectedQuirk() {
+  saveSelectedQuirk(null);
+}
+
 // --- Game boot logic ---
 document.addEventListener('DOMContentLoaded', () => {
   setupMusic();
