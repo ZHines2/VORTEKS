@@ -1,10 +1,12 @@
+import { ACHIEVEMENTS, MIGRATION_VERSION, DEBUG } from './config.js';
+
 // card-unlock.js
 // VORTEKS Card Unlock System
 // Design goals: simplicity, declarative metadata, scalability, non-intrusive UX.
 
 const LS_KEY = 'vorteks-card-unlocks';
 const LS_QUIRKS_KEY = 'vorteks-quirks';
-const STORAGE_VERSION = 1;
+const STORAGE_VERSION = MIGRATION_VERSION;
 
 // 6 starter cards (always unlocked immediately)
 const STARTER_CARDS = ['swords','shield','heart','fire','bolt','star'];
@@ -113,9 +115,9 @@ const UNLOCK_META = [
   {
     id: 'curiosity',
     kind: 'persona',
-    description: 'Defeat a Cat opponent.',
-    progressHint: () => 'Find and defeat a rare Cat opponent.',
-    check: () => false // Handled by persona defeat system
+    description: 'Defeat a distinctive Cat (blush + mole).',
+    progressHint: () => 'Find and defeat a Cat with blush and mole features.',
+    check: () => false // Handled by enhanced persona defeat system
   },
   {
     id: 'droid',
@@ -140,14 +142,14 @@ const QUIRKS_META = [
     name: 'MINTY',
     description: 'Start with +1 max ⚡ (and +1 now).',
     unlockedByDefault: false,
-    hint: 'Spend 10+ ⚡ in a single turn.',
+    hint: `Spend ${ACHIEVEMENTS.MINTY_ENERGY_THRESHOLD}+ ⚡ in a single turn.`,
     effect: 'start_energy_plus_one',
     check: (ctx, state) => {
       if (ctx.event === 'turnEnd' && ctx.energySpentThisTurn != null) {
         if (!state.progress.mintyMaxEnergySpent || ctx.energySpentThisTurn > state.progress.mintyMaxEnergySpent) {
           state.progress.mintyMaxEnergySpent = ctx.energySpentThisTurn;
         }
-        return ctx.energySpentThisTurn >= 10;
+        return ctx.energySpentThisTurn >= ACHIEVEMENTS.MINTY_ENERGY_THRESHOLD;
       }
       return false;
     }
@@ -157,14 +159,14 @@ const QUIRKS_META = [
     name: 'SPICY',
     description: 'Your Burns deal +1.',
     unlockedByDefault: false,
-    hint: 'Deal 10+ Burn damage in one battle.',
+    hint: `Deal ${ACHIEVEMENTS.SPICY_BURN_THRESHOLD}+ Burn damage in one battle.`,
     effect: 'burn_plus_one',
     check: (ctx, state) => {
       if (ctx.event === 'burnDamage' && ctx.source === 'you') {
         state.progress.spicyBurnThisBattle = (state.progress.spicyBurnThisBattle || 0) + ctx.amount;
       }
       if (ctx.event === 'battleEnd' && ctx.result === 'win') {
-        return (state.progress.spicyBurnThisBattle || 0) >= 10;
+        return (state.progress.spicyBurnThisBattle || 0) >= ACHIEVEMENTS.SPICY_BURN_THRESHOLD;
       }
       return false;
     },
@@ -177,14 +179,14 @@ const QUIRKS_META = [
     name: 'PIERCER',
     description: 'Your first attack each turn pierces 1.',
     unlockedByDefault: false,
-    hint: 'Deal 10+ pierce damage in one battle.',
+    hint: `Deal ${ACHIEVEMENTS.PIERCER_DAMAGE_THRESHOLD}+ pierce damage in one battle.`,
     effect: 'first_attack_pierce',
     check: (ctx, state) => {
       if (ctx.event === 'pierceDamage' && ctx.source === 'you') {
         state.progress.piercerDamageThisBattle = (state.progress.piercerDamageThisBattle || 0) + ctx.amount;
       }
       if (ctx.event === 'battleEnd' && ctx.result === 'win') {
-        return (state.progress.piercerDamageThisBattle || 0) >= 10;
+        return (state.progress.piercerDamageThisBattle || 0) >= ACHIEVEMENTS.PIERCER_DAMAGE_THRESHOLD;
       }
       return false;
     },
@@ -217,7 +219,7 @@ const QUIRKS_META = [
     name: 'SCHOLAR',
     description: '25% chance at the start of each of your turns to draw +1 card.',
     unlockedByDefault: false,
-    hint: 'Draw 5+ cards in a single turn.',
+    hint: `Draw ${ACHIEVEMENTS.SCHOLAR_DRAW_THRESHOLD}+ cards in a single turn.`,
     effect: 'turn_start_draw_chance',
     check: (ctx, state) => {
       if (ctx.event === 'cardDrawn' && ctx.source === 'you') {
@@ -229,7 +231,7 @@ const QUIRKS_META = [
           state.progress.scholarMaxDrawnInTurn = drawn;
         }
         state.progress.scholarCardsThisTurn = 0;
-        return drawn >= 5;
+        return drawn >= ACHIEVEMENTS.SCHOLAR_DRAW_THRESHOLD;
       }
       return false;
     }
@@ -239,11 +241,11 @@ const QUIRKS_META = [
     name: 'HEARTY',
     description: '+5 HP at the start of each battle.',
     unlockedByDefault: false,
-    hint: 'Win a battle at 1 HP or less.',
+    hint: `Win a battle at ${ACHIEVEMENTS.HEARTY_HP_THRESHOLD} HP or less.`,
     effect: 'battle_start_hp',
     check: (ctx, state) => {
       if (ctx.event === 'battleEnd' && ctx.result === 'win' && ctx.youHP != null) {
-        return ctx.youHP <= 1;
+        return ctx.youHP <= ACHIEVEMENTS.HEARTY_HP_THRESHOLD;
       }
       return false;
     }
@@ -283,14 +285,32 @@ function loadQuirksState() {
       return s;
     }
     const parsed = JSON.parse(raw);
+    
+    // Handle migration from older versions
     if (parsed.version !== STORAGE_VERSION) {
-      const s = freshQuirksState();
-      saveQuirksState(s);
-      return s;
+      if (DEBUG.LOG_MIGRATIONS) {
+        console.log(`Migrating quirks storage from version ${parsed.version || 'undefined'} to ${STORAGE_VERSION}`);
+      }
+      
+      // Preserve unlocked quirks where possible
+      const migrated = freshQuirksState();
+      if (parsed.unlocked) {
+        migrated.unlocked = { ...migrated.unlocked, ...parsed.unlocked };
+      }
+      if (parsed.progress) {
+        migrated.progress = { ...parsed.progress };
+      }
+      
+      saveQuirksState(migrated);
+      return migrated;
     }
+    
     parsed.unlocked ||= {};
     return parsed;
-  } catch {
+  } catch (error) {
+    if (DEBUG.LOG_MIGRATIONS) {
+      console.warn('Failed to parse quirks storage, reinitializing:', error);
+    }
     const s = freshQuirksState();
     saveQuirksState(s);
     return s;
@@ -324,17 +344,41 @@ function loadState() {
       return s;
     }
     const parsed = JSON.parse(raw);
+    
+    // Handle migration from older versions
     if (parsed.version !== STORAGE_VERSION) {
-      const s = freshState();
-      saveState(s);
-      return s;
+      if (DEBUG.LOG_MIGRATIONS) {
+        console.log(`Migrating storage from version ${parsed.version || 'undefined'} to ${STORAGE_VERSION}`);
+      }
+      
+      // Preserve unlocked cards and progress where possible
+      const migrated = freshState();
+      if (parsed.unlocked) {
+        migrated.unlocked = { ...migrated.unlocked, ...parsed.unlocked };
+      }
+      if (parsed.progress) {
+        migrated.progress = { ...parsed.progress };
+      }
+      if (parsed.personaDefeats) {
+        migrated.personaDefeats = { ...parsed.personaDefeats };
+      }
+      if (parsed.stats) {
+        migrated.stats = { ...parsed.stats };
+      }
+      
+      saveState(migrated);
+      return migrated;
     }
+    
     parsed.unlocked ||= {};
     parsed.progress ||= {};
     parsed.personaDefeats ||= {};
     parsed.stats ||= {};
     return parsed;
-  } catch {
+  } catch (error) {
+    if (DEBUG.LOG_MIGRATIONS) {
+      console.warn('Failed to parse storage, reinitializing:', error);
+    }
     const s = freshState();
     saveState(s);
     return s;
@@ -459,11 +503,27 @@ function checkQuirkUnlocks(ctx) {
   if (unlockedAny) saveState(_state);
 }
 
-function checkPersonaDefeatUnlocks(personaName) {
+function checkPersonaDefeatUnlocks(personaName, oppFeatures = null) {
   if (!personaName) return;
   _state.personaDefeats[personaName] = (_state.personaDefeats[personaName] || 0) + 1;
-  const cardId = PERSONA_UNLOCKS[personaName];
-  if (cardId && !isCardUnlocked(cardId)) unlockCard(cardId, 'Defeated persona: ' + personaName);
+  
+  // Special handling for Curiosity unlock - requires Cat with blush + mole
+  if (personaName.toLowerCase() === 'cat' && oppFeatures) {
+    const hasBlush = oppFeatures.blush && oppFeatures.blush.some(b => b.length > 0);
+    const hasMole = oppFeatures.mole && oppFeatures.mole.length > 0;
+    
+    if (hasBlush && hasMole && !isCardUnlocked('curiosity')) {
+      unlockCard('curiosity', 'Defeated distinctive Cat (blush + mole)');
+      saveState(_state);
+      return;
+    }
+  }
+  
+  // Standard persona unlocks
+  const cardId = PERSONA_UNLOCKS[personaName.toLowerCase()];
+  if (cardId && !isCardUnlocked(cardId)) {
+    unlockCard(cardId, 'Defeated persona: ' + personaName);
+  }
   saveState(_state);
 }
 

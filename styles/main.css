@@ -293,6 +293,11 @@ button.card:disabled {
   animation: flash 0.35s 1;
 }
 
+.overheal {
+  color: var(--good);
+  font-weight: bold;
+}
+
 .shieldhit {
   animation: flash 0.25s 1;
 }
@@ -316,6 +321,8 @@ button.card:disabled {
   border:3px solid var(--border); 
   padding:12px; 
   max-width:640px;
+  max-height:90vh;
+  overflow-y:auto;
 }
 
 .qgrid{
@@ -325,11 +332,25 @@ button.card:disabled {
   margin-top:8px;
 }
 
+/* Mobile responsive qgrid */
+@media (max-width: 768px) {
+  .qgrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .qgrid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .qcard{
   background:black; 
   border:2px solid var(--border); 
   padding:8px; 
   cursor:pointer;
+  min-width: 140px; /* Minimum card width for mobile */
 }
 
 .qcard:hover{

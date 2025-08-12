@@ -1,10 +1,21 @@
-import { $ } from './utils.js';
+import { $, clamp } from './utils.js';
+import { SAFETY_MAX_ENERGY, OVERHEAL_LIMIT_MULT } from './config.js';
+
+// Cost rendering helper function
+export function renderCost(card) {
+  if (card.id === 'reconsider') {
+    return 'ALL';
+  }
+  return card.cost.toString();
+}
 
 // UI rendering and card display functions
 export function renderStatuses(p, nodeId) {
   const el = $(nodeId); 
   el.innerHTML = '';
-  if (p.status.burn) addTag('🔥 ' + p.status.burn + ' (' + (p.status.burnTurns || 0) + ')');
+  if (p.status.burn && p.status.burnTurns > 0) {
+    addTag(`🔥 ${p.status.burn} (${p.status.burnTurns})`);
+  }
   if (p.status.nextPlus) addTag('✨ +' + p.status.nextPlus + ' atk');
   if (!p.isAI && p.quirk === 'piercer' && !p.status.firstAttackUsed) addTag('⟂ pierce 1 ready');
   
@@ -52,6 +63,9 @@ export function cardText(c) {
   }
   if (c.id === 'echo') { 
     parts.push('Repeat last non‑Echo, else draw 1.'); 
+  }
+  if (c.id === 'reconsider') {
+    parts.push('Spend all remaining energy. Reshuffle your deck (discard → deck).');
   }
   if (c.id === 'curiosity') {
     parts.push('End: If you bank energy, next start draw +1.');
@@ -101,29 +115,57 @@ export function predictCard(card, me, them, Game) {
 
 export function createRenderFunction(Game) {
   return () => {
-    $('#youHP').textContent = Game.you.hp;
-    $('#youSH').textContent = Game.you.shield;
-    $('#youEN').textContent = `${Game.you.energy}/${Game.you.maxEnergy}`;
-    $('#oppHP').textContent = Game.opp.hp;
-    $('#oppSH').textContent = Game.opp.shield;
-    $('#oppEN').textContent = `${Game.opp.energy}/${Game.opp.maxEnergy}`;
-    $('#streak').textContent = Game.streak;
-    renderStatuses(Game.you, '#youStatus');
-    renderStatuses(Game.opp, '#oppStatus');
+    // HP rendering with overheal support
+    const renderHP = (player, hpElementId) => {
+      if (!player) return; // Safety check for tests
+      const hpElement = $(hpElementId);
+      const hp = player.hp;
+      const maxHP = player.maxHP;
+      
+      if (hp > maxHP) {
+        // Show overheal
+        hpElement.innerHTML = `<span class="overheal">${hp}</span>/${maxHP}`;
+      } else {
+        hpElement.textContent = hp;
+      }
+    };
+
+    renderHP(Game.you, '#youHP');
+    renderHP(Game.opp, '#oppHP');
+    
+    if (Game.you) $('#youSH').textContent = Game.you.shield;
+    
+    // Energy rendering with safety cap for display
+    const renderEnergy = (player, energyElementId) => {
+      if (!player) return; // Safety check for tests
+      const energyElement = $(energyElementId);
+      const displayEnergy = Math.min(player.energy, SAFETY_MAX_ENERGY);
+      energyElement.textContent = `${displayEnergy}/${player.maxEnergy}`;
+    };
+    
+    renderEnergy(Game.you, '#youEN');
+    renderEnergy(Game.opp, '#oppEN');
+    
+    if (Game.opp) $('#oppSH').textContent = Game.opp.shield;
+    $('#streak').textContent = Game.streak || 0;
+    if (Game.you) renderStatuses(Game.you, '#youStatus');
+    if (Game.opp) renderStatuses(Game.opp, '#oppStatus');
     const handEl = $('#hand'); 
     handEl.innerHTML = '';
-    Game.you.hand.forEach((card, idx) => {
-      const b = document.createElement('button');
-      b.className = 'card';
-      const pv = predictCard(card, Game.you, Game.opp, Game);
-      const cost = `<div class="cost">${card.cost}</div>`;
-      b.innerHTML = `${cost}<div class="sym">${card.sym}</div><div class="nm">${card.name}</div><div class="ct">${cardText(card)}</div><div class="pv">${pv}</div>`;
-      const affordable = Game.you.canAfford(card);
-      b.disabled = Game.turn !== 'you' || !affordable || Game.over;
-      if (!affordable) b.classList.add('insufficient');
-      if (!b.disabled) b.onclick = () => { Game.playCard(Game.you, idx); };
-      handEl.appendChild(b);
-    });
+    if (Game.you && Game.you.hand) {
+      Game.you.hand.forEach((card, idx) => {
+        const b = document.createElement('button');
+        b.className = 'card';
+        const pv = predictCard(card, Game.you, Game.opp, Game);
+        const cost = `<div class="cost">${renderCost(card)}</div>`;
+        b.innerHTML = `${cost}<div class="sym">${card.sym}</div><div class="nm">${card.name}</div><div class="ct">${cardText(card)}</div><div class="pv">${pv}</div>`;
+        const affordable = Game.you.canAfford(card);
+        b.disabled = Game.turn !== 'you' || !affordable || Game.over;
+        if (!affordable) b.classList.add('insufficient');
+        if (!b.disabled) b.onclick = () => { Game.playCard(Game.you, idx); };
+        handEl.appendChild(b);
+      });
+    }
     $('#endTurn').disabled = Game.turn !== 'you' || Game.over;
   };
 }

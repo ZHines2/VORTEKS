@@ -4,6 +4,13 @@ import { drawOppFace, setOpponentName } from './face-generator.js';
 import { makePersonaDeck, createAIPlayer } from './ai.js';
 import { checkAchievementUnlocks, checkPersonaDefeatUnlocks, recordBattleResult, getUnlockableCardsInfo, STARTER_CARDS } from './card-unlock.js';
 import { CARDS } from '../data/cards.js';
+import { 
+  OVERHEAL_LIMIT_MULT, 
+  AI_ALLOW_OVERHEAL, 
+  SAFETY_MAX_ENERGY, 
+  MIN_BURN_TICK,
+  ACHIEVEMENTS 
+} from './config.js';
 
 // Global log function (will be set by main script)
 let log = null;
@@ -41,6 +48,17 @@ export const Game = {
   playerTurnDamage: 0, // Track cumulative damage dealt by player this turn
   playerTurnEnergySpent: 0, // Track energy spent by player this turn
   playerTurnCardsDrawn: 0, // Track cards drawn by player this turn
+  isEchoing: false, // Flag to prevent recursive echo effects
+  
+  // Enhanced stats tracking
+  stats: {
+    maxEnergyDuringRun: 3,
+    peakOverheal: 0,
+    totalOverhealGained: 0,
+    maxHandSizeTurn: 5,
+    maxBurnAmount: 0,
+    firstPerfectWin: false
+  },
   
   // Placeholder mechanics for easter egg faces - to be implemented later
   easterEggMechanics: {
@@ -134,8 +152,8 @@ export const Game = {
     window.onQuirkSelected = (quirkId) => {
       this.you.quirk = quirkId;
       if (quirkId === 'minty') { 
-        this.you.maxEnergy = clamp(this.you.maxEnergy + 1, 1, 6); 
-        this.you.energy = clamp(this.you.energy + 1, 0, this.you.maxEnergy); 
+        this.you.maxEnergy = Math.max(this.you.maxEnergy + 1, 1); // Remove cap
+        this.you.energy = this.applyEnergyGain(this.you, 1); 
       }
       modal.hidden = true;
       if (log) log('Quirk: ' + quirkId.toUpperCase());
@@ -144,6 +162,64 @@ export const Game = {
     };
   },
   
+  // Helper method for applying burn with stacking support
+  applyBurn(target, newBurnAmount, newBurnTurns) {
+    if (newBurnAmount <= 0 || newBurnTurns <= 0) return;
+
+    // Implement burn stacking: add amounts, keep max turns
+    const existingBurn = target.status.burn || 0;
+    const existingTurns = target.status.burnTurns || 0;
+    
+    target.status.burn = Math.max(MIN_BURN_TICK, existingBurn + newBurnAmount);
+    target.status.burnTurns = Math.max(existingTurns, newBurnTurns);
+    
+    // Track max burn amount stats
+    if (target.isAI) { // Player is applying burn to opponent
+      this.stats.maxBurnAmount = Math.max(this.stats.maxBurnAmount, target.status.burn);
+    }
+  },
+
+  // Helper method for applying heal with overheal support
+  applyHeal(player, amount) {
+    if (amount <= 0) return player.hp;
+    
+    // Check if player should get overheal (player always, AI based on config)
+    const allowOverheal = !player.isAI || AI_ALLOW_OVERHEAL;
+    
+    if (allowOverheal) {
+      const overhealLimit = Math.floor(player.maxHP * OVERHEAL_LIMIT_MULT);
+      const newHP = Math.min(player.hp + amount, overhealLimit);
+      
+      // Track overheal stats for player
+      if (!player.isAI && newHP > player.maxHP) {
+        const overhealAmount = newHP - player.maxHP;
+        this.stats.totalOverhealGained += overhealAmount;
+        this.stats.peakOverheal = Math.max(this.stats.peakOverheal, overhealAmount);
+      }
+      
+      return newHP;
+    } else {
+      // Traditional healing capped at maxHP
+      return Math.min(player.hp + amount, player.maxHP);
+    }
+  },
+
+  // Helper method for applying energy with uncapping support
+  applyEnergyGain(player, amount) {
+    if (amount <= 0) return player.energy;
+    
+    // Allow energy to exceed maxEnergy, but track true value
+    const newEnergy = player.energy + amount;
+    
+    // Track max energy for player stats
+    if (!player.isAI) {
+      this.stats.maxEnergyDuringRun = Math.max(this.stats.maxEnergyDuringRun, newEnergy);
+    }
+    
+    // For display purposes, we may clamp at SAFETY_MAX_ENERGY in UI
+    return newEnergy;
+  },
+
   startTurn(p) {
     p.status.firstAttackUsed = false;
     if (p.status.frozenNext) { 
@@ -168,9 +244,9 @@ export const Game = {
       const actorName = p === this.you ? '[YOU]' : '[ROBOT]';
       const bonuses = [
         () => { p.shield += 1; return '+1 shield'; },
-        () => { p.hp = clamp(p.hp + 1, 0, p.maxHP); return 'Heal 1'; },
+        () => { p.hp = this.applyHeal(p, 1); return 'Heal 1'; },
         () => { p.draw(1); return 'Draw 1'; },
-        () => { p.energy = clamp(p.energy + 1, 0, p.maxEnergy); return '+1 energy'; },
+        () => { p.energy = this.applyEnergyGain(p, 1); return '+1 energy'; },
         () => { p.status.nextPlus = (p.status.nextPlus||0)+1; return '+1 next atk'; }
       ];
       const randomBonus = bonuses[Math.floor(Math.random() * bonuses.length)];
@@ -190,6 +266,9 @@ export const Game = {
       this.playerTurnDamage = 0;
       this.playerTurnEnergySpent = 0;
       this.playerTurnCardsDrawn = 0;
+      
+      // Track max hand size
+      this.stats.maxHandSizeTurn = Math.max(this.stats.maxHandSizeTurn, p.hand.length);
     }
     
     // Log turn start and draw
@@ -273,17 +352,21 @@ export const Game = {
     // Track card types and emit achievement events for player
     if (isPlayer) {
       this.turnTypes.add(card.type);
-      this.playerTurnEnergySpent += card.cost;
+      
+      // For reconsider, track the actual energy spent (all remaining)
+      const energyToSpend = card.id === 'reconsider' ? p.energy : card.cost;
+      this.playerTurnEnergySpent += energyToSpend;
+      
       checkAchievementUnlocks({
         event: 'cardPlayed',
         cardId: card.id,
         cardType: card.type,
-        youEnergyAfter: p.energy - card.cost
+        youEnergyAfter: card.id === 'reconsider' ? 0 : (p.energy - card.cost)
       });
     }
     
-    // spend cost first
-    p.spend(card.cost);
+    // spend cost first (returns actual amount spent for reconsider)
+    const actualCost = p.spend(card.cost, card);
     p.lastPlayed = card;
     // remove from hand and send to discard BEFORE resolving effect
     p.removeFromHand(idx);
@@ -429,7 +512,7 @@ export const Game = {
       } else {
         logOpp(`heals ${effects.heal}`);
       }
-      state.me.hp = clamp(state.me.hp + effects.heal, 0, state.me.maxHP); 
+      state.me.hp = this.applyHeal(state.me, effects.heal); 
     }
     if (effects.shield && !simulate) { 
       const isPlayer = (state.me === this.you);
@@ -479,8 +562,7 @@ export const Game = {
       } else {
         logOpp(`applies Burn (${burnObj.amount})`);
       }
-      state.them.status.burn = burnObj.amount; 
-      state.them.status.burnTurns = burnObj.turns; 
+      this.applyBurn(state.them, burnObj.amount, burnObj.turns);
     }
     if (status.target && status.target.freezeEnergy && !simulate) { 
       const isPlayer = (state.me === this.you);
@@ -496,10 +578,10 @@ export const Game = {
         state.me.status.nextPlus = (state.me.status.nextPlus || 0) + status.self.nextPlus; 
       }
       if (status.self.maxEnergyDelta) { 
-        state.me.maxEnergy = clamp(state.me.maxEnergy + status.self.maxEnergyDelta, 1, 6); 
+        state.me.maxEnergy = Math.max(state.me.maxEnergy + status.self.maxEnergyDelta, 1); // Remove cap
       }
       if (status.self.energyNowDelta) { 
-        state.me.energy = clamp(state.me.energy + status.self.energyNowDelta, 0, state.me.maxEnergy); 
+        state.me.energy = this.applyEnergyGain(state.me, status.self.energyNowDelta); 
       }
       if (status.self.curiosityPower && !simulate) { 
         state.me.status.curiosityPower = true; 
@@ -514,7 +596,11 @@ export const Game = {
       const last = me.lastPlayed && me.lastPlayed.id !== 'echo' ? me.lastPlayed : null;
       if (last) {
         // Echo repeats last card without paying its cost
+        // Add a flag to prevent recursive echoes and ensure clean state
+        const wasEchoing = this.isEchoing;
+        this.isEchoing = true;
         this.applyCard(last, me, them, simulate);
+        this.isEchoing = wasEchoing;
       } else {
         if (!simulate) { 
           me.draw(1); 
@@ -577,6 +663,11 @@ export const Game = {
       log(youWin ? 'You win!' : 'AI wins!');
       if (youWin) { 
         this.streak++; 
+        
+        // Track perfect win (win at full HP)
+        if (this.you.hp === this.you.maxHP && !this.stats.firstPerfectWin) {
+          this.stats.firstPerfectWin = true;
+        }
       } else { 
         this.streak = 0; 
       }
@@ -590,7 +681,7 @@ export const Game = {
         youHP: this.you.hp
       });
       if (youWin) {
-        checkPersonaDefeatUnlocks(this.persona);
+        checkPersonaDefeatUnlocks(this.persona, this.oppFeatures);
         this.showVictoryModal();
       }
     }

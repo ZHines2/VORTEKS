@@ -1,6 +1,6 @@
 import { CARDS } from '../data/cards.js';
 import { shuffle, $ } from './utils.js';
-import { cardText } from './ui.js';
+import { cardText, renderCost } from './ui.js';
 import { getUnlockedCards } from './card-unlock.js';
 
 // Deck building functionality
@@ -32,7 +32,7 @@ export function openDeckBuilder(done) {
     availableCards.forEach(c => {
       const card = document.createElement('div'); 
       card.className = 'qcard';
-      card.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><div><span style="margin-right:6px">${c.sym}</span>${c.name}</div><div class="cost">${c.cost}</div></div><div style="margin-top:6px;font-size:10px">${cardText(c)}</div><div style="display:flex;gap:6px;margin-top:6px;align-items:center"><button class="btn" data-act="sub" data-id="${c.id}">-</button><div>${counts[c.id]}</div><button class="btn" data-act="add" data-id="${c.id}">+</button></div>`;
+      card.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><div><span style="margin-right:6px">${c.sym}</span>${c.name}</div><div class="cost">${renderCost(c)}</div></div><div style="margin-top:6px;font-size:10px">${cardText(c)}</div><div style="display:flex;gap:6px;margin-top:6px;align-items:center"><button class="btn" data-act="sub" data-id="${c.id}">-</button><div>${counts[c.id]}</div><button class="btn" data-act="add" data-id="${c.id}">+</button></div>`;
       grid.appendChild(card);
     });
     cntEl.textContent = deckSize();
@@ -53,6 +53,14 @@ export function openDeckBuilder(done) {
     rebuild();
   };
   
+  $('#deckCancel').onclick = () => {
+    modal.hidden = true;
+    // Return to start screen without progressing to quirk selection
+    if (window.showStart) {
+      window.showStart();
+    }
+  };
+
   $('#deckClear').onclick = () => { 
     Object.keys(counts).forEach(k => counts[k] = 0); 
     rebuild(); 
