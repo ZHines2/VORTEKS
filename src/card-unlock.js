@@ -115,9 +115,9 @@ const UNLOCK_META = [
   {
     id: 'curiosity',
     kind: 'persona',
-    description: 'Defeat a distinctive Cat (blush + mole).',
-    progressHint: () => 'Find and defeat a Cat with blush and mole features.',
-    check: () => false // Handled by enhanced persona defeat system
+    description: 'Defeat a Cat opponent.',
+    progressHint: () => 'Find and defeat any Cat opponent.',
+    check: () => false // Handled by persona defeat system
   },
   {
     id: 'droid',
@@ -506,18 +506,6 @@ function checkQuirkUnlocks(ctx) {
 function checkPersonaDefeatUnlocks(personaName, oppFeatures = null) {
   if (!personaName) return;
   _state.personaDefeats[personaName] = (_state.personaDefeats[personaName] || 0) + 1;
-  
-  // Special handling for Curiosity unlock - requires Cat with blush + mole
-  if (personaName.toLowerCase() === 'cat' && oppFeatures) {
-    const hasBlush = oppFeatures.blush && oppFeatures.blush.some(b => b.length > 0);
-    const hasMole = oppFeatures.mole && oppFeatures.mole.length > 0;
-    
-    if (hasBlush && hasMole && !isCardUnlocked('curiosity')) {
-      unlockCard('curiosity', 'Defeated distinctive Cat (blush + mole)');
-      saveState(_state);
-      return;
-    }
-  }
   
   // Standard persona unlocks
   const cardId = PERSONA_UNLOCKS[personaName.toLowerCase()];
