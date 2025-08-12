@@ -84,7 +84,19 @@ export function runSelfTests(Game, log, showStart) {
     const me = createPlayer(false); 
     const foe = createPlayer(true);
     me.lastPlayed = CARDS.find(c => c.id === 'swords');
-    Game.applyCard(CARDS.find(c => c.id === 'echo'), me, foe, false);
+    const testGame = Object.create(Game);
+    testGame.you = me;
+    testGame.opp = foe;
+    testGame.turn = 'you';
+    testGame.over = false;
+    testGame.isEchoing = false;
+    testGame.stats = { maxBurnAmount: 0 };
+    testGame.checkWin = () => {};
+    // Set a mock log function to avoid errors
+    const originalSetLog = Game.setLogFunction;
+    Game.setLogFunction(() => {});
+    testGame.applyCard(CARDS.find(c => c.id === 'echo'), me, foe, false);
+    Game.setLogFunction(originalSetLog);
     assertEqual('Echo repeats last attack', foe.hp <= 17, true, log);
   }
   
