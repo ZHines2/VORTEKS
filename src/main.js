@@ -4,6 +4,7 @@ import { openDeckBuilder, buildRandomDeck } from './deck-builder.js';
 import { runSelfTests } from './tests.js';
 import { initFaceGenerator, drawOppFace, setOpponentName } from './face-generator.js';
 import { makePersonaDeck } from './ai.js';
+import { MOTTOS } from './mottos.js';
 import { 
   getUnlockedCards, 
   isCardUnlocked, 
@@ -241,6 +242,12 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize face generator
   initFaceGenerator();
 
+  // Setup title image fallback logic
+  setupTitleImage();
+
+  // Setup hidden clear unlocks functionality
+  setupHiddenClearUnlocks();
+
   // Usual game boot
   setLogFunction(function log(entry){
     const logBox = document.getElementById('log');
@@ -270,6 +277,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('nextBattleBtn').onclick = () => Game.nextBattle();
   document.getElementById('victoryUnlocksBtn').onclick = () => {
     renderUnlocksModal();
+    document.getElementById('unlocksClearBtn').hidden = true; // Ensure button starts hidden
     document.getElementById('unlocksModal').hidden = false;
   };
   document.getElementById('victoryDeckBtn').onclick = () => {
@@ -281,6 +289,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Unlocks modal event handlers
   document.getElementById('unlocksBtn').onclick = () => {
     renderUnlocksModal();
+    document.getElementById('unlocksClearBtn').hidden = true; // Ensure button starts hidden
     document.getElementById('unlocksModal').hidden = false;
   };
   document.getElementById('unlocksCloseBtn').onclick = () => {
@@ -384,10 +393,107 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Setup title image with fallback logic
+  function setupTitleImage() {
+    const titleImg = document.getElementById('titleImg');
+    const titleText = document.getElementById('titleText');
+    
+    if (!titleImg || !titleText) return;
+    
+    // Get fallback list from data-fallback attribute
+    const fallbacks = titleImg.getAttribute('data-fallback')?.split(',') || [];
+    let currentIndex = -1; // Start with the original src
+    
+    function tryNextImage() {
+      currentIndex++;
+      
+      if (currentIndex === 0) {
+        // Original src already set, just wait for load/error
+        return;
+      } else if (currentIndex <= fallbacks.length) {
+        // Try fallback images
+        const fallbackSrc = fallbacks[currentIndex - 1]?.trim();
+        if (fallbackSrc) {
+          titleImg.src = fallbackSrc;
+        } else {
+          // No more fallbacks, show text
+          showTextFallback();
+        }
+      } else {
+        // All fallbacks exhausted, show text
+        showTextFallback();
+      }
+    }
+    
+    function showTextFallback() {
+      titleImg.style.display = 'none';
+      titleText.style.display = 'block';
+    }
+    
+    function showImageSuccess() {
+      titleImg.style.display = 'block';
+      titleText.style.display = 'none';
+    }
+    
+    // Set up event listeners
+    titleImg.onload = showImageSuccess;
+    titleImg.onerror = tryNextImage;
+    
+    // Start the fallback process
+    tryNextImage();
+  }
+
+  // Setup hidden clear unlocks functionality
+  function setupHiddenClearUnlocks() {
+    const unlocksTitle = document.getElementById('unlocksTitle');
+    const unlocksClearBtn = document.getElementById('unlocksClearBtn');
+    const unlocksModal = document.getElementById('unlocksModal');
+    
+    if (!unlocksTitle || !unlocksClearBtn || !unlocksModal) return;
+    
+    // Alt+click on unlocks title to reveal button
+    unlocksTitle.addEventListener('click', (e) => {
+      if (e.altKey) {
+        unlocksClearBtn.hidden = false;
+        e.preventDefault();
+      }
+    });
+    
+    // Ctrl+Alt+U keyboard shortcut to reveal button when unlocks modal is open
+    document.addEventListener('keydown', (e) => {
+      if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'u' && !unlocksModal.hidden) {
+        unlocksClearBtn.hidden = false;
+        e.preventDefault();
+      }
+    });
+    
+    // Clear unlocks button functionality
+    unlocksClearBtn.addEventListener('click', () => {
+      const confirmed = confirm('Clear ALL unlocks and achievements? This cannot be undone.');
+      if (confirmed) {
+        resetUnlocks();
+        renderUnlocksModal();
+      }
+    });
+    
+    // Hide the button when unlocks modal is closed
+    document.getElementById('unlocksCloseBtn').addEventListener('click', () => {
+      unlocksClearBtn.hidden = true;
+    });
+  }
+
   // Start screen logic
   function showStart() {
     const modal = document.getElementById('startModal');
     modal.hidden = false;
+    
+    // Set random motto
+    const mottoElement = document.getElementById('motto');
+    if (mottoElement && MOTTOS.length > 0) {
+      const randomMotto = MOTTOS[Math.floor(Math.random() * MOTTOS.length)];
+      mottoElement.textContent = randomMotto;
+    }
+    
     renderQuirkGrid(); // Render dynamic quirk grid when showing start
     document.getElementById('startBtn').onclick = ()=>{ modal.hidden=true; Game.init(); };
     document.getElementById('quickBtn').onclick = ()=>{ modal.hidden=true; Game.initQuick(); };
