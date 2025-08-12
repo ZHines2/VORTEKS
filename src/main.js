@@ -173,10 +173,38 @@ function updateMuteBtn(muted) {
 function setupHelp() {
   const helpModal = document.getElementById('helpModal');
   const helpCloseBtn = document.getElementById('helpCloseBtn');
+  
+  // Tab switching functionality
+  function setupHelpTabs() {
+    const tabs = helpModal.querySelectorAll('.help-tab');
+    const panels = helpModal.querySelectorAll('.help-panel');
+    
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const targetTab = tab.dataset.tab;
+        
+        // Remove active class from all tabs and hide all panels
+        tabs.forEach(t => t.classList.remove('active'));
+        panels.forEach(p => p.style.display = 'none');
+        
+        // Activate clicked tab and show corresponding panel
+        tab.classList.add('active');
+        const targetPanel = helpModal.querySelector(`[data-panel="${targetTab}"]`);
+        if (targetPanel) {
+          targetPanel.style.display = 'block';
+        }
+      });
+    });
+  }
 
   // Help button click handler
   helpBtn.addEventListener('click', () => {
     helpModal.hidden = false;
+    // Initialize tabs if not already done
+    if (!helpModal.dataset.tabsInitialized) {
+      setupHelpTabs();
+      helpModal.dataset.tabsInitialized = 'true';
+    }
   });
 
   // Close button handler

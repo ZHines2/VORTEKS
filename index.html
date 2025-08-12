@@ -100,18 +100,191 @@
   </div>
   <!-- How to Play Modal -->
   <div class="modal" id="helpModal" hidden>
-    <div class="box" style="text-align:center; width:min(96vw, 520px)">
-      <div style="font-size:18px; color:var(--accent); margin:8px 0 16px"><strong>How to Play</strong></div>
-      <div style="text-align:left; line-height:1.4; margin-bottom:16px">
-        Welcome to <strong>VORTEKS</strong> — a tactical card battler where every decision matters!<br/><br/>
-        • Play cards using ⚡ energy to attack, defend, and combo<br/>
-        • Manage your health ❤, shields 🛡, and energy wisely<br/>
-        • Defeat AI opponents with unique personas and strategies<br/>
-        • Build custom decks or jump in with Quick Start<br/>
-        • Master quirks and status effects for deeper tactics<br/><br/>
-        <em>Strategy and timing unlock VORTEKS's true potential...</em>
+    <div class="box" style="width:min(96vw, 720px); max-height:90vh;">
+      <div style="font-size:18px; color:var(--accent); margin:8px 0 16px; text-align:center"><strong>How to Play VORTEKS</strong></div>
+      
+      <!-- Tab Navigation -->
+      <div class="help-tabs" style="display:flex; margin-bottom:16px; border-bottom:2px solid var(--border)">
+        <button class="help-tab active" data-tab="basics">Basics</button>
+        <button class="help-tab" data-tab="cards">Cards</button>
+        <button class="help-tab" data-tab="effects">Effects</button>
+        <button class="help-tab" data-tab="quirks">Quirks</button>
+        <button class="help-tab" data-tab="symbols">Symbols</button>
       </div>
-      <button id="helpCloseBtn" class="btn" style="background:var(--good); color:black; font-weight:bold">Got it!</button>
+      
+      <!-- Tab Content -->
+      <div class="help-content" style="max-height:400px; overflow-y:auto; text-align:left; line-height:1.4;">
+        
+        <!-- Basics Tab -->
+        <div class="help-panel" data-panel="basics">
+          <h3 style="color:var(--accent); margin-top:0">Welcome to VORTEKS!</h3>
+          <p>A tactical card battler where every decision matters. Your goal is to defeat AI opponents by reducing their health to 0 while keeping yourself alive.</p>
+          
+          <h4 style="color:var(--accent)">Core Gameplay</h4>
+          <div style="margin-left:16px">
+            <p><strong>⚡ Energy:</strong> Start with 3 energy each turn. Use it to play cards.</p>
+            <p><strong>❤ Health:</strong> Lose the game if it reaches 0. Can heal above maximum (overheal).</p>
+            <p><strong>🛡 Shields:</strong> Block incoming damage. No upper limit.</p>
+            <p><strong>🃏 Hand:</strong> Draw 1 card each turn. Play cards to attack, defend, or gain advantages.</p>
+          </div>
+          
+          <h4 style="color:var(--accent)">Turn Flow</h4>
+          <div style="margin-left:16px">
+            <p>1. Draw a card (if deck not empty)</p>
+            <p>2. Your turn: play cards, use energy</p>
+            <p>3. Opponent's turn: they play their cards</p>
+            <p>4. End of turn: status effects trigger, energy resets</p>
+          </div>
+          
+          <h4 style="color:var(--accent)">Building Decks</h4>
+          <p>Choose 20 cards for your deck. Maximum 4 copies of any single card. Balance attacks, defenses, and special effects for optimal strategy.</p>
+        </div>
+        
+        <!-- Cards Tab -->
+        <div class="help-panel" data-panel="cards" style="display:none">
+          <h3 style="color:var(--accent); margin-top:0">Card Types & Examples</h3>
+          
+          <h4 style="color:var(--accent)">⚔ Attack Cards</h4>
+          <div style="margin-left:16px">
+            <p><strong>⚔ Strike (1⚡):</strong> Deal 3 damage. Gains +1 damage if you have bonus energy next turn.</p>
+            <p><strong>🗡 Pierce (2⚡):</strong> Deal 3 damage. Always does at least 1 damage through shields.</p>
+            <p><strong>🔥 Ignite (2⚡):</strong> Burn opponent for 2 damage over 2 turns.</p>
+          </div>
+          
+          <h4 style="color:var(--accent)">🛡 Defense Cards</h4>
+          <div style="margin-left:16px">
+            <p><strong>🛡 Guard (1⚡):</strong> Gain 3 shields to block incoming damage.</p>
+            <p><strong>♥ Heart (1⚡):</strong> Heal 3 health. Can heal above maximum.</p>
+          </div>
+          
+          <h4 style="color:var(--accent)">✨ Skill Cards</h4>
+          <div style="margin-left:16px">
+            <p><strong>✨ Focus (1⚡):</strong> +2 energy for your next turn only.</p>
+            <p><strong>❄ Freeze (2⚡):</strong> Freeze 1 of opponent's energy next turn.</p>
+            <p><strong>🔁 Echo (1⚡):</strong> Special effect varies by situation.</p>
+          </div>
+          
+          <h4 style="color:var(--accent)">🔄 Advanced Cards</h4>
+          <div style="margin-left:16px">
+            <p><strong>⟳ Surge (2⚡):</strong> +1 max energy, +1 energy now.</p>
+            <p><strong>🔀 Reconsider (ALL⚡):</strong> Spend all energy to reshuffle your deck and draw cards.</p>
+          </div>
+        </div>
+        
+        <!-- Effects Tab -->
+        <div class="help-panel" data-panel="effects" style="display:none">
+          <h3 style="color:var(--accent); margin-top:0">Status Effects</h3>
+          
+          <h4 style="color:var(--accent)">🔥 Burn</h4>
+          <div style="margin-left:16px">
+            <p>Takes damage at the end of each turn. Stacks with itself (amount and duration).</p>
+            <p><strong>Example:</strong> Burn 2 for 3 turns = 2 damage per turn for 3 turns</p>
+          </div>
+          
+          <h4 style="color:var(--accent)">❄ Freeze</h4>
+          <div style="margin-left:16px">
+            <p>Reduces available energy for the affected turns.</p>
+            <p><strong>Example:</strong> Freeze 1 energy = opponent has 1 less energy next turn</p>
+          </div>
+          
+          <h4 style="color:var(--accent)">🛡 Shield</h4>
+          <div style="margin-left:16px">
+            <p>Blocks incoming damage point-for-point. No upper limit.</p>
+            <p><strong>Pierce:</strong> Some attacks bypass 1 shield and deal at least 1 damage</p>
+          </div>
+          
+          <h4 style="color:var(--accent)">⚡ Energy Modifiers</h4>
+          <div style="margin-left:16px">
+            <p><strong>+Energy Next Turn:</strong> Temporary bonus energy for one turn</p>
+            <p><strong>Max Energy:</strong> Permanent increase to energy per turn</p>
+            <p><strong>Cleanse:</strong> Removes negative status effects</p>
+          </div>
+          
+          <h4 style="color:var(--accent)">💫 Overheal</h4>
+          <div style="margin-left:16px">
+            <p>Healing above maximum health is allowed up to 150% of max HP.</p>
+            <p>Provides a buffer against incoming damage.</p>
+          </div>
+        </div>
+        
+        <!-- Quirks Tab -->
+        <div class="help-panel" data-panel="quirks" style="display:none">
+          <h3 style="color:var(--accent); margin-top:0">Quirks & Progression</h3>
+          
+          <h4 style="color:var(--accent)">What are Quirks?</h4>
+          <p>Special modifiers that define your playstyle for each run. Choose one quirk before each battle to gain unique advantages.</p>
+          
+          <h4 style="color:var(--accent)">Starting Quirks</h4>
+          <div style="margin-left:16px">
+            <p><strong>MY FIRST QUIRK:</strong> Start with +1 card in your opening hand</p>
+          </div>
+          
+          <h4 style="color:var(--accent)">Unlockable Quirks</h4>
+          <div style="margin-left:16px">
+            <p><strong>MINTY:</strong> Start with +1 max energy (and +1 current energy)</p>
+            <p style="font-size:0.9em; opacity:0.8">Unlock: Spend 7+ energy in a single turn</p>
+            
+            <p><strong>SPICY:</strong> Your burn effects deal +1 extra damage</p>
+            <p style="font-size:0.9em; opacity:0.8">Unlock: Deal 10+ burn damage in one battle</p>
+            
+            <p><strong>HEARTY:</strong> Heal +5 HP at the start of each battle</p>
+            <p style="font-size:0.9em; opacity:0.8">Unlock: Win with 95%+ of max health remaining</p>
+            
+            <p><strong>GUARDIAN:</strong> Gain +1 shield at the start of each turn</p>
+            <p style="font-size:0.9em; opacity:0.8">Unlock: Accumulate 10+ shield then win</p>
+          </div>
+          
+          <h4 style="color:var(--accent)">Card Unlocks</h4>
+          <p>Defeat different opponent personas to unlock new cards:</p>
+          <div style="margin-left:16px">
+            <p><strong>Cat/Feline personas:</strong> Unlock Curiosity card</p>
+            <p><strong>Robot/Automaton personas:</strong> Unlock Droid Protocol card</p>
+          </div>
+        </div>
+        
+        <!-- Symbols Tab -->
+        <div class="help-panel" data-panel="symbols" style="display:none">
+          <h3 style="color:var(--accent); margin-top:0">Game Symbols & UI</h3>
+          
+          <h4 style="color:var(--accent)">Core Symbols</h4>
+          <div style="margin-left:16px">
+            <p><strong>⚡:</strong> Energy (cost/current/max)</p>
+            <p><strong>❤:</strong> Health points</p>
+            <p><strong>🛡:</strong> Shield/protection</p>
+            <p><strong>🔥:</strong> Burn damage over time</p>
+            <p><strong>❄:</strong> Freeze energy reduction</p>
+            <p><strong>✨:</strong> Focus/energy bonus</p>
+            <p><strong>🗡:</strong> Pierce (bypasses some shield)</p>
+            <p><strong>🔁:</strong> Echo effect</p>
+            <p><strong>⟳:</strong> Permanent upgrade</p>
+            <p><strong>🔀:</strong> Reconsider/reshuffle</p>
+          </div>
+          
+          <h4 style="color:var(--accent)">Status Display</h4>
+          <div style="margin-left:16px">
+            <p><strong>🔥 2 (3):</strong> Burn 2 damage for 3 turns</p>
+            <p><strong>❄ 1:</strong> Frozen energy (1 less next turn)</p>
+            <p><strong>+2:</strong> Bonus energy next turn</p>
+            <p><strong>1/3:</strong> Current turn / Max energy</p>
+          </div>
+          
+          <h4 style="color:var(--accent)">Card Costs</h4>
+          <div style="margin-left:16px">
+            <p><strong>Numbers (1, 2, 3):</strong> Fixed energy cost</p>
+            <p><strong>ALL:</strong> Spend all current energy</p>
+            <p><strong>Affordable indicators:</strong> Cards glow when playable</p>
+          </div>
+          
+          <h4 style="color:var(--accent)">Tooltips & Predictions</h4>
+          <p>Hover over cards to see detailed effects and predicted outcomes. The game shows you exactly what will happen before you play a card.</p>
+        </div>
+        
+      </div>
+      
+      <!-- Footer -->
+      <div style="display:flex; justify-content:center; margin-top:16px; padding-top:12px; border-top:1px solid var(--border)">
+        <button id="helpCloseBtn" class="btn" style="background:var(--good); color:black; font-weight:bold">Got it!</button>
+      </div>
     </div>
   </div>
   <!-- Victory Modal -->

@@ -375,6 +375,61 @@ button.card:disabled {
   overflow-y:auto;
 }
 
+/* Help Modal Tab System */
+.help-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  border-bottom: 2px solid var(--border);
+}
+
+.help-tab {
+  background: transparent;
+  border: none;
+  padding: 8px 16px;
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 14px;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.help-tab:hover {
+  background: var(--border);
+  color: var(--accent);
+}
+
+.help-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  font-weight: bold;
+}
+
+.help-content h3 {
+  color: var(--accent);
+  margin: 16px 0 8px 0;
+  font-size: 16px;
+}
+
+.help-content h4 {
+  color: var(--accent);
+  margin: 12px 0 6px 0;
+  font-size: 14px;
+}
+
+.help-content p {
+  margin: 6px 0;
+  font-size: 13px;
+}
+
+.help-panel {
+  display: block;
+}
+
+.help-panel[style*="display:none"] {
+  display: none !important;
+}
+
 /* Splash - Start Modal Styles */
 #startModal {
   background: transparent;
