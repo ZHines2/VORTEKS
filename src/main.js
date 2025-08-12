@@ -14,7 +14,8 @@ import {
   isQuirkUnlocked,
   getUnlockedQuirks,
   unlockQuirk,
-  resetUnlocks, 
+  resetUnlocks,
+  resetQuirks, 
   debugUnlock,
   checkPersonaDefeatUnlocks,
   checkAchievementUnlocks,
@@ -687,8 +688,10 @@ document.addEventListener('DOMContentLoaded', () => {
     unlocksClearBtn.addEventListener('click', () => {
       const confirmed = confirm('Clear ALL unlocks and achievements? This cannot be undone.');
       if (confirmed) {
-        resetUnlocks();
+        resetUnlocks(); // Reset card unlocks
+        resetQuirks(); // Reset quirk unlocks  
         clearSelectedQuirk(); // Clear selected quirk
+        clearDefeatedOpponents(); // Clear defeated opponents history
         renderUnlocksModal();
       }
     });
