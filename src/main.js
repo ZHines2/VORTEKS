@@ -461,7 +461,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let logMessage = 'Opponent shifts to ' + Game.persona + ' persona. Deck re-tuned.';
     if (Game.oppFeatures.isEasterEgg) {
       logMessage = `✨ RARE FACE! ${Game.oppFeatures.easterEggType} ${Game.persona} appears! ✨ [${Game.oppFeatures.rarity.toUpperCase()}] Deck re-tuned.`;
-      Game.activateEasterEggMechanic(Game.oppFeatures.placeholderMechanic);
     }
     if (window.log) window.log(logMessage);
     if (window.render) window.render();

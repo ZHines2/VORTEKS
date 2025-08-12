@@ -33,7 +33,7 @@ export function makePersonaDeck(kind) {
     counts.dagger -= 1;  // Fewer expensive cards
     counts.loop -= 1;    // Fewer expensive cards
   }
-  if (kind === 'robot') {
+  if (kind === 'robot' || kind === 'Automaton') {
     // Robot deck: 3 copies of Droid Protocol + bias toward low-cost tempo/control
     counts.droid = 3;
     counts.bolt += 2;    // More low-cost tempo
