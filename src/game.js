@@ -736,14 +736,14 @@ export const Game = {
     this.you.energy = this.you.maxEnergy;
     this.you.status = { nextPlus: 0, firstAttackUsed: false };
     
-    // Apply battle start quirk effects
-    this.applyQuirkBattleStart(this.you);
-    
     // Shuffle deck back together
     this.you.deck = shuffle([...this.you.hand, ...this.you.discard]);
     this.you.hand = [];
     this.you.discard = [];
     this.you.draw(5);
+    
+    // Apply battle start quirk effects (after deck is properly reshuffled)
+    this.applyQuirkBattleStart(this.you);
     
     // Generate new opponent
     this.generateNewOpponent();
