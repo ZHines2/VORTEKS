@@ -150,6 +150,7 @@
         <div class="qcard" data-quirk="minty">MINTY<br/><small>Start with +1 max ⚡ (and +1 now).</small></div>
         <div class="qcard" data-quirk="spicy">SPICY<br/><small>Your Burns deal +1.</small></div>
         <div class="qcard" data-quirk="piercer">PIERCER<br/><small>Your first attack each turn pierces 1.</small></div>
+        <div class="qcard" data-quirk="scholar">SCHOLAR<br/><small>Start with +1 card draw each turn.</small></div>
       </div>
     </div>
   </div>
@@ -413,17 +414,30 @@
     },
     pickQuirk(done){
       const modal = $('#quirkModal');
-      modal.hidden = false;
-      modal.querySelectorAll('.qcard').forEach(el=>{
-        el.onclick = ()=>{
-          const q = el.getAttribute('data-quirk');
-          this.you.quirk = q;
-          if(q==='minty'){ this.you.maxEnergy = clamp(this.you.maxEnergy+1,1,6); this.you.energy = clamp(this.you.energy+1,0,this.you.maxEnergy); }
-          modal.hidden = true;
-          log('Quirk: '+q.toUpperCase());
-          done();
+      const grid = modal.querySelector('.qgrid');
+      grid.innerHTML = '';
+      
+      // Show available quirks based on unlock status
+      Object.keys(QUIRKS_META).forEach(quirkKey => {
+        const quirk = QUIRKS_META[quirkKey];
+        if(quirk.unlocked) {
+          const card = document.createElement('div');
+          card.className = 'qcard';
+          card.setAttribute('data-quirk', quirkKey);
+          card.innerHTML = `${quirk.name}<br/><small>${quirk.description}</small>`;
+          card.onclick = () => {
+            this.you.quirk = quirkKey;
+            if(quirkKey==='minty'){ this.you.maxEnergy = clamp(this.you.maxEnergy+1,1,6); this.you.energy = clamp(this.you.energy+1,0,this.you.maxEnergy); }
+            if(quirkKey==='scholar'){ this.you.scholarBonus = true; }
+            modal.hidden = true;
+            log('Quirk: '+quirkKey.toUpperCase());
+            done();
+          };
+          grid.appendChild(card);
         }
       });
+      
+      modal.hidden = false;
     },
     startTurn(p){
       p.status.firstAttackUsed = false;
@@ -435,10 +449,12 @@
         UNLOCK_PROGRESS.energySpentInTurn = 0;
         UNLOCK_PROGRESS.cardsDrawnInTurn = 0;
       }
-      p.draw(1);
+      // Normal card draw (1 card, +1 if Scholar quirk)
+      const drawCount = (!p.isAI && p.scholarBonus) ? 2 : 1;
+      p.draw(drawCount);
       // Track card draw for unlocks
       if(!p.isAI) {
-        UNLOCK_PROGRESS.cardsDrawnInTurn += 1;
+        UNLOCK_PROGRESS.cardsDrawnInTurn += drawCount;
         UNLOCK_PROGRESS.maxCardsDrawnInTurn = Math.max(UNLOCK_PROGRESS.maxCardsDrawnInTurn, UNLOCK_PROGRESS.cardsDrawnInTurn);
       }
       render();
@@ -447,6 +463,12 @@
       const me = this.turn==='you'?this.you:this.opp;
       if(me.status.burn && me.status.burnTurns>0){ this.hit(me, me.status.burn, true, false); me.status.burnTurns--; log(`${me.isAI?'AI':'You'} take burn.`) }
       if(me.status.burnTurns===0) me.status.burn=0;
+      
+      // Check unlock conditions at end of player turn
+      if(!me.isAI) {
+        this.checkUnlockConditions();
+      }
+      
       this.turn = this.turn==='you'?'opp':'you';
       const now = this.turn==='you'?this.you:this.opp;
       this.startTurn(now);
@@ -563,6 +585,25 @@
         this.over=true; const youWin = this.opp.hp<=0 && this.you.hp>0;
         log(youWin? 'You win!':'AI wins!');
         if(youWin){ this.streak++; } else { this.streak=0; }
+      }
+    },
+    checkUnlockConditions(){
+      // Check MINTY quirk unlock condition
+      if(UNLOCK_PROGRESS.maxEnergySpentInTurn >= 6 && !QUIRKS_META.minty.unlocked) {
+        log('🎉 Unlock achieved: MINTY quirk! (Spent 6+ ⚡ in one turn)');
+        QUIRKS_META.minty.unlocked = true;
+      }
+      
+      // Check SCHOLAR quirk unlock condition  
+      if(UNLOCK_PROGRESS.maxCardsDrawnInTurn >= 5 && !QUIRKS_META.scholar.unlocked) {
+        log('🎉 Unlock achieved: SCHOLAR quirk! (Drew 5+ cards in one turn)');
+        QUIRKS_META.scholar.unlocked = true;
+      }
+      
+      // Check SPICY quirk unlock condition (win streak)
+      if(this.streak >= 3 && !QUIRKS_META.spicy.unlocked) {
+        log('🎉 Unlock achieved: SPICY quirk! (Won 3 games in a row)');
+        QUIRKS_META.spicy.unlocked = true;
       }
     }
   };
