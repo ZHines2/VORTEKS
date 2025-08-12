@@ -1,5 +1,5 @@
 import { Game, setLogFunction } from './game.js';
-import { createRenderFunction, bump, bumpHP, bumpShield } from './ui.js';
+import { createRenderFunction, bump, bumpHP, bumpShield, fxBurn, fxFreeze, fxZap, fxFocus, fxSlash, fxSurge, fxEcho, fxReconsider } from './ui.js';
 import { openDeckBuilder, buildRandomDeck } from './deck-builder.js';
 import { runSelfTests } from './tests.js';
 import { initFaceGenerator, drawOppFace, setOpponentName } from './face-generator.js';
@@ -305,6 +305,16 @@ window.bumpHP = bumpHP;
 window.bumpShield = bumpShield;
 window.openDeckBuilder = openDeckBuilder;
 window.buildRandomDeck = buildRandomDeck;
+
+// --- FX microinteraction helpers ---
+window.fxBurn = fxBurn;
+window.fxFreeze = fxFreeze;
+window.fxZap = fxZap;
+window.fxFocus = fxFocus;
+window.fxSlash = fxSlash;
+window.fxSurge = fxSurge;
+window.fxEcho = fxEcho;
+window.fxReconsider = fxReconsider;
 
 // --- Expose unlock system for debugging ---
 window.CardUnlock = {

@@ -1,4 +1,5 @@
 import { ACHIEVEMENTS, MIGRATION_VERSION, DEBUG } from './config.js';
+import { CARDS } from '../data/cards.js';
 
 // card-unlock.js
 // VORTEKS Card Unlock System
@@ -10,6 +11,9 @@ const STORAGE_VERSION = MIGRATION_VERSION;
 
 // 6 starter cards (always unlocked immediately)
 const STARTER_CARDS = ['swords','shield','heart','fire','bolt','star'];
+
+// Create mapping from card ID to pretty name for announcements
+const CARD_NAME_MAP = Object.fromEntries(CARDS.map(c => [c.id, c.name]));
 
 // Unlock metadata for NON-starter existing/future cards.
 // Each entry:
@@ -257,8 +261,10 @@ const QUIRKS_META = [
 const PERSONA_UNLOCKS = {
   // Cat persona unlocks Curiosity card
   'cat': 'curiosity',
+  'feline': 'curiosity',
   // Robot persona unlocks Droid Protocol card
-  'robot': 'droid'
+  'robot': 'droid',
+  'automaton': 'droid'
   // Example future entries:
   // 'Glacier': 'snow',
   // 'Assassin': 'dagger'
@@ -403,7 +409,7 @@ function unlockCard(id, cause = '') {
 }
 
 function announceUnlock(id, cause) {
-  const cardName = id; // Placeholder: could map id->pretty name later
+  const cardName = CARD_NAME_MAP[id] || id;
   const msg = `CARD UNLOCKED: ${cardName}${cause ? ' (' + cause + ')' : ''}`;
   if (window.log) window.log(msg);
   // Lightweight toast

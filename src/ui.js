@@ -96,7 +96,13 @@ export function predictCard(card, me, them, Game) {
   if (shGain) out.push(`+${shGain} sh`); 
   if (heal) out.push(`+${heal} hp`);
   if (card.id === 'fire') { 
-    out.push(`burn ${(themClone.status.burn || 0)}`); 
+    const burnAmt = themClone.status.burn || 0;
+    const burnTurns = themClone.status.burnTurns || 0;
+    if (burnAmt && burnTurns) {
+      out.push(`burn ${burnAmt} for ${burnTurns}`);
+    } else if (burnAmt) {
+      out.push(`burn ${burnAmt}`);
+    }
   }
   if (card.id === 'snow') { 
     out.push(`-1⚡ next`); 
@@ -186,4 +192,61 @@ export function bumpShield(p) {
   const span = p.isAI ? $('#oppSH') : $('#youSH'); 
   span.classList.add('shieldhit'); 
   setTimeout(() => span.classList.remove('shieldhit'), 220);
+}
+
+// FX helpers for card effect microinteractions
+export function fxBurn(target) {
+  const panel = target.isAI ? $('#oppPanel') : $('#youPanel');
+  if (!panel) return;
+  panel.classList.add('ignite');
+  setTimeout(() => panel.classList.remove('ignite'), 500);
+}
+
+export function fxFreeze(target) {
+  const panel = target.isAI ? $('#oppPanel') : $('#youPanel');
+  if (!panel) return;
+  panel.classList.add('freeze');
+  setTimeout(() => panel.classList.remove('freeze'), 600);
+}
+
+export function fxZap(target) {
+  const panel = target.isAI ? $('#oppPanel') : $('#youPanel');
+  if (!panel) return;
+  panel.classList.add('zap');
+  setTimeout(() => panel.classList.remove('zap'), 250);
+}
+
+export function fxFocus(player) {
+  const panel = player.isAI ? $('#oppPanel') : $('#youPanel');
+  if (!panel) return;
+  panel.classList.add('twinkle');
+  setTimeout(() => panel.classList.remove('twinkle'), 600);
+}
+
+export function fxSlash(target) {
+  const panel = target.isAI ? $('#oppPanel') : $('#youPanel');
+  if (!panel) return;
+  panel.classList.add('slash');
+  setTimeout(() => panel.classList.remove('slash'), 220);
+}
+
+export function fxSurge(player) {
+  const pill = player.isAI ? $('#oppEN') : $('#youEN');
+  if (!pill) return;
+  pill.classList.add('surge');
+  setTimeout(() => pill.classList.remove('surge'), 600);
+}
+
+export function fxEcho(player) {
+  const panel = player.isAI ? $('#oppPanel') : $('#youPanel');
+  if (!panel) return;
+  panel.classList.add('ripple');
+  setTimeout(() => panel.classList.remove('ripple'), 600);
+}
+
+export function fxReconsider() {
+  const hand = $('#hand');
+  if (!hand) return;
+  hand.classList.add('swirl');
+  setTimeout(() => hand.classList.remove('swirl'), 500);
 }
