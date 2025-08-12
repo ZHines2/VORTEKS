@@ -126,7 +126,7 @@ export const CARDS = [
   { 
     id: 'curiosity', 
     sym: '🐈', 
-    name: '🐈 Curiosity', 
+    name: 'Curiosity', 
     cost: 1, 
     type: 'power', 
     tags: ['curiosity'],
@@ -138,7 +138,7 @@ export const CARDS = [
   { 
     id: 'droid', 
     sym: '🤖', 
-    name: '🤖 Droid Protocol', 
+    name: 'Droid Protocol', 
     cost: 1, 
     type: 'power', 
     tags: ['droid'],

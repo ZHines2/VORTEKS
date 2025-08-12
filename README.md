@@ -166,7 +166,7 @@ The game includes a comprehensive self-test suite accessible via the **DEBUG** b
 
 ## 🔮 Future Expansion Potential
 
-The modular architecture supports extensive future development including new card mechanics, additional personas, campaign modes, multiplayer features, and visual/audio enhancements. See ROADMAP.md for detailed expansion plans.
+The modular architecture supports extensive future development including new card mechanics, additional personas, campaign modes, multiplayer features, and visual/audio enhancements.
 
 ---
 
