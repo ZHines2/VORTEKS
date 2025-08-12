@@ -57,12 +57,25 @@
     /* Modals */
     .modal{position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:#000a}
     .modal[hidden]{ display:none !important }
-    .modal .box{ background:var(--panel); border:3px solid var(--border); padding:12px; max-width:640px }
+    .modal .box{ background:var(--panel); border:3px solid var(--border); padding:12px; max-width:640px; max-height:90vh; overflow-y:auto; width:95vw; }
     .qgrid{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:8px}
     .qcard{background:black; border:2px solid var(--border); padding:8px; cursor:pointer}
     .qcard:hover{filter:brightness(1.1)}
     .qcard.locked{opacity:0.6}
     .qcard .status{font-size:8px; color:var(--accent); margin-top:4px}
+    
+    /* Mobile responsive design */
+    @media (max-width: 768px) {
+      .modal .box { width:98vw; padding:8px; max-height:95vh; }
+      .qgrid { grid-template-columns:1fr 1fr; gap:6px; }
+      .qcard { padding:6px; font-size:10px; }
+      .btn { padding:4px 8px; font-size:10px; }
+    }
+    
+    @media (max-width: 480px) {
+      .qgrid { grid-template-columns:1fr; }
+      .modal .box { width:99vw; padding:6px; }
+    }
   </style>
 </head>
 <body>
@@ -118,9 +131,12 @@
   <div class="modal" id="startModal">
     <div class="box" style="text-align:center; width:min(96vw, 480px)">
       <div style="font-size:24px; color:var(--accent); margin:8px 0 14px">VORTEKS</div>
-      <div style="display:flex; gap:8px; justify-content:center">
+      <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap">
         <button id="startBtn" class="btn">BUILD DECK</button>
         <button id="quickBtn" class="btn">QUICK START</button>
+      </div>
+      <div style="margin-top:12px">
+        <button id="clearUnlocksBtn" class="btn" style="font-size:8px; opacity:0.7" title="Reset all unlocks">CLEAR UNLOCKS</button>
       </div>
     </div>
   </div>
@@ -150,7 +166,7 @@
         <div class="qcard" data-quirk="minty">MINTY<br/><small>Start with +1 max ⚡ (and +1 now).</small></div>
         <div class="qcard" data-quirk="spicy">SPICY<br/><small>Your Burns deal +1.</small></div>
         <div class="qcard" data-quirk="piercer">PIERCER<br/><small>Your first attack each turn pierces 1.</small></div>
-        <div class="qcard" data-quirk="scholar">SCHOLAR<br/><small>Start with +1 card draw each turn.</small></div>
+        <div class="qcard" data-quirk="scholar">SCHOLAR<br/><small>25% chance to draw an extra card each turn.</small></div>
       </div>
     </div>
   </div>
@@ -239,6 +255,8 @@
     if(style===2) persona = 'Trickster';
     if(hasHat && persona!=='Trickster') persona = 'Trickster';
     if(hasStache && persona!=='Doctor' && style!==2) persona = 'Doctor';
+    // Add Cat persona for special unlock
+    if(hasMole && hasBlushL && hasBlushR) persona = 'Cat';
 
     return { persona, features:{style,hasHat,hasStache,browL,browR,hasBlushL,hasBlushR,hair} };
   }
@@ -294,7 +312,7 @@
 
   // ---------- Unlock System ----------
   const UNLOCKS = {
-    cards: new Set(['curiosity', 'droidProtocol', 'reconsider']), // Cards unlocked by default for now
+    cards: new Set(['droidProtocol', 'reconsider']), // Curiosity removed - unlocked by defeating cat
     quirks: new Set(['minty', 'spicy', 'piercer', 'scholar']) // Include scholar in unlocked quirks
   };
 
@@ -331,7 +349,7 @@
     },
     scholar: {
       name: 'SCHOLAR',
-      description: 'Start with +1 card draw each turn.',
+      description: '25% chance to draw an extra card each turn.',
       hint: 'Draw 5+ cards in a single turn.',
       unlocked: true,
       check: () => UNLOCK_PROGRESS.maxCardsDrawnInTurn >= 5
@@ -374,7 +392,19 @@
       lastPlayed:null,
       status:{ burn:0, burnTurns:0, frozenNext:0, nextPlus:0, firstAttackUsed:false },
       quirk:null,
-      draw(n=1){ while(n-->0){ if(!this.deck.length){ this.deck = shuffle(this.discard.splice(0)); if(this.deck.length) log((this.isAI?'AI':'You')+' reshuffle.'); } if(this.deck.length){ this.hand.push(this.deck.pop()); } } },
+      draw(n=1, preventReshuffle=false){ 
+        while(n-->0){ 
+          if(!this.deck.length){ 
+            if(!preventReshuffle) {
+              this.deck = shuffle(this.discard.splice(0)); 
+              if(this.deck.length) log((this.isAI?'AI':'You')+' reshuffle.'); 
+            } else {
+              break; // Exit early if reshuffling is prevented and deck is empty
+            }
+          } 
+          if(this.deck.length){ this.hand.push(this.deck.pop()); } 
+        } 
+      },
       canAfford(card){ return this.energy >= card.cost },
       spend(cost){ this.energy = Math.max(0,this.energy-cost) },
       removeFromHand(idx){ return this.hand.splice(idx,1)[0] },
@@ -449,8 +479,12 @@
         UNLOCK_PROGRESS.energySpentInTurn = 0;
         UNLOCK_PROGRESS.cardsDrawnInTurn = 0;
       }
-      // Normal card draw (1 card, +1 if Scholar quirk)
-      const drawCount = (!p.isAI && p.scholarBonus) ? 2 : 1;
+      // Normal card draw (1 card, +1 if Scholar quirk with 25% chance)
+      let drawCount = 1;
+      if(!p.isAI && p.scholarBonus && Math.random() < 0.25) {
+        drawCount = 2;
+        log('Scholar bonus: drew extra card!');
+      }
       p.draw(drawCount);
       // Track card draw for unlocks
       if(!p.isAI) {
@@ -521,7 +555,7 @@
       let burnObj = status.target && status.target.burn ? { ...status.target.burn } : null;
       if(burnObj && card.scaling && card.scaling.addToBurnFromSelf && state.me.quirk==='spicy'){ burnObj.amount += (card.scaling.addToBurnFromSelf.spicyQuirk||0); }
       // 2) primary numeric effects
-      if(effects.heal){ state.me.hp = clamp(state.me.hp + effects.heal, 0, state.me.maxHP); }
+      if(effects.heal){ state.me.hp = Math.max(0, state.me.hp + effects.heal); }
       if(effects.shield){ state.me.shield += effects.shield; }
       if(effects.pierce){ this.hit(state.them, dmg, true, simulate); } else if(dmg>0){ this.hit(state.them, dmg, false, simulate); }
       if(effects.draw){ 
@@ -539,19 +573,36 @@
         log((state.me.isAI?'AI':'You')+' reshuffle via Reconsider.');
       }
       // 3) statuses
-      if(burnObj){ state.them.status.burn = burnObj.amount; state.them.status.burnTurns = burnObj.turns; }
+      if(burnObj){ 
+        state.them.status.burn = (state.them.status.burn || 0) + burnObj.amount; 
+        state.them.status.burnTurns = Math.max(state.them.status.burnTurns || 0, burnObj.turns); 
+      }
       if(status.target && status.target.freezeEnergy){ state.them.status.frozenNext = (state.them.status.frozenNext||0) + status.target.freezeEnergy; }
       if(status.self){
         if(status.self.nextPlus){ state.me.status.nextPlus = (state.me.status.nextPlus||0) + status.self.nextPlus; }
         if(status.self.maxEnergyDelta){ state.me.maxEnergy = clamp(state.me.maxEnergy + status.self.maxEnergyDelta, 1, 6); }
-        if(status.self.energyNowDelta){ state.me.energy = clamp(state.me.energy + status.self.energyNowDelta, 0, state.me.maxEnergy); }
+        if(status.self.energyNowDelta){ state.me.energy = Math.max(0, state.me.energy + status.self.energyNowDelta); }
       }
       // 4) special: Echo
       if(card.id==='echo'){
         const last = me.lastPlayed && me.lastPlayed.id!=='echo' ? me.lastPlayed : null;
         if(last){
           // Echo repeats last card without paying its cost
-          this.applyCard(last, me, them, simulate);
+          // If echoing Zap, prevent reshuffling to avoid unwanted deck cycling
+          if(last.id === 'bolt' && !simulate) {
+            // Special handling for Zap echo - apply damage and pierce first
+            if(last.effects.damage){ 
+              this.hit(state.them, last.effects.damage, last.effects.pierce || false, simulate); 
+            }
+            // Then draw with reshuffle prevention
+            if(last.effects.draw) {
+              state.me.draw(last.effects.draw, true);
+              UNLOCK_PROGRESS.cardsDrawnInTurn += last.effects.draw;
+              UNLOCK_PROGRESS.maxCardsDrawnInTurn = Math.max(UNLOCK_PROGRESS.maxCardsDrawnInTurn, UNLOCK_PROGRESS.cardsDrawnInTurn);
+            }
+          } else {
+            this.applyCard(last, me, them, simulate);
+          }
         } else {
           if(!simulate){ me.draw(1); }
         }
@@ -584,7 +635,16 @@
       if(this.you.hp<=0 || this.opp.hp<=0){
         this.over=true; const youWin = this.opp.hp<=0 && this.you.hp>0;
         log(youWin? 'You win!':'AI wins!');
-        if(youWin){ this.streak++; } else { this.streak=0; }
+        if(youWin){ 
+          this.streak++; 
+          // Check for special persona defeats
+          if(this.persona === 'Cat' && !UNLOCKS.cards.has('curiosity')) {
+            log('🎉 Unlock achieved: CURIOSITY card! (Defeated the cat)');
+            UNLOCKS.cards.add('curiosity');
+          }
+        } else { 
+          this.streak=0; 
+        }
       }
     },
     checkUnlockConditions(){
@@ -614,6 +674,7 @@
     if(kind==='Doctor'){ counts.heart+=2; counts.shield+=1; counts.dagger-=1; }
     if(kind==='Bruiser'){ counts.swords+=2; counts.dagger+=1; counts.heart-=1; }
     if(kind==='Trickster'){ counts.echo+=2; counts.snow+=1; counts.swords-=1; }
+    if(kind==='Cat'){ counts.bolt+=2; counts.heart+=1; counts.shield-=1; } // Cat favors zap and mobility
     const deck=[]; for(const id in counts){ for(let i=0;i<counts[id];i++){ deck.push(CARDS.find(c=>c.id===id)); } }
     return shuffle(deck);
   }
@@ -834,6 +895,19 @@
     modal.hidden = false;
     document.getElementById('startBtn').onclick = ()=>{ modal.hidden=true; Game.init(); };
     document.getElementById('quickBtn').onclick = ()=>{ modal.hidden=true; Game.initQuick(); };
+    document.getElementById('clearUnlocksBtn').onclick = ()=>{
+      if(confirm('Clear all unlocks? This will reset cards and quirks to starter set only.')) {
+        UNLOCKS.cards.clear();
+        UNLOCKS.cards.add('droidProtocol');
+        UNLOCKS.cards.add('reconsider');
+        Object.keys(QUIRKS_META).forEach(key => QUIRKS_META[key].unlocked = false);
+        QUIRKS_META.minty.unlocked = true; // Keep basic quirks
+        QUIRKS_META.spicy.unlocked = true;
+        QUIRKS_META.piercer.unlocked = true;
+        QUIRKS_META.scholar.unlocked = true;
+        log('🔄 All unlocks cleared! Back to basics.');
+      }
+    };
   }
 
   // ---------- Quick Start Helpers ----------
