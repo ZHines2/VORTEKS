@@ -77,11 +77,35 @@ function setupHelp() {
     localStorage.setItem(HELP_SHOWN_KEY, '1');
   });
 
-  // Close modal on ESC key
+  // Global ESC key handler for modals
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !helpModal.hidden) {
-      helpModal.hidden = true;
-      localStorage.setItem(HELP_SHOWN_KEY, '1');
+    if (e.key === 'Escape') {
+      // Close any open modals
+      const modals = [
+        'helpModal',
+        'deckModal', 
+        'quirkModal',
+        'unlocksModal',
+        'glossaryModal',
+        'victoryModal'
+      ];
+      
+      modals.forEach(modalId => {
+        const modal = document.getElementById(modalId);
+        if (modal && !modal.hidden) {
+          modal.hidden = true;
+          
+          // Special handling for deck builder - return to start
+          if (modalId === 'deckModal' && window.showStart) {
+            window.showStart();
+          }
+          
+          // Mark help as shown if closed
+          if (modalId === 'helpModal') {
+            localStorage.setItem(HELP_SHOWN_KEY, '1');
+          }
+        }
+      });
     }
   });
 
@@ -115,36 +139,34 @@ function setupGlossary() {
     glossaryModal.hidden = true;
   });
 
-  // Close modal on ESC key
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !glossaryModal.hidden) {
-      glossaryModal.hidden = true;
-    }
-  });
-
   function renderGlossary() {
     const cardsInfo = getUnlockableCardsInfo();
     // Get all cards including starters
     import('../data/cards.js').then(({ CARDS }) => {
-      glossaryGrid.innerHTML = '';
-      
-      CARDS.forEach(card => {
-        const unlocked = isCardUnlocked(card.id);
-        const cardMeta = cardsInfo.find(c => c.id === card.id);
+      // Import renderCost for proper cost display
+      import('./ui.js').then(({ renderCost }) => {
+        glossaryGrid.innerHTML = '';
         
-        const div = document.createElement('div');
-        div.className = 'qcard';
-        if (!unlocked) {
-          div.style.opacity = '0.5';
-          div.style.filter = 'grayscale(1)';
-        }
-        
-        const title = `${card.sym} ${card.name}`;
-        const costText = card.cost > 0 ? ` (${card.cost}⚡)` : ' (0⚡)';
-        const description = unlocked ? getCardDescription(card) : (cardMeta?.progress || 'Locked');
-        
-        div.innerHTML = `<strong>${title}${costText}</strong><br/><small>${description}</small>`;
-        glossaryGrid.appendChild(div);
+        CARDS.forEach(card => {
+          const unlocked = isCardUnlocked(card.id);
+          const cardMeta = cardsInfo.find(c => c.id === card.id);
+          
+          const div = document.createElement('div');
+          div.className = 'qcard';
+          if (!unlocked) {
+            div.style.opacity = '0.5';
+            div.style.filter = 'grayscale(1)';
+          }
+          
+          // Use card.name without sym prefix, render sym separately  
+          const cardName = card.name.startsWith(card.sym) ? card.name.substring(card.sym.length).trim() : card.name;
+          const title = `${card.sym} ${cardName}`;
+          const costText = ` (${renderCost(card)}⚡)`;
+          const description = unlocked ? getCardDescription(card) : (cardMeta?.progress || 'Locked');
+          
+          div.innerHTML = `<strong>${title}${costText}</strong><br/><small>${description}</small>`;
+          glossaryGrid.appendChild(div);
+        });
       });
     });
   }
@@ -189,6 +211,25 @@ window.CardUnlock = {
   checkPersonaDefeatUnlocks,
   checkAchievementUnlocks,
   recordBattleResult
+};
+
+// --- Expose Game Stats for debugging ---
+window.GameStats = {
+  get current() {
+    return window.Game ? window.Game.stats : null;
+  },
+  reset() {
+    if (window.Game) {
+      window.Game.stats = {
+        maxEnergyDuringRun: 3,
+        peakOverheal: 0,
+        totalOverhealGained: 0,
+        maxHandSizeTurn: 5,
+        maxBurnAmount: 0,
+        firstPerfectWin: false
+      };
+    }
+  }
 };
 
 // --- Game boot logic ---

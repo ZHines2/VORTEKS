@@ -53,11 +53,23 @@ export function createPlayer(isAI = false) {
     },
     
     canAfford(card) { 
+      // Reconsider card can always be played (costs "ALL" energy)
+      if (card.id === 'reconsider') {
+        return true;
+      }
       return this.energy >= card.cost;
     },
     
-    spend(cost) { 
+    spend(cost, card) { 
+      // For reconsider card, spend all remaining energy
+      if (card && card.id === 'reconsider') {
+        const spent = this.energy;
+        this.energy = 0;
+        return spent;
+      }
+      const spent = Math.min(cost, this.energy);
       this.energy = Math.max(0, this.energy - cost);
+      return spent;
     },
     
     removeFromHand(idx) { 

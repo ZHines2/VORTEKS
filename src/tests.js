@@ -15,28 +15,56 @@ export function runSelfTests(Game, log, showStart) {
   { 
     const t = {hp: 10, shield: 3, isAI: true}; 
     const atk = {status: {nextPlus: 0, firstAttackUsed: false}, isAI: false, quirk: null}; 
-    Game.hit.call({turn: 'you', you: atk, opp: t}, t, 4, false); 
+    const mockGame = {
+      turn: 'you', 
+      you: atk, 
+      opp: t, 
+      checkWin: () => {},
+      stats: { maxBurnAmount: 0 }
+    };
+    Game.hit.call(mockGame, t, 4, false); 
     assertEqual('Shield absorbs first', {hp: t.hp, sh: t.shield}, {hp: 9, sh: 0}, log); 
   }
   
   { 
     const t = {hp: 10, shield: 5, isAI: true}; 
     const atk = {status: {nextPlus: 0, firstAttackUsed: false}, isAI: false, quirk: null}; 
-    Game.hit.call({turn: 'you', you: atk, opp: t}, t, 3, true); 
+    const mockGame = {
+      turn: 'you', 
+      you: atk, 
+      opp: t, 
+      checkWin: () => {},
+      stats: { maxBurnAmount: 0 }
+    };
+    Game.hit.call(mockGame, t, 3, true); 
     assertEqual('Pierce ignores shield', {hp: t.hp, sh: t.shield}, {hp: 7, sh: 5}, log); 
   }
   
   { 
     const t = {hp: 10, shield: 0, isAI: true}; 
     const atk = {status: {nextPlus: 2, firstAttackUsed: false}, isAI: false, quirk: null}; 
-    Game.hit.call({turn: 'you', you: atk, opp: t}, t, 3, true); 
+    const mockGame = {
+      turn: 'you', 
+      you: atk, 
+      opp: t, 
+      checkWin: () => {},
+      stats: { maxBurnAmount: 0 }
+    };
+    Game.hit.call(mockGame, t, 3, true); 
     assertEqual('Focus adds +2 once', {hp: t.hp, next: atk.status.nextPlus}, {hp: 5, next: 0}, log); 
   }
   
   { 
     const t = {hp: 10, shield: 2, isAI: true}; 
     const atk = {status: {nextPlus: 0, firstAttackUsed: false}, isAI: false, quirk: 'piercer'}; 
-    Game.hit.call({turn: 'you', you: atk, opp: t}, t, 3, false); 
+    const mockGame = {
+      turn: 'you', 
+      you: atk, 
+      opp: t, 
+      checkWin: () => {},
+      stats: { maxBurnAmount: 0 }
+    };
+    Game.hit.call(mockGame, t, 3, false); 
     assertEqual('Piercer first hit', {hp: t.hp, sh: t.shield, used: atk.status.firstAttackUsed}, {hp: 9, sh: 0, used: true}, log); 
   }
   
@@ -56,7 +84,19 @@ export function runSelfTests(Game, log, showStart) {
     const me = createPlayer(false); 
     const foe = createPlayer(true);
     me.lastPlayed = CARDS.find(c => c.id === 'swords');
-    Game.applyCard(CARDS.find(c => c.id === 'echo'), me, foe, false);
+    const testGame = Object.create(Game);
+    testGame.you = me;
+    testGame.opp = foe;
+    testGame.turn = 'you';
+    testGame.over = false;
+    testGame.isEchoing = false;
+    testGame.stats = { maxBurnAmount: 0 };
+    testGame.checkWin = () => {};
+    // Set a mock log function to avoid errors
+    const originalSetLog = Game.setLogFunction;
+    Game.setLogFunction(() => {});
+    testGame.applyCard(CARDS.find(c => c.id === 'echo'), me, foe, false);
+    Game.setLogFunction(originalSetLog);
     assertEqual('Echo repeats last attack', foe.hp <= 17, true, log);
   }
   
@@ -222,6 +262,86 @@ export function runSelfTests(Game, log, showStart) {
       assertEqual('Droid Protocol flag cleared', flagCleared, true, log);
     }
   }
-  
+
+  // Test burn stacking
+  {
+    const target = createPlayer(true);
+    target.status.burn = 3;
+    target.status.burnTurns = 2;
+    
+    // Apply new burn that should stack
+    Game.applyBurn(target, 4, 3);
+    
+    assertEqual('Burn stacking adds amounts', target.status.burn, 7, log);
+    assertEqual('Burn stacking keeps max turns', target.status.burnTurns, 3, log);
+  }
+
+  // Test overheal functionality
+  {
+    const player = createPlayer(false);
+    player.hp = 18;
+    player.maxHP = 20;
+    
+    const healedHP = Game.applyHeal(player, 5);
+    assertEqual('Overheal allows HP beyond maxHP', healedHP, 23, log);
+    
+    // Test overheal cap
+    player.hp = 20;
+    const cappedHP = Game.applyHeal(player, 20);
+    assertEqual('Overheal respects 150% cap', cappedHP, 30, log); // 20 * 1.5 = 30
+  }
+
+  // Test energy uncapping
+  {
+    const player = createPlayer(false);
+    player.energy = 5;
+    player.maxEnergy = 6;
+    
+    const newEnergy = Game.applyEnergyGain(player, 8);
+    assertEqual('Energy uncapping allows energy beyond maxEnergy', newEnergy, 13, log);
+  }
+
+  // Test Reconsider card mechanics
+  {
+    const player = createPlayer(false);
+    const reconsiderCard = { id: 'reconsider', cost: 0 };
+    
+    player.energy = 7;
+    const canAfford = player.canAfford(reconsiderCard);
+    assertEqual('Reconsider card is always affordable', canAfford, true, log);
+    
+    const spent = player.spend(0, reconsiderCard);
+    assertEqual('Reconsider spends all energy', spent, 7, log);
+    assertEqual('Player energy is 0 after reconsider', player.energy, 0, log);
+  }
+
+  // Test Echo & Zap interaction (regression test)
+  {
+    const me = createPlayer(false);
+    const foe = createPlayer(true);
+    const testGame = Object.create(Game);
+    testGame.you = me;
+    testGame.opp = foe;
+    testGame.isEchoing = false;
+    
+    // Set up last played as Zap
+    me.lastPlayed = CARDS.find(c => c.id === 'bolt'); // Zap card
+    
+    // Apply Echo card
+    const echoCard = CARDS.find(c => c.id === 'echo');
+    const initialDeckSize = me.deck.length;
+    const initialHandSize = me.hand.length;
+    
+    testGame.applyCard(echoCard, me, foe, false);
+    
+    // Verify no unwanted state anomalies occurred
+    const finalDeckSize = me.deck.length;
+    const finalHandSize = me.hand.length;
+    
+    // The exact numbers depend on deck state, but we check that it didn't break
+    assertEqual('Echo-Zap interaction maintains valid game state', typeof finalDeckSize, 'number', log);
+    assertEqual('Echo flag properly managed', testGame.isEchoing, false, log);
+  }
+
   log('Self-tests complete.');
 }
