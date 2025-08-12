@@ -147,4 +147,16 @@ export const CARDS = [
     scaling: {}, 
     ai: { role: 'setup', pri: 48 } 
   },
+  { 
+    id: 'reconsider', 
+    sym: icons.reconsider, 
+    name: 'Reconsider', 
+    cost: 0, 
+    type: 'skill', 
+    tags: ['utility'],
+    effects: { damage: 0, pierce: false, heal: 0, shield: 0, draw: 0, reconsider: true }, 
+    status: { target: { burn: null, freezeEnergy: 0 }, self: { nextPlus: 0, maxEnergyDelta: 0, energyNowDelta: 0, cleanse: false } }, 
+    scaling: {}, 
+    ai: { role: 'utility', pri: 35 } 
+  },
 ];

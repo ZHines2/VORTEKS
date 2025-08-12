@@ -9,5 +9,6 @@ export const icons = {
   bolt: '⚡', 
   star: '✨', 
   dagger: '🗡', 
-  loop: '⟳' 
+  loop: '⟳',
+  reconsider: '🔀'
 };

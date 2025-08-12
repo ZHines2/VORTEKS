@@ -3,6 +3,7 @@
 // Design goals: simplicity, declarative metadata, scalability, non-intrusive UX.
 
 const LS_KEY = 'vorteks-card-unlocks';
+const LS_QUIRKS_KEY = 'vorteks-quirks';
 const STORAGE_VERSION = 1;
 
 // 6 starter cards (always unlocked immediately)
@@ -17,6 +18,21 @@ const STARTER_CARDS = ['swords','shield','heart','fire','bolt','star'];
 //  progressHint: optional progress string
 //  resetBattleFlags(state): optional cleanup at battle end
 const UNLOCK_META = [
+  {
+    id: 'reconsider',
+    kind: 'achievement',
+    description: 'Reach a 5-win streak.',
+    progressHint: s => `Win streak best: ${s.progress.reconsiderBestStreak || 0}/5`,
+    check: (ctx, state) => {
+      if (ctx.event === 'battleEnd' && ctx.result === 'win' && ctx.streak != null) {
+        if (!state.progress.reconsiderBestStreak || ctx.streak > state.progress.reconsiderBestStreak) {
+          state.progress.reconsiderBestStreak = ctx.streak;
+        }
+        return ctx.streak >= 5;
+      }
+      return false;
+    }
+  },
   {
     id: 'echo',
     kind: 'achievement',
@@ -110,6 +126,130 @@ const UNLOCK_META = [
   }
 ];
 
+// Quirks metadata
+const QUIRKS_META = [
+  {
+    id: 'myfirst',
+    name: 'MY FIRST QUIRK',
+    description: '+1 opening hand card at battle start.',
+    unlockedByDefault: true,
+    effect: 'opening_hand_plus_one'
+  },
+  {
+    id: 'minty',
+    name: 'MINTY',
+    description: 'Start with +1 max ⚡ (and +1 now).',
+    unlockedByDefault: false,
+    hint: 'Spend 10+ ⚡ in a single turn.',
+    effect: 'start_energy_plus_one',
+    check: (ctx, state) => {
+      if (ctx.event === 'turnEnd' && ctx.energySpentThisTurn != null) {
+        if (!state.progress.mintyMaxEnergySpent || ctx.energySpentThisTurn > state.progress.mintyMaxEnergySpent) {
+          state.progress.mintyMaxEnergySpent = ctx.energySpentThisTurn;
+        }
+        return ctx.energySpentThisTurn >= 10;
+      }
+      return false;
+    }
+  },
+  {
+    id: 'spicy',
+    name: 'SPICY',
+    description: 'Your Burns deal +1.',
+    unlockedByDefault: false,
+    hint: 'Deal 10+ Burn damage in one battle.',
+    effect: 'burn_plus_one',
+    check: (ctx, state) => {
+      if (ctx.event === 'burnDamage' && ctx.source === 'you') {
+        state.progress.spicyBurnThisBattle = (state.progress.spicyBurnThisBattle || 0) + ctx.amount;
+      }
+      if (ctx.event === 'battleEnd' && ctx.result === 'win') {
+        return (state.progress.spicyBurnThisBattle || 0) >= 10;
+      }
+      return false;
+    },
+    resetBattleFlags: (state) => {
+      delete state.progress.spicyBurnThisBattle;
+    }
+  },
+  {
+    id: 'piercer',
+    name: 'PIERCER',
+    description: 'Your first attack each turn pierces 1.',
+    unlockedByDefault: false,
+    hint: 'Deal 10+ pierce damage in one battle.',
+    effect: 'first_attack_pierce',
+    check: (ctx, state) => {
+      if (ctx.event === 'pierceDamage' && ctx.source === 'you') {
+        state.progress.piercerDamageThisBattle = (state.progress.piercerDamageThisBattle || 0) + ctx.amount;
+      }
+      if (ctx.event === 'battleEnd' && ctx.result === 'win') {
+        return (state.progress.piercerDamageThisBattle || 0) >= 10;
+      }
+      return false;
+    },
+    resetBattleFlags: (state) => {
+      delete state.progress.piercerDamageThisBattle;
+    }
+  },
+  {
+    id: 'guardian',
+    name: 'GUARDIAN',
+    description: 'Gain +1 shield at the start of each of your turns.',
+    unlockedByDefault: false,
+    hint: 'Win a battle without losing HP (perfect block).',
+    effect: 'turn_start_shield',
+    check: (ctx, state) => {
+      if (ctx.event === 'damage' && ctx.target === 'you' && ctx.amount > 0) {
+        state.progress.guardianTookDamageThisBattle = true;
+      }
+      if (ctx.event === 'battleEnd' && ctx.result === 'win') {
+        return !state.progress.guardianTookDamageThisBattle;
+      }
+      return false;
+    },
+    resetBattleFlags: (state) => {
+      delete state.progress.guardianTookDamageThisBattle;
+    }
+  },
+  {
+    id: 'scholar',
+    name: 'SCHOLAR',
+    description: '25% chance at the start of each of your turns to draw +1 card.',
+    unlockedByDefault: false,
+    hint: 'Draw 5+ cards in a single turn.',
+    effect: 'turn_start_draw_chance',
+    check: (ctx, state) => {
+      if (ctx.event === 'cardDrawn' && ctx.source === 'you') {
+        state.progress.scholarCardsThisTurn = (state.progress.scholarCardsThisTurn || 0) + 1;
+      }
+      if (ctx.event === 'turnEnd') {
+        const drawn = state.progress.scholarCardsThisTurn || 0;
+        if (!state.progress.scholarMaxDrawnInTurn || drawn > state.progress.scholarMaxDrawnInTurn) {
+          state.progress.scholarMaxDrawnInTurn = drawn;
+        }
+        state.progress.scholarCardsThisTurn = 0;
+        return drawn >= 5;
+      }
+      return false;
+    }
+  },
+  {
+    id: 'hearty',
+    name: 'HEARTY',
+    description: '+5 HP at the start of each battle.',
+    unlockedByDefault: false,
+    hint: 'Win a battle at 1 HP or less.',
+    effect: 'battle_start_hp',
+    check: (ctx, state) => {
+      if (ctx.event === 'battleEnd' && ctx.result === 'win' && ctx.youHP != null) {
+        return ctx.youHP <= 1;
+      }
+      return false;
+    }
+  }
+];
+
 // Persona-based unlock mapping (future expansion)
 // personaName -> cardId
 const PERSONA_UNLOCKS = {
@@ -121,6 +261,47 @@ const PERSONA_UNLOCKS = {
   // 'Glacier': 'snow',
   // 'Assassin': 'dagger'
 };
+
+// Quirks state management
+function freshQuirksState() {
+  const base = { version: STORAGE_VERSION, unlocked: {} };
+  // Unlock default quirks
+  QUIRKS_META.forEach(quirk => {
+    if (quirk.unlockedByDefault) {
+      base.unlocked[quirk.id] = true;
+    }
+  });
+  return base;
+}
+
+function loadQuirksState() {
+  try {
+    const raw = localStorage.getItem(LS_QUIRKS_KEY);
+    if (!raw) {
+      const s = freshQuirksState();
+      saveQuirksState(s);
+      return s;
+    }
+    const parsed = JSON.parse(raw);
+    if (parsed.version !== STORAGE_VERSION) {
+      const s = freshQuirksState();
+      saveQuirksState(s);
+      return s;
+    }
+    parsed.unlocked ||= {};
+    return parsed;
+  } catch {
+    const s = freshQuirksState();
+    saveQuirksState(s);
+    return s;
+  }
+}
+
+function saveQuirksState(state) {
+  try { localStorage.setItem(LS_QUIRKS_KEY, JSON.stringify(state)); } catch {}
+}
+
+let _quirksState = loadQuirksState();
 
 function freshState() {
   const base = {
@@ -215,6 +396,69 @@ function resetUnlocks() {
 
 function debugUnlock(id) { unlockCard(id, 'debug'); }
 
+// Quirks functions
+function isQuirkUnlocked(id) { return !!_quirksState.unlocked[id]; }
+function getUnlockedQuirks() { return Object.keys(_quirksState.unlocked).filter(k => _quirksState.unlocked[k]); }
+
+function unlockQuirk(id, cause = '') {
+  if (isQuirkUnlocked(id)) return false;
+  _quirksState.unlocked[id] = true;
+  saveQuirksState(_quirksState);
+  announceQuirkUnlock(id, cause);
+  return true;
+}
+
+function announceQuirkUnlock(id, cause) {
+  const quirkMeta = QUIRKS_META.find(q => q.id === id);
+  const quirkName = quirkMeta ? quirkMeta.name : id;
+  const msg = `QUIRK UNLOCKED: ${quirkName}${cause ? ' (' + cause + ')' : ''}`;
+  if (window.log) window.log(msg);
+  // Lightweight toast
+  try {
+    const existing = document.getElementById('unlockToast');
+    if (existing) existing.remove();
+    const div = document.createElement('div');
+    div.id = 'unlockToast';
+    div.textContent = msg;
+    Object.assign(div.style, {
+      position: 'fixed', top: '12px', left: '50%', transform: 'translateX(-50%)',
+      background: 'var(--good)', color: 'black', padding: '6px 12px', fontSize: '12px',
+      fontWeight: 'bold', borderRadius: '6px', zIndex: 9999, boxShadow: '0 2px 6px rgba(0,0,0,0.4)'
+    });
+    document.body.appendChild(div);
+    setTimeout(()=>div.remove(), 4000);
+  } catch {}
+}
+
+function getUnlockableQuirksInfo() {
+  return QUIRKS_META.map(q => ({
+    id: q.id,
+    name: q.name,
+    description: q.description,
+    unlocked: isQuirkUnlocked(q.id),
+    hint: q.hint || '',
+    effect: q.effect
+  }));
+}
+
+function checkQuirkUnlocks(ctx) {
+  let unlockedAny = false;
+  for (const quirk of QUIRKS_META) {
+    if (isQuirkUnlocked(quirk.id) || !quirk.check) continue;
+    const before = JSON.stringify(_state.progress);
+    const success = quirk.check(ctx, _state);
+    const after = JSON.stringify(_state.progress);
+    if (success) {
+      unlockQuirk(quirk.id, 'Achievement');
+      unlockedAny = true;
+    } else if (before !== after) {
+      saveState(_state); // progress changed
+    }
+    if (ctx.event === 'battleEnd' && quirk.resetBattleFlags) quirk.resetBattleFlags(_state);
+  }
+  if (unlockedAny) saveState(_state);
+}
+
 function checkPersonaDefeatUnlocks(personaName) {
   if (!personaName) return;
   _state.personaDefeats[personaName] = (_state.personaDefeats[personaName] || 0) + 1;
@@ -243,7 +487,12 @@ function checkAchievementUnlocks(ctx) {
     }
     if (ctx.event === 'battleEnd' && meta.resetBattleFlags) meta.resetBattleFlags(_state);
   }
+  
+  // Also check quirk unlocks
+  checkQuirkUnlocks(ctx);
+  
   if (unlockedAny) saveState(_state);
+}
 }
 
 function recordBattleResult(result) {
@@ -257,10 +506,15 @@ function recordBattleResult(result) {
 export {
   STARTER_CARDS,
   UNLOCK_META,
+  QUIRKS_META,
   getUnlockedCards,
   isCardUnlocked,
   unlockCard,
   getUnlockableCardsInfo,
+  getUnlockableQuirksInfo,
+  isQuirkUnlocked,
+  getUnlockedQuirks,
+  unlockQuirk,
   resetUnlocks,
   debugUnlock,
   checkPersonaDefeatUnlocks,
