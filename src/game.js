@@ -39,6 +39,8 @@ export const Game = {
   oppFeatures: null, // Store opponent face features for easter eggs
   turnTypes: new Set(), // Track card types played in current turn
   playerTurnDamage: 0, // Track cumulative damage dealt by player this turn
+  playerTurnEnergySpent: 0, // Track energy spent by player this turn
+  playerTurnCardsDrawn: 0, // Track cards drawn by player this turn
   
   // Placeholder mechanics for easter egg faces - to be implemented later
   easterEggMechanics: {
@@ -127,19 +129,19 @@ export const Game = {
   pickQuirk(done) {
     const modal = $('#quirkModal');
     modal.hidden = false;
-    modal.querySelectorAll('.qcard').forEach(el => {
-      el.onclick = () => {
-        const q = el.getAttribute('data-quirk');
-        this.you.quirk = q;
-        if (q === 'minty') { 
-          this.you.maxEnergy = clamp(this.you.maxEnergy + 1, 1, 6); 
-          this.you.energy = clamp(this.you.energy + 1, 0, this.you.maxEnergy); 
-        }
-        modal.hidden = true;
-        if (log) log('Quirk: ' + q.toUpperCase());
-        done();
-      };
-    });
+    // The quirk grid is now dynamically rendered from main.js
+    // We'll set up a global selection handler
+    window.onQuirkSelected = (quirkId) => {
+      this.you.quirk = quirkId;
+      if (quirkId === 'minty') { 
+        this.you.maxEnergy = clamp(this.you.maxEnergy + 1, 1, 6); 
+        this.you.energy = clamp(this.you.energy + 1, 0, this.you.maxEnergy); 
+      }
+      modal.hidden = true;
+      if (log) log('Quirk: ' + quirkId.toUpperCase());
+      this.applyQuirkBattleStart(this.you);
+      done();
+    };
   },
   
   startTurn(p) {
@@ -177,10 +179,17 @@ export const Game = {
       p.status.droidProcNext = false;
     }
     
+    // Apply quirk effects for player turns
+    if (p === this.you && p.quirk) {
+      this.applyQuirkTurnStart(p);
+    }
+    
     // Reset per-turn achievement tracking if player's turn
     if (p === this.you) {
       this.turnTypes = new Set();
       this.playerTurnDamage = 0;
+      this.playerTurnEnergySpent = 0;
+      this.playerTurnCardsDrawn = 0;
     }
     
     // Log turn start and draw
@@ -211,7 +220,8 @@ export const Game = {
         event: 'turnEnd',
         turnTypes: this.turnTypes,
         youShield: this.you.shield,
-        youUnspentEnergy: this.you.energy
+        youUnspentEnergy: this.you.energy,
+        energySpentThisTurn: this.playerTurnEnergySpent
       });
     }
     
@@ -223,7 +233,16 @@ export const Game = {
     }
     
     if (me.status.burn && me.status.burnTurns > 0) { 
-      this.hit(me, me.status.burn, true, false); 
+      // Track burn damage if it's happening to opponent and player dealt it
+      const burnDamage = me.status.burn;
+      if (me === this.opp) {
+        checkAchievementUnlocks({
+          event: 'burnDamage',
+          source: 'you',
+          amount: burnDamage
+        });
+      }
+      this.hit(me, burnDamage, true, false); 
       me.status.burnTurns--; 
     }
     if (me.status.burnTurns === 0) me.status.burn = 0;
@@ -254,6 +273,7 @@ export const Game = {
     // Track card types and emit achievement events for player
     if (isPlayer) {
       this.turnTypes.add(card.type);
+      this.playerTurnEnergySpent += card.cost;
       checkAchievementUnlocks({
         event: 'cardPlayed',
         cardId: card.id,
@@ -326,6 +346,24 @@ export const Game = {
         checkAchievementUnlocks({
           event: 'damage',
           source: 'you',
+          amount: dmg
+        });
+        
+        // Track pierce damage separately
+        if (pierce || extraPierce > 0) {
+          checkAchievementUnlocks({
+            event: 'pierceDamage',
+            source: 'you',
+            amount: dmg
+          });
+        }
+      }
+      
+      // Track damage taken by player (for Guardian unlock)
+      if (targetIsPlayer && dmg > 0) {
+        checkAchievementUnlocks({
+          event: 'damage',
+          target: 'you',
           amount: dmg
         });
       }
@@ -412,6 +450,26 @@ export const Game = {
         state.me.draw(effects.draw); 
       } 
     }
+    if (effects.reconsider && !simulate) {
+      // Reconsider effect: spend all remaining energy, reshuffle deck
+      const isPlayer = (state.me === this.you);
+      const energySpent = state.me.energy;
+      if (isPlayer) {
+        this.playerTurnEnergySpent += energySpent;
+      }
+      state.me.energy = 0; // Spend all remaining energy
+      
+      // Reshuffle: move discard into deck and shuffle
+      state.me.deck.push(...state.me.discard);
+      state.me.discard = [];
+      shuffle(state.me.deck);
+      
+      if (isPlayer) {
+        logYou(`spends ${energySpent}⚡ and reshuffles deck`);
+      } else {
+        logOpp(`spends ${energySpent}⚡ and reshuffles deck`);
+      }
+    }
     
     // 3) statuses
     if (burnObj && !simulate) { 
@@ -481,6 +539,37 @@ export const Game = {
     return Math.max(0, before - d.hp);
   },
   
+  applyQuirkTurnStart(p) {
+    switch (p.quirk) {
+      case 'guardian':
+        p.shield += 1;
+        logYou('Guardian: +1 shield');
+        break;
+      case 'scholar':
+        if (Math.random() < 0.25) {
+          p.draw(1);
+          logYou('Scholar: drew +1 card (25% chance)');
+        }
+        break;
+      // MY FIRST QUIRK and other quirks don't have turn start effects
+    }
+  },
+  
+  applyQuirkBattleStart(p) {
+    switch (p.quirk) {
+      case 'myfirst':
+        p.draw(1);
+        logYou('MY FIRST QUIRK: drew +1 opening hand card');
+        break;
+      case 'hearty':
+        const hpGain = Math.min(5, p.maxHP - p.hp);
+        p.hp += hpGain;
+        logYou(`Hearty: gained ${hpGain} HP`);
+        break;
+      // Other quirks don't have battle start effects
+    }
+  },
+  
   checkWin() {
     if (this.you.hp <= 0 || this.opp.hp <= 0) {
       this.over = true; 
@@ -496,7 +585,9 @@ export const Game = {
       recordBattleResult(youWin ? 'win' : 'loss');
       checkAchievementUnlocks({
         event: 'battleEnd',
-        result: youWin ? 'win' : 'loss'
+        result: youWin ? 'win' : 'loss',
+        streak: this.streak,
+        youHP: this.you.hp
       });
       if (youWin) {
         checkPersonaDefeatUnlocks(this.persona);
@@ -521,6 +612,9 @@ export const Game = {
     this.you.shield = 0;
     this.you.energy = this.you.maxEnergy;
     this.you.status = { nextPlus: 0, firstAttackUsed: false };
+    
+    // Apply battle start quirk effects
+    this.applyQuirkBattleStart(this.you);
     
     // Shuffle deck back together
     this.you.deck = shuffle([...this.you.hand, ...this.you.discard]);

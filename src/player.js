@@ -1,4 +1,5 @@
 import { shuffle } from './utils.js';
+import { checkAchievementUnlocks } from './card-unlock.js';
 
 // Player creation and management
 export function createPlayer(isAI = false) {
@@ -23,6 +24,7 @@ export function createPlayer(isAI = false) {
     quirk: null,
     
     draw(n = 1) { 
+      let actualDrawn = 0;
       while (n-- > 0) { 
         if (!this.deck.length) { 
           this.deck = shuffle(this.discard.splice(0)); 
@@ -35,8 +37,19 @@ export function createPlayer(isAI = false) {
         } 
         if (this.deck.length) { 
           this.hand.push(this.deck.pop()); 
+          actualDrawn++;
         } 
-      } 
+      }
+      
+      // Track card draws for player (for Scholar unlock)
+      if (!this.isAI && actualDrawn > 0 && window.Game) {
+        window.Game.playerTurnCardsDrawn += actualDrawn;
+        checkAchievementUnlocks({
+          event: 'cardDrawn',
+          source: 'you',
+          amount: actualDrawn
+        });
+      }
     },
     
     canAfford(card) { 

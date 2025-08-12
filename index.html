@@ -9,8 +9,9 @@
 </head>
 <body>
   <div class="wrap">
-    <!-- Top-right buttons: unlocks, mute, and help -->
+    <!-- Top-right buttons: unlocks, glossary, mute, and help -->
     <button id="unlocksBtn" aria-label="Unlocks" title="View unlocked cards and achievements">🏆</button>
+    <button id="glossaryBtn" aria-label="Glossary" title="View card glossary">📖</button>
     <button id="muteBtn" aria-label="Mute music" title="Mute/unmute music">🔊</button>
     <button id="helpBtn" aria-label="Help" title="How to play VORTEKS">?</button>
     <h1>VORTEKS</h1>
@@ -86,11 +87,7 @@
   <div class="modal" id="quirkModal" hidden>
     <div class="box">
       <div><strong>Pick a Quirk</strong> — one‑line identity for this run.</div>
-      <div class="qgrid">
-        <div class="qcard" data-quirk="minty">MINTY<br/><small>Start with +1 max ⚡ (and +1 now).</small></div>
-        <div class="qcard" data-quirk="spicy">SPICY<br/><small>Your Burns deal +1.</small></div>
-        <div class="qcard" data-quirk="piercer">PIERCER<br/><small>Your first attack each turn pierces 1.</small></div>
-      </div>
+      <div class="qgrid" id="quirkGrid"></div>
     </div>
   </div>
   <!-- How to Play Modal -->
@@ -127,10 +124,27 @@
   <!-- Unlocks Modal -->
   <div class="modal" id="unlocksModal" hidden>
     <div class="box" style="width:min(96vw, 600px)">
-      <div style="font-size:18px; color:var(--accent); margin:8px 0 16px; text-align:center"><strong>Card Unlocks</strong></div>
-      <div id="unlocksGrid" class="qgrid" style="max-height:400px; overflow-y:auto;"></div>
+      <div style="font-size:18px; color:var(--accent); margin:8px 0 16px; text-align:center"><strong>Unlocks</strong></div>
+      <div style="margin-bottom:16px">
+        <div style="font-size:14px; color:var(--accent); margin-bottom:8px"><strong>Cards</strong></div>
+        <div id="unlocksCardsGrid" class="qgrid" style="max-height:200px; overflow-y:auto;"></div>
+      </div>
+      <div style="margin-bottom:16px">
+        <div style="font-size:14px; color:var(--accent); margin-bottom:8px"><strong>Quirks</strong></div>
+        <div id="unlocksQuirksGrid" class="qgrid" style="max-height:200px; overflow-y:auto;"></div>
+      </div>
       <div style="display:flex; justify-content:center; margin-top:16px">
         <button id="unlocksCloseBtn" class="btn">CLOSE</button>
+      </div>
+    </div>
+  </div>
+  <!-- Glossary Modal -->
+  <div class="modal" id="glossaryModal" hidden>
+    <div class="box" style="width:min(96vw, 600px)">
+      <div style="font-size:18px; color:var(--accent); margin:8px 0 16px; text-align:center"><strong>Card Glossary</strong></div>
+      <div id="glossaryGrid" class="qgrid" style="max-height:400px; overflow-y:auto;"></div>
+      <div style="display:flex; justify-content:center; margin-top:16px">
+        <button id="glossaryCloseBtn" class="btn">CLOSE</button>
       </div>
     </div>
   </div>

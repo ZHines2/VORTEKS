@@ -9,6 +9,10 @@ import {
   isCardUnlocked, 
   unlockCard, 
   getUnlockableCardsInfo, 
+  getUnlockableQuirksInfo,
+  isQuirkUnlocked,
+  getUnlockedQuirks,
+  unlockQuirk,
   resetUnlocks, 
   debugUnlock,
   checkPersonaDefeatUnlocks,
@@ -24,6 +28,7 @@ let music;
 const muteBtn = document.getElementById('muteBtn');
 const helpBtn = document.getElementById('helpBtn');
 const unlocksBtn = document.getElementById('unlocksBtn');
+const glossaryBtn = document.getElementById('glossaryBtn');
 
 function setupMusic() {
   music = new Audio(MUSIC_FILE);
@@ -94,6 +99,74 @@ function setupHelp() {
   }
 }
 
+function setupGlossary() {
+  const glossaryModal = document.getElementById('glossaryModal');
+  const glossaryCloseBtn = document.getElementById('glossaryCloseBtn');
+  const glossaryGrid = document.getElementById('glossaryGrid');
+
+  // Glossary button click handler
+  glossaryBtn.addEventListener('click', () => {
+    renderGlossary();
+    glossaryModal.hidden = false;
+  });
+
+  // Close button handler
+  glossaryCloseBtn.addEventListener('click', () => {
+    glossaryModal.hidden = true;
+  });
+
+  // Close modal on ESC key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !glossaryModal.hidden) {
+      glossaryModal.hidden = true;
+    }
+  });
+
+  function renderGlossary() {
+    const cardsInfo = getUnlockableCardsInfo();
+    // Get all cards including starters
+    import('../data/cards.js').then(({ CARDS }) => {
+      glossaryGrid.innerHTML = '';
+      
+      CARDS.forEach(card => {
+        const unlocked = isCardUnlocked(card.id);
+        const cardMeta = cardsInfo.find(c => c.id === card.id);
+        
+        const div = document.createElement('div');
+        div.className = 'qcard';
+        if (!unlocked) {
+          div.style.opacity = '0.5';
+          div.style.filter = 'grayscale(1)';
+        }
+        
+        const title = `${card.sym} ${card.name}`;
+        const costText = card.cost > 0 ? ` (${card.cost}⚡)` : ' (0⚡)';
+        const description = unlocked ? getCardDescription(card) : (cardMeta?.progress || 'Locked');
+        
+        div.innerHTML = `<strong>${title}${costText}</strong><br/><small>${description}</small>`;
+        glossaryGrid.appendChild(div);
+      });
+    });
+  }
+
+  function getCardDescription(card) {
+    const parts = [];
+    if (card.effects.damage > 0) parts.push(`${card.effects.damage} damage`);
+    if (card.effects.heal > 0) parts.push(`Heal ${card.effects.heal}`);
+    if (card.effects.shield > 0) parts.push(`+${card.effects.shield} shield`);
+    if (card.effects.draw > 0) parts.push(`Draw ${card.effects.draw}`);
+    if (card.effects.pierce) parts.push('Pierce');
+    if (card.effects.reconsider) parts.push('Spend all energy. Reshuffle your deck.');
+    if (card.status.target.burn) parts.push(`Burn ${card.status.target.burn.amount} for ${card.status.target.burn.turns} turns`);
+    if (card.status.target.freezeEnergy > 0) parts.push(`Freeze ${card.status.target.freezeEnergy} energy`);
+    if (card.status.self.nextPlus > 0) parts.push(`+${card.status.self.nextPlus} to next card`);
+    if (card.status.self.maxEnergyDelta !== 0) parts.push(`${card.status.self.maxEnergyDelta > 0 ? '+' : ''}${card.status.self.maxEnergyDelta} max energy`);
+    if (card.status.self.energyNowDelta !== 0) parts.push(`${card.status.self.energyNowDelta > 0 ? '+' : ''}${card.status.self.energyNowDelta} energy now`);
+    
+    return parts.length > 0 ? parts.join(', ') : 'Special effect';
+  }
+}
+
 // --- Attach to window for modularity (if needed) ---
 window.bump = bump;
 window.bumpHP = bumpHP;
@@ -107,6 +180,10 @@ window.CardUnlock = {
   isCardUnlocked,
   unlockCard,
   getUnlockableCardsInfo,
+  getUnlockableQuirksInfo,
+  isQuirkUnlocked,
+  getUnlockedQuirks,
+  unlockQuirk,
   resetUnlocks,
   debugUnlock,
   checkPersonaDefeatUnlocks,
@@ -118,6 +195,7 @@ window.CardUnlock = {
 document.addEventListener('DOMContentLoaded', () => {
   setupMusic();
   setupHelp();
+  setupGlossary();
 
   // Initialize face generator
   initFaceGenerator();
@@ -149,7 +227,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Victory modal event handlers
   document.getElementById('nextBattleBtn').onclick = () => Game.nextBattle();
-  document.getElementById('victoryUnlocksBtn').onclick = () => Game.openUnlocks();
+  document.getElementById('victoryUnlocksBtn').onclick = () => {
+    renderUnlocksModal();
+    document.getElementById('unlocksModal').hidden = false;
+  };
   document.getElementById('victoryDeckBtn').onclick = () => {
     document.getElementById('victoryModal').hidden = true;
     Game.init(); // Return to deck builder flow
@@ -157,7 +238,10 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('victoryRestartBtn').onclick = () => Game.resetGameToStart();
 
   // Unlocks modal event handlers
-  document.getElementById('unlocksBtn').onclick = () => Game.openUnlocks();
+  document.getElementById('unlocksBtn').onclick = () => {
+    renderUnlocksModal();
+    document.getElementById('unlocksModal').hidden = false;
+  };
   document.getElementById('unlocksCloseBtn').onclick = () => {
     document.getElementById('unlocksModal').hidden = true;
   };
@@ -185,10 +269,85 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.render) window.render();
   };
 
+  // Quirk grid rendering
+  function renderQuirkGrid() {
+    const quirkGrid = document.getElementById('quirkGrid');
+    const quirksInfo = getUnlockableQuirksInfo();
+    
+    quirkGrid.innerHTML = '';
+    
+    quirksInfo.forEach(quirk => {
+      const div = document.createElement('div');
+      div.className = 'qcard';
+      div.setAttribute('data-quirk', quirk.id);
+      
+      if (!quirk.unlocked) {
+        div.style.opacity = '0.5';
+        div.style.filter = 'grayscale(1)';
+        div.style.cursor = 'not-allowed';
+      } else {
+        div.style.cursor = 'pointer';
+        div.addEventListener('click', () => {
+          if (quirk.unlocked) {
+            // Set selected quirk and call the global handler
+            document.querySelectorAll('.qcard').forEach(c => c.classList.remove('selected'));
+            div.classList.add('selected');
+            if (window.onQuirkSelected) {
+              window.onQuirkSelected(quirk.id);
+            }
+          }
+        });
+      }
+      
+      const description = quirk.unlocked ? quirk.description : quirk.hint;
+      div.innerHTML = `${quirk.name}<br/><small>${description}</small>`;
+      quirkGrid.appendChild(div);
+    });
+  }
+
+  // Unlocks modal rendering
+  function renderUnlocksModal() {
+    const cardsGrid = document.getElementById('unlocksCardsGrid');
+    const quirksGrid = document.getElementById('unlocksQuirksGrid');
+    
+    // Render cards
+    const cardsInfo = getUnlockableCardsInfo();
+    cardsGrid.innerHTML = '';
+    cardsInfo.forEach(card => {
+      const div = document.createElement('div');
+      div.className = 'qcard';
+      if (!card.unlocked) {
+        div.style.opacity = '0.5';
+        div.style.filter = 'grayscale(1)';
+      }
+      
+      const status = card.unlocked ? 'Unlocked' : card.progress;
+      div.innerHTML = `<strong>${card.id.toUpperCase()}</strong><br/><small>${card.description}</small><br/><em>${status}</em>`;
+      cardsGrid.appendChild(div);
+    });
+    
+    // Render quirks
+    const quirksInfo = getUnlockableQuirksInfo();
+    quirksGrid.innerHTML = '';
+    quirksInfo.forEach(quirk => {
+      const div = document.createElement('div');
+      div.className = 'qcard';
+      if (!quirk.unlocked) {
+        div.style.opacity = '0.5';
+        div.style.filter = 'grayscale(1)';
+      }
+      
+      const status = quirk.unlocked ? 'Unlocked' : quirk.hint;
+      div.innerHTML = `<strong>${quirk.name}</strong><br/><small>${quirk.description}</small><br/><em>${status}</em>`;
+      quirksGrid.appendChild(div);
+    });
+  }
+
   // Start screen logic
   function showStart() {
     const modal = document.getElementById('startModal');
     modal.hidden = false;
+    renderQuirkGrid(); // Render dynamic quirk grid when showing start
     document.getElementById('startBtn').onclick = ()=>{ modal.hidden=true; Game.init(); };
     document.getElementById('quickBtn').onclick = ()=>{ modal.hidden=true; Game.initQuick(); };
   }
