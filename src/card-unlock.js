@@ -493,7 +493,6 @@ function checkAchievementUnlocks(ctx) {
   
   if (unlockedAny) saveState(_state);
 }
-}
 
 function recordBattleResult(result) {
   _state.stats.totalBattles = (_state.stats.totalBattles || 0) + 1;
