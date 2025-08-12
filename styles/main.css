@@ -195,6 +195,15 @@ h1 {
   padding:2px 4px;
 }
 
+.status .tag.achievement-progress {
+  background: var(--panel);
+  color: var(--accent);
+  font-weight: normal;
+  border: 1px solid var(--accent);
+  opacity: 0.8;
+}
+
+
 .hand {
   display:flex;
   gap:8px;
@@ -265,6 +274,20 @@ button.card:disabled {
   font-size:10px;
 }
 
+.card-type {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  background: var(--panel);
+  color: var(--ink);
+  padding: 1px 3px;
+  font-size: 7px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  opacity: 0.6;
+  line-height: 1;
+}
+
 .insufficient{
   filter:grayscale(1);
 }
@@ -295,6 +318,18 @@ button.card:disabled {
   border:2px solid var(--border);
   padding:8px;
 }
+
+.log .unlock-notification {
+  background: var(--panel);
+  color: var(--accent);
+  font-weight: bold;
+  padding: 2px 6px;
+  margin: 1px 0;
+  border-radius: 2px;
+  border: 1px solid var(--accent);
+}
+
+
 
 /* Opp face */
 #oppFace{ 

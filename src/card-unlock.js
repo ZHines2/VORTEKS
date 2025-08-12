@@ -42,7 +42,7 @@ const UNLOCK_META = [
   {
     id: 'echo',
     kind: 'achievement',
-    description: 'Play 3 different card types in a single turn (attack + skill + power).',
+    description: 'Play 3 different card types in one turn: attack (⚔), skill (🛠), and power (💎).',
     progressHint: s => `Turn type diversity best: ${s.progress.echoMaxTurnTypes || 0}/3`,
     check: (ctx, state) => {
       if (ctx.event === 'turnEnd' && ctx.turnTypes) {

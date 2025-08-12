@@ -1,6 +1,16 @@
 import { $, clamp } from './utils.js';
 import { SAFETY_MAX_ENERGY, OVERHEAL_LIMIT_MULT } from './config.js';
 
+// Card type icon mapping for UI clarity
+export function getCardTypeIcon(type) {
+  const typeIcons = {
+    'attack': '⚔',
+    'skill': '🛠',
+    'power': '💎'
+  };
+  return typeIcons[type] || '?';
+}
+
 // Cost rendering helper function
 export function renderCost(card) {
   if (card.id === 'reconsider') {
@@ -10,7 +20,7 @@ export function renderCost(card) {
 }
 
 // UI rendering and card display functions
-export function renderStatuses(p, nodeId) {
+export function renderStatuses(p, nodeId, Game = null) {
   const el = $(nodeId); 
   el.innerHTML = '';
   if (p.status.burn && p.status.burnTurns > 0) {
@@ -19,9 +29,16 @@ export function renderStatuses(p, nodeId) {
   if (p.status.nextPlus) addTag('✨ +' + p.status.nextPlus + ' atk');
   if (!p.isAI && p.quirk === 'piercer' && !p.status.firstAttackUsed) addTag('⟂ pierce 1 ready');
   
-  function addTag(txt) { 
+  // Show achievement progress for player
+  if (!p.isAI && Game && Game.turnTypes && Game.turnTypes.size > 0) {
+    const types = Array.from(Game.turnTypes).map(getCardTypeIcon).join('');
+    const progress = `${Game.turnTypes.size}/3`;
+    addTag(`Types: ${types} (${progress})`, 'achievement-progress');
+  }
+  
+  function addTag(txt, extraClass = '') { 
     const s = document.createElement('span'); 
-    s.className = 'tag'; 
+    s.className = 'tag' + (extraClass ? ' ' + extraClass : ''); 
     s.textContent = txt; 
     el.appendChild(s);
   }
@@ -154,8 +171,8 @@ export function createRenderFunction(Game) {
     
     if (Game.opp) $('#oppSH').textContent = Game.opp.shield;
     $('#streak').textContent = Game.streak || 0;
-    if (Game.you) renderStatuses(Game.you, '#youStatus');
-    if (Game.opp) renderStatuses(Game.opp, '#oppStatus');
+    if (Game.you) renderStatuses(Game.you, '#youStatus', Game);
+    if (Game.opp) renderStatuses(Game.opp, '#oppStatus', Game);
     const handEl = $('#hand'); 
     handEl.innerHTML = '';
     if (Game.you && Game.you.hand) {
@@ -164,7 +181,10 @@ export function createRenderFunction(Game) {
         b.className = 'card';
         const pv = predictCard(card, Game.you, Game.opp, Game);
         const cost = `<div class="cost">${renderCost(card)}</div>`;
-        b.innerHTML = `${cost}<div class="sym">${card.sym}</div><div class="nm">${card.name}</div><div class="ct">${cardText(card)}</div><div class="pv">${pv}</div>`;
+        // Add card type indicator for achievement clarity
+        const typeIcon = getCardTypeIcon(card.type);
+        const typeIndicator = `<div class="card-type" title="${card.type} card">${typeIcon}</div>`;
+        b.innerHTML = `${cost}${typeIndicator}<div class="sym">${card.sym}</div><div class="nm">${card.name}</div><div class="ct">${cardText(card)}</div><div class="pv">${pv}</div>`;
         const affordable = Game.you.canAfford(card);
         b.disabled = Game.turn !== 'you' || !affordable || Game.over;
         if (!affordable) b.classList.add('insufficient');
