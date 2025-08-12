@@ -57,16 +57,18 @@
   </div>
   <!-- Start Screen Modal -->
   <div class="modal" id="startModal">
-    <div class="box" style="text-align:center; width:min(96vw, 480px)">
-      <img id="titleImg" src="vortexicon.png" data-fallback="title.png" alt="VORTEKS" style="max-width:200px; max-height:60px; image-rendering:pixelated; margin:8px 0 14px" />
-      <div id="titleText" style="font-size:24px; color:var(--accent); margin:8px 0 14px; display:none">VORTEKS</div>
-      <div id="motto" style="font-size:12px; opacity:0.7; margin:4px 0 14px; color:var(--text)"></div>
-      <div style="display:flex; gap:8px; justify-content:center">
-        <button id="startBtn" class="btn">BUILD DECK</button>
-        <button id="quickBtn" class="btn">QUICK START</button>
-      </div>
-      <div style="margin-top:16px; display:flex; gap:8px; justify-content:center">
-        <button id="selfTest" class="btn" style="font-size:12px; opacity:0.7" title="Run built-in tests">DEBUG</button>
+    <div class="start-container">
+      <img id="titleImg" src="vortexicon.png" data-fallback="title.png" alt="VORTEKS" class="title-image" />
+      <div id="titleText" class="title-fallback">VORTEKS</div>
+      <div class="content-overlay">
+        <div id="motto" class="motto"></div>
+        <div class="button-group">
+          <button id="startBtn" class="btn">BUILD DECK</button>
+          <button id="quickBtn" class="btn">QUICK START</button>
+        </div>
+        <div class="debug-group">
+          <button id="selfTest" class="btn debug-btn" title="Run built-in tests">DEBUG</button>
+        </div>
       </div>
     </div>
   </div>
