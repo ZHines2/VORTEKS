@@ -28,6 +28,7 @@ const DEFEATED_KEY = 'vorteks-defeated';
 const QUIRK_KEY = 'vorteks-selected-quirk';
 
 let music;
+window.music = null; // Make music accessible globally for sound functions
 const muteBtn = document.getElementById('muteBtn');
 const helpBtn = document.getElementById('helpBtn');
 const unlocksBtn = document.getElementById('unlocksBtn');
@@ -141,6 +142,7 @@ function setupDefeatedOpponents() {
 
 function setupMusic() {
   music = new Audio(MUSIC_FILE);
+  window.music = music; // Make music accessible globally
   music.loop = true;
   music.volume = 0.7;
   // Restore mute state from localStorage
@@ -169,6 +171,42 @@ function updateMuteBtn(muted) {
   muteBtn.textContent = muted ? '🔇' : '🔊';
   muteBtn.setAttribute('aria-label', muted ? 'Unmute music' : 'Mute music');
 }
+
+// Create and play a bell sound for achievement unlocks
+window.playUnlockSound = function() {
+  try {
+    // Create a simple bell-like tone using Web Audio API
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    // Connect nodes
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    // Configure the bell sound
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(800, audioContext.currentTime); // High pitch
+    oscillator.frequency.exponentialRampToValueAtTime(400, audioContext.currentTime + 0.3); // Decay
+    
+    // Volume envelope for bell-like sound
+    gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+    gainNode.gain.linearRampToValueAtTime(0.15, audioContext.currentTime + 0.01); // Quick attack
+    gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.8); // Slow decay
+    
+    // Play the sound
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.8);
+    
+    // Respect music mute setting
+    if (window.music && window.music.muted) {
+      gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+    }
+  } catch (e) {
+    // Fallback: create a simple beep if Web Audio API fails
+    console.warn('Could not create bell sound:', e);
+  }
+};
 
 function setupHelp() {
   const helpModal = document.getElementById('helpModal');
@@ -406,10 +444,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof entry === 'string') {
       const p = document.createElement('div');
       
-      // Make unlock notifications more prominent
+      // Make unlock notifications less prominent but add sound
       if (entry.includes('UNLOCKED')) {
         p.classList.add('unlock-notification');
-        p.textContent = '🎉 ' + entry + ' 🎉';
+        p.textContent = '> ' + entry;
+        
+        // Play a bell sound for achievement unlocks
+        window.playUnlockSound();
       } else {
         p.textContent = '> ' + entry;
       }

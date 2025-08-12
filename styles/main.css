@@ -196,16 +196,13 @@ h1 {
 }
 
 .status .tag.achievement-progress {
-  background: var(--accent);
-  color: #000;
-  font-weight: bold;
-}
-
-.status .tag.energy-info {
   background: var(--panel);
   color: var(--accent);
-  border-color: var(--accent);
+  font-weight: normal;
+  border: 1px solid var(--accent);
+  opacity: 0.8;
 }
+
 
 .hand {
   display:flex;
@@ -283,11 +280,11 @@ button.card:disabled {
   left: 6px;
   background: var(--panel);
   color: var(--ink);
-  padding: 2px 4px;
-  font-size: 8px;
+  padding: 1px 3px;
+  font-size: 7px;
   border: 1px solid var(--border);
   border-radius: 2px;
-  opacity: 0.9;
+  opacity: 0.6;
   line-height: 1;
 }
 
@@ -323,20 +320,16 @@ button.card:disabled {
 }
 
 .log .unlock-notification {
-  background: var(--good);
-  color: #000;
+  background: var(--panel);
+  color: var(--accent);
   font-weight: bold;
-  padding: 4px 8px;
-  margin: 2px 0;
-  border-radius: 4px;
-  border: 2px solid var(--accent);
-  animation: unlock-flash 2s ease-in-out;
+  padding: 2px 6px;
+  margin: 1px 0;
+  border-radius: 2px;
+  border: 1px solid var(--accent);
 }
 
-@keyframes unlock-flash {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; transform: scale(1.02); }
-}
+
 
 /* Opp face */
 #oppFace{ 

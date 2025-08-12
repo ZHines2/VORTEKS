@@ -36,11 +36,6 @@ export function renderStatuses(p, nodeId, Game = null) {
     addTag(`Types: ${types} (${progress})`, 'achievement-progress');
   }
   
-  // Show energy information for planning
-  if (!p.isAI && Game && Game.playerTurnEnergySpent > 0) {
-    addTag(`⚡ spent: ${Game.playerTurnEnergySpent}`, 'energy-info');
-  }
-  
   function addTag(txt, extraClass = '') { 
     const s = document.createElement('span'); 
     s.className = 'tag' + (extraClass ? ' ' + extraClass : ''); 
