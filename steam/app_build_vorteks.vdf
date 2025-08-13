@@ -1,0 +1,42 @@
+"appbuild"
+{
+  "appid" "YOUR_STEAM_APP_ID"
+  "desc" "VORTEKS - Unicode Card Battler"
+  "buildoutput" "../steam-build-logs"
+  "contentroot" "../dist-steam/"
+  "setlive" ""
+  "preview" "0"
+  "local" ""
+  
+  "depots"
+  {
+    
+    "WINDOWS_DEPOT_ID"
+    {
+      "FileMapping"
+      {
+        "LocalPath" "win-unpacked/*"
+        "DepotPath" "."
+        "recursive" "1"
+      }
+    }
+    "MAC_DEPOT_ID"
+    {
+      "FileMapping"
+      {
+        "LocalPath" "mac/*"
+        "DepotPath" "."
+        "recursive" "1"
+      }
+    }
+    "LINUX_DEPOT_ID"
+    {
+      "FileMapping"
+      {
+        "LocalPath" "linux-unpacked/*"
+        "DepotPath" "."
+        "recursive" "1"
+      }
+    }
+  }
+}

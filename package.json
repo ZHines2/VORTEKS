@@ -1,21 +1,32 @@
 {
   "name": "vorteks",
   "version": "2.0.0",
-  "description": "VORTEKS - Unicode Minimal Card Battler Mobile App",
-  "main": "index.html",
+  "description": "VORTEKS - Unicode Minimal Card Battler - Web, Mobile & Steam",
+  "main": "electron/main.js",
+  "homepage": "./",
   "scripts": {
     "build": "npm run copy-assets",
-    "copy-assets": "cp -r *.html *.mp3 *.png *.json src data styles icons www/",
+    "copy-assets": "cp -r *.html *.mp3 *.png manifest.json src data styles icons www/",
     "start": "python3 -m http.server 8080",
     "ios": "npm run copy-assets && npx cap run ios",
     "android": "npm run copy-assets && npx cap run android",
     "sync": "npm run copy-assets && npx cap sync",
     "add:ios": "npx cap add ios",
-    "add:android": "npx cap add android"
+    "add:android": "npx cap add android",
+    "electron": "electron .",
+    "electron-dev": "NODE_ENV=development electron .",
+    "build-steam": "npm run build && electron-builder --win --mac --linux",
+    "build-steam-win": "npm run build && electron-builder --win",
+    "build-steam-mac": "npm run build && electron-builder --mac",
+    "build-steam-linux": "npm run build && electron-builder --linux",
+    "pack-steam": "npm run build && electron-builder --dir",
+    "steam-prep": "npm run build-steam && node scripts/steam-prep.js"
   },
   "keywords": [
     "card game",
     "mobile app",
+    "desktop app",
+    "steam game",
     "strategy",
     "unicode",
     "retro"
@@ -27,5 +38,48 @@
     "@capacitor/cli": "^7.4.2",
     "@capacitor/core": "^7.4.2",
     "@capacitor/ios": "^7.4.2"
+  },
+  "devDependencies": {
+    "electron": "^32.3.3",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.zhines2.vorteks",
+    "productName": "VORTEKS",
+    "directories": {
+      "output": "dist-steam"
+    },
+    "files": [
+      "*.html",
+      "*.mp3",
+      "*.png",
+      "*.json",
+      "src/**/*",
+      "data/**/*",
+      "styles/**/*",
+      "icons/**/*",
+      "electron/main.js",
+      "electron/preload.js"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "icons/icon-256x256.ico"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "icons/icon-512x512.icns",
+      "category": "public.app-category.games"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "icons/icon-512x512.png",
+      "category": "Game"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
   }
 }

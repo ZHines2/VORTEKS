@@ -1,0 +1,11 @@
+"DepotBuildConfig"
+{
+  "DepotID" "WINDOWS_DEPOT_ID"
+  "ContentRoot" "../dist-steam/"
+  "FileMapping"
+  {
+    "LocalPath" "win-unpacked/*"
+    "DepotPath" "."
+    "recursive" "1"
+  }
+}

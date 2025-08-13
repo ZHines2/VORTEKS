@@ -1,0 +1,11 @@
+"DepotBuildConfig"
+{
+  "DepotID" "MAC_DEPOT_ID"
+  "ContentRoot" "../dist-steam/"
+  "FileMapping"
+  {
+    "LocalPath" "mac/*"
+    "DepotPath" "."
+    "recursive" "1"
+  }
+}

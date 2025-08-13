@@ -1,22 +1,35 @@
 # VORTEKS
-Unicode Minimal Card Battler - **Now Available as Mobile App!**
+Unicode Minimal Card Battler - **Cross-Platform Gaming Experience!**
 
 A modular, browser-based tactical card game built with vanilla JavaScript ES6 modules. Battle AI opponents with unique personas using strategic card combinations, energy management, and powerful quirks in a retro Unicode aesthetic.
 
-**🚀 NEW: Mobile App for iOS and Android!** - Ready for App Store submission with Capacitor hybrid app framework.
+**🚀 AVAILABLE EVERYWHERE:**
+- 🌐 **Web Browser** - Original HTML5 experience  
+- 📱 **Mobile Apps** - iOS App Store & Google Play Store ready
+- 🖥️ **Desktop/Steam** - Windows, macOS, and Linux builds
 
 ## 🎮 Current Game State Summary
 
 **VORTEKS v2.0** features a complete card battler experience with 13 unique cards, 5 AI personas, 7 unlockable quirks, sophisticated mechanics, and extensive polish. All 34 automated tests pass, ensuring rock-solid gameplay reliability.
 
-## 📱 Mobile App Features
+## 📱🖥️ Multi-Platform Features
 
+### Mobile Apps (iOS & Android)
 - **iOS App Store Ready**: Complete Xcode project with proper app icons and launch screens
 - **Google Play Store Ready**: Android Studio project with signed APK/AAB build support  
 - **PWA Capabilities**: Progressive Web App features for installable web experience
 - **Touch Optimized**: Mobile-friendly UI with proper touch targets and gestures
-- **Offline Play**: No internet connection required - perfect for mobile gaming
-- **Cross-Platform**: Same codebase runs on web, iOS, and Android
+
+### Desktop Apps (Steam & Direct Download)
+- **Steam Distribution**: Full desktop builds for Windows, macOS, and Linux
+- **Native Performance**: Electron-based desktop applications with system integration
+- **Keyboard & Mouse**: Enhanced controls for desktop gaming experience
+- **Steam Features**: Ready for Steam Workshop, achievements, and social features
+
+### Universal Features
+- **Offline Play**: No internet connection required - perfect for any platform
+- **Cross-Platform Saves**: Game progress syncs across all platforms
+- **Consistent Experience**: Same gameplay and features across web, mobile, and desktop
 
 ## 🏗️ Project Structure
 
@@ -147,8 +160,30 @@ npx cap open ios     # Opens Xcode project
 npx cap open android # Opens Android Studio project
 ```
 
+### Desktop/Steam Development
+```bash
+# Install dependencies (includes Electron)
+npm install
+
+# Test desktop app in development
+npm run electron-dev
+
+# Build for all desktop platforms
+npm run build-steam
+
+# Build for specific platforms
+npm run build-steam-win    # Windows only
+npm run build-steam-mac    # macOS only  
+npm run build-steam-linux  # Linux only
+
+# Prepare for Steam distribution
+npm run steam-prep
+```
+
 ### App Store Submission
-See [APP_STORE_GUIDE.md](APP_STORE_GUIDE.md) for complete instructions on building and submitting to iOS App Store and Google Play Store.
+- **Mobile**: See [APP_STORE_GUIDE.md](APP_STORE_GUIDE.md) for iOS App Store and Google Play Store submission
+- **Steam**: See [STEAM_GUIDE.md](STEAM_GUIDE.md) for Steam distribution and store page setup
+- **Desktop Direct**: Distribute built applications from `dist-steam/` directory
 
 ### Development
 ```bash

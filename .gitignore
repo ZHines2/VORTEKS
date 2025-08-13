@@ -17,16 +17,24 @@ node_modules/
 *.swo
 *~
 
-# Build artifacts (if any build system is added later)
+# Build artifacts
 dist/
 build/
+dist-steam/
+
+# Steam build files
+steam-build-logs/
 
 # Backup files
 *_old.*
 *.bak
 README_old.md
 
+# Mobile platforms
 # Capacitor
 ios/
 android/
 www/
+
+# Desktop app builds
+electron/dist/
