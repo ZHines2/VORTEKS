@@ -1,11 +1,22 @@
 # VORTEKS
-Unicode Minimal Card Battler
+Unicode Minimal Card Battler - **Now Available as Mobile App!**
 
 A modular, browser-based tactical card game built with vanilla JavaScript ES6 modules. Battle AI opponents with unique personas using strategic card combinations, energy management, and powerful quirks in a retro Unicode aesthetic.
+
+**🚀 NEW: Mobile App for iOS and Android!** - Ready for App Store submission with Capacitor hybrid app framework.
 
 ## 🎮 Current Game State Summary
 
 **VORTEKS v2.0** features a complete card battler experience with 13 unique cards, 5 AI personas, 7 unlockable quirks, sophisticated mechanics, and extensive polish. All 34 automated tests pass, ensuring rock-solid gameplay reliability.
+
+## 📱 Mobile App Features
+
+- **iOS App Store Ready**: Complete Xcode project with proper app icons and launch screens
+- **Google Play Store Ready**: Android Studio project with signed APK/AAB build support  
+- **PWA Capabilities**: Progressive Web App features for installable web experience
+- **Touch Optimized**: Mobile-friendly UI with proper touch targets and gestures
+- **Offline Play**: No internet connection required - perfect for mobile gaming
+- **Cross-Platform**: Same codebase runs on web, iOS, and Android
 
 ## 🏗️ Project Structure
 
@@ -116,6 +127,28 @@ open index.html
 python3 -m http.server 8080
 # Then visit http://localhost:8080
 ```
+
+### Mobile App Development
+```bash
+# Install dependencies
+npm install
+
+# Build and sync web assets to mobile platforms
+npm run sync
+
+# Run on iOS simulator (requires macOS + Xcode)
+npm run ios
+
+# Run on Android emulator (requires Android Studio)
+npm run android
+
+# Open native projects for app store builds
+npx cap open ios     # Opens Xcode project
+npx cap open android # Opens Android Studio project
+```
+
+### App Store Submission
+See [APP_STORE_GUIDE.md](APP_STORE_GUIDE.md) for complete instructions on building and submitting to iOS App Store and Google Play Store.
 
 ### Development
 ```bash

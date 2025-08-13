@@ -25,3 +25,8 @@ build/
 *_old.*
 *.bak
 README_old.md
+
+# Capacitor
+ios/
+android/
+www/
