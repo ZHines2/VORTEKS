@@ -10,5 +10,6 @@ export const icons = {
   star: '✨', 
   dagger: '🗡', 
   loop: '⟳',
-  reconsider: '🔀'
+  reconsider: '🔀',
+  purge: '✨'
 };

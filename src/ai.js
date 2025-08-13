@@ -11,7 +11,8 @@ export function makePersonaDeck(kind) {
   if (kind === 'Doctor') { 
     counts.heart += 2; 
     counts.shield += 1; 
-    counts.dagger -= 1; 
+    counts.dagger -= 1;
+    counts.purge = 2;  // Doctor uses purge cards
   }
   if (kind === 'Bruiser') { 
     counts.swords += 2; 
