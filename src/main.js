@@ -5,6 +5,7 @@ import { runSelfTests } from './tests.js';
 import { initFaceGenerator, drawOppFace, setOpponentName } from './face-generator.js';
 import { makePersonaDeck } from './ai.js';
 import { MOTTOS } from './mottos.js';
+import { CARDS } from '../data/cards.js';
 import { 
   getUnlockedCards, 
   isCardUnlocked, 
@@ -607,7 +608,10 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       
       const status = card.unlocked ? 'Unlocked' : card.progress;
-      div.innerHTML = `<strong>${card.id.toUpperCase()}</strong><br/><small>${card.description}</small><br/><em>${status}</em>`;
+      // Get the proper card name from CARDS data
+      const cardData = CARDS.find(c => c.id === card.id);
+      const cardName = cardData ? cardData.name.toUpperCase() : card.id.toUpperCase();
+      div.innerHTML = `<strong>${cardName}</strong><br/><small>${card.description}</small><br/><em>${status}</em>`;
       cardsGrid.appendChild(div);
     });
     

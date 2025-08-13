@@ -275,8 +275,8 @@ const PERSONA_UNLOCKS = {
   // Doctor persona unlocks Purge card
   'doctor': 'purge'
   // Example future entries:
-  // 'Glacier': 'snow',
-  // 'Assassin': 'dagger'
+  // 'Glacier': 'snow',  // would unlock Freeze card
+  // 'Assassin': 'dagger'  // would unlock Pierce card
 };
 
 // Quirks state management
