@@ -626,6 +626,29 @@ export const Game = {
       if (status.self.droidProcArm && !simulate) { 
         state.me.status.droidProcNext = true; 
       }
+      if (status.self.cleanse && !simulate) {
+        // Purge effect: clear all status effects
+        const isPlayer = (state.me === this.you);
+        if (isPlayer) {
+          logYou('cleanses all status effects');
+        } else {
+          logOpp('cleanses all status effects');
+        }
+        
+        // Clear debuffs
+        state.me.status.burn = 0;
+        state.me.status.burnTurns = 0;
+        state.me.status.frozenNext = 0;
+        
+        // Clear buffs (this is a design choice - should cleanse remove buffs too?)
+        state.me.status.nextPlus = 0;
+        state.me.status.curiosityPower = false;
+        state.me.status.droidProcNext = false;
+        state.me.status.curiosityNextDraw = false;
+        
+        // FX: Purge effect
+        if (window.fxPurge) window.fxPurge(state.me);
+      }
     }
     
     // 4) special: Echo

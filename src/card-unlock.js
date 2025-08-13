@@ -129,6 +129,13 @@ const UNLOCK_META = [
     description: 'Defeat a Robot opponent.',
     progressHint: () => 'Find and defeat a rare Robot opponent.',
     check: () => false // Handled by persona defeat system
+  },
+  {
+    id: 'purge',
+    kind: 'persona',
+    description: 'Defeat a Doctor opponent.',
+    progressHint: () => 'Find and defeat a Doctor opponent.',
+    check: () => false // Handled by persona defeat system
   }
 ];
 
@@ -264,7 +271,9 @@ const PERSONA_UNLOCKS = {
   'feline': 'curiosity',
   // Robot persona unlocks Droid Protocol card
   'robot': 'droid',
-  'automaton': 'droid'
+  'automaton': 'droid',
+  // Doctor persona unlocks Purge card
+  'doctor': 'purge'
   // Example future entries:
   // 'Glacier': 'snow',
   // 'Assassin': 'dagger'
