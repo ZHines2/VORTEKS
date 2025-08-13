@@ -444,6 +444,11 @@ function resetUnlocks() {
   saveState(_state);
 }
 
+function resetQuirks() {
+  _quirksState = freshQuirksState();
+  saveQuirksState(_quirksState);
+}
+
 function debugUnlock(id) { unlockCard(id, 'debug'); }
 
 // Quirks functions
@@ -569,6 +574,7 @@ export {
   getUnlockedQuirks,
   unlockQuirk,
   resetUnlocks,
+  resetQuirks,
   debugUnlock,
   checkPersonaDefeatUnlocks,
   checkAchievementUnlocks,
