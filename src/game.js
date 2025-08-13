@@ -718,6 +718,8 @@ export const Game = {
   },
   
   checkWin() {
+    if (this.over) return; // Prevent multiple streak increments if already won
+    
     if (this.you.hp <= 0 || this.opp.hp <= 0) {
       this.over = true; 
       const youWin = this.opp.hp <= 0 && this.you.hp > 0;
