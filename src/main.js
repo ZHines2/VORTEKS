@@ -262,55 +262,130 @@ function setupDefeatedOpponents() {
     }
   });
 
-  // VORTEK interaction handlers
+  // VORTEK interaction handlers with personality-driven responses
   feedCompanionBtn.addEventListener('click', () => {
     if (feedCreature()) {
       renderCompanionData();
-      showCompanionMessage('Fed your VORTEK! Energy restored.');
+      const creature = getCreature();
+      let message = 'Fed your VORTEK! Energy restored.';
+      
+      if (creature.loyalty >= 70) message = `${creature.name} gratefully accepts your gift! Energy restored.`;
+      else if (creature.playfulness >= 70) message = `${creature.name} happily munches away! Energy restored.`;
+      else if (creature.happiness >= 80) message = `${creature.name} joyfully enjoys the meal! Energy restored.`;
+      
+      showCompanionMessage(message);
     } else {
-      showCompanionMessage('Your VORTEK is not hungry right now.');
+      const creature = getCreature();
+      let message = 'Your VORTEK is not hungry right now.';
+      
+      if (creature.loyalty >= 70) message = `${creature.name} appreciates the offer but isn't hungry.`;
+      else if (creature.focus >= 70) message = `${creature.name} is focused on other things right now.`;
+      
+      showCompanionMessage(message);
     }
   });
 
   playCompanionBtn.addEventListener('click', () => {
     if (playWithCreature()) {
       renderCompanionData();
-      showCompanionMessage('Played with your VORTEK! Happiness increased.');
+      const creature = getCreature();
+      let message = 'Played with your VORTEK! Happiness increased.';
+      
+      if (creature.playfulness >= 70) message = `${creature.name} absolutely loves playing! Happiness soars!`;
+      else if (creature.loyalty >= 70) message = `${creature.name} cherishes this bonding time! Happiness increased.`;
+      else if (creature.creativity >= 70) message = `${creature.name} plays with artistic flair! Happiness increased.`;
+      
+      showCompanionMessage(message);
     } else {
-      showCompanionMessage('Your VORTEK is too tired to play right now.');
+      const creature = getCreature();
+      let message = 'Your VORTEK is too tired to play right now.';
+      
+      if (creature.loyalty >= 70) message = `${creature.name} wants to play but needs rest first.`;
+      else if (creature.wisdom >= 70) message = `${creature.name} wisely knows rest is needed before play.`;
+      
+      showCompanionMessage(message);
     }
   });
 
   meditateCompanionBtn.addEventListener('click', () => {
     if (meditateWithCreature()) {
       renderCompanionData();
-      showCompanionMessage('Meditated together! Wisdom and focus increased.');
+      const creature = getCreature();
+      let message = 'Meditated together! Wisdom and focus increased.';
+      
+      if (creature.focus >= 70) message = `${creature.name} enters deep meditation! Wisdom and focus greatly increased.`;
+      else if (creature.wisdom >= 70) message = `${creature.name} shares profound insights! Wisdom and focus increased.`;
+      else if (creature.loyalty >= 70) message = `${creature.name} finds peace in your presence! Wisdom and focus increased.`;
+      
+      showCompanionMessage(message);
     } else {
-      showCompanionMessage('Your VORTEK needs more energy to meditate.');
+      const creature = getCreature();
+      let message = 'Your VORTEK needs more energy to meditate.';
+      
+      if (creature.wisdom >= 70) message = `${creature.name} knows meditation requires proper energy.`;
+      else if (creature.focus >= 70) message = `${creature.name} cannot concentrate without sufficient energy.`;
+      
+      showCompanionMessage(message);
     }
   });
 
   exploreRoomBtn.addEventListener('click', () => {
     if (exploreRoom()) {
       renderCompanionData();
-      showCompanionMessage('Explored the room together! Curiosity increased.');
+      const creature = getCreature();
+      let message = 'Explored the room together! Curiosity increased.';
+      
+      if (creature.curiosity >= 70) message = `${creature.name} discovers fascinating details! Curiosity greatly increased.`;
+      else if (creature.creativity >= 70) message = `${creature.name} finds artistic inspiration! Curiosity increased.`;
+      else if (creature.playfulness >= 70) message = `${creature.name} turns exploration into play! Curiosity increased.`;
+      
+      showCompanionMessage(message);
     } else {
-      showCompanionMessage('Need to wait before exploring again.');
+      const creature = getCreature();
+      let message = 'Need to wait before exploring again.';
+      
+      if (creature.curiosity >= 70) message = `${creature.name} is still processing the last discovery.`;
+      else if (creature.wisdom >= 70) message = `${creature.name} believes good exploration takes time.`;
+      
+      showCompanionMessage(message);
     }
   });
 
   function renderCompanionData() {
     const creatureInfo = getCreatureInfo();
     
-    // Update VORTEK display elements
+    // Update VORTEK display elements with dynamic appearance
     document.getElementById('companionEmoji').textContent = creatureInfo.stageEmoji;
     document.getElementById('companionName').textContent = creatureInfo.name;
-    document.getElementById('companionStage').textContent = creatureInfo.stageName;
+    
+    // Update stage display with personality info
+    const stageText = creatureInfo.personalityDisplay ? 
+      `${creatureInfo.stageName} (${creatureInfo.personalityDisplay})` : 
+      creatureInfo.stageName;
+    document.getElementById('companionStage').textContent = stageText;
     document.getElementById('companionLevel').textContent = creatureInfo.level;
+    
+    // Add visual effects display
+    const emojiElement = document.getElementById('companionEmoji');
+    if (creatureInfo.visualEffects && creatureInfo.visualEffects.length > 0) {
+      emojiElement.title = creatureInfo.visualEffects.join(' • ');
+      emojiElement.style.filter = 'drop-shadow(0 0 8px rgba(119, 255, 221, 0.6))';
+    } else {
+      emojiElement.title = '';
+      emojiElement.style.filter = 'drop-shadow(0 0 4px rgba(119, 255, 221, 0.3))';
+    }
     
     // Update room size class based on evolution stage
     const roomElement = document.getElementById('vortekRoom');
     roomElement.className = `vortek-${creatureInfo.stageSize}`;
+    
+    // Add personality-based visual effects
+    if (creatureInfo.happiness >= 90) roomElement.classList.add('happiness-high');
+    if (creatureInfo.energy >= 95) roomElement.classList.add('energy-high');
+    if (creatureInfo.power >= 85 || creatureInfo.courage >= 85) roomElement.classList.add('power-high');
+    if (creatureInfo.creativity >= 80) roomElement.classList.add('creativity-high');
+    if (creatureInfo.focus >= 80) roomElement.classList.add('focus-high');
+    if (creatureInfo.playfulness >= 80) roomElement.classList.add('playfulness-high');
     
     // Update core stats
     document.getElementById('companionHappiness').textContent = Math.floor(creatureInfo.happiness);
@@ -344,10 +419,10 @@ function setupDefeatedOpponents() {
     document.getElementById('companionExpNeeded').textContent = creatureInfo.expNeeded;
     document.getElementById('expBar').style.width = `${creatureInfo.expProgress}%`;
     
-    // Update influences
-    document.getElementById('battleInfluence').textContent = creatureInfo.battleInfluence;
-    document.getElementById('cardMastery').textContent = creatureInfo.cardMastery;
-    document.getElementById('strategicDepth').textContent = creatureInfo.strategicDepth;
+    // Update influences with performance modifiers
+    document.getElementById('battleInfluence').textContent = `${creatureInfo.battleInfluence}% (+${creatureInfo.performanceModifiers.battleBonus}% battle)`;
+    document.getElementById('cardMastery').textContent = `${creatureInfo.cardMastery}% (${creatureInfo.performanceModifiers.experienceMultiplier.toFixed(1)}x exp)`;
+    document.getElementById('strategicDepth').textContent = `${creatureInfo.strategicDepth}% (${(100 - creatureInfo.performanceModifiers.energyEfficiency * 100).toFixed(0)}% efficiency)`;
     
     // Update status messages
     document.getElementById('companionStatus').textContent = creatureInfo.statusMessage;

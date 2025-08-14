@@ -204,7 +204,11 @@ export function updateCreatureFromTelemetry() {
 function gainExperience(amount) {
   if (!currentCreature || amount <= 0) return;
   
-  currentCreature.experience += amount;
+  // Apply performance modifier for experience gain
+  const modifiers = getPerformanceModifiers(currentCreature);
+  const adjustedAmount = Math.floor(amount * modifiers.experienceMultiplier);
+  
+  currentCreature.experience += adjustedAmount;
   
   // Level up check
   const expNeeded = currentCreature.level * 10;
@@ -212,9 +216,10 @@ function gainExperience(amount) {
     currentCreature.level++;
     currentCreature.experience -= expNeeded;
     
-    // Level up bonuses
-    currentCreature.happiness = Math.min(100, currentCreature.happiness + 10);
-    currentCreature.energy = Math.min(100, currentCreature.energy + 15);
+    // Level up bonuses with personality influence
+    const loyaltyBonus = Math.floor(modifiers.loyaltyBonus / 10);
+    currentCreature.happiness = Math.min(100, currentCreature.happiness + 10 + loyaltyBonus);
+    currentCreature.energy = Math.min(100, currentCreature.energy + 15 + loyaltyBonus);
     
     // Check for evolution
     checkEvolution();
@@ -303,19 +308,31 @@ export function playWithCreature() {
   if (!currentCreature) return false;
   
   const now = Date.now();
+  const modifiers = getPerformanceModifiers(currentCreature);
+  
+  // Reduced cooldown based on performance modifiers
+  const baseCooldown = 0.5; // 30 minutes
+  const adjustedCooldown = baseCooldown * (1 - modifiers.cooldownReduction / 100);
   const hoursSinceLastPlay = (now - currentCreature.lastPlayed) / (1000 * 60 * 60);
   
-  if (hoursSinceLastPlay < 0.5) return false; // Can't play too often
+  if (hoursSinceLastPlay < adjustedCooldown) return false;
   
-  currentCreature.happiness = Math.min(100, currentCreature.happiness + 15);
-  currentCreature.playfulness = Math.min(100, currentCreature.playfulness + 8);
-  currentCreature.loyalty = Math.min(100, currentCreature.loyalty + 3);
-  currentCreature.energy = Math.max(0, currentCreature.energy - 5); // Playing uses energy
+  // Enhanced gains based on personality
+  const happinessGain = 15 + Math.floor(modifiers.loyaltyBonus / 10);
+  const playfulnessGain = 8 + Math.floor(currentCreature.playfulness >= 70 ? 4 : 0);
+  const loyaltyGain = 3 + Math.floor(modifiers.loyaltyBonus / 20);
+  const energyCost = Math.max(2, Math.floor(5 * modifiers.energyEfficiency));
+  
+  currentCreature.happiness = Math.min(100, currentCreature.happiness + happinessGain);
+  currentCreature.playfulness = Math.min(100, currentCreature.playfulness + playfulnessGain);
+  currentCreature.loyalty = Math.min(100, currentCreature.loyalty + loyaltyGain);
+  currentCreature.energy = Math.max(0, currentCreature.energy - energyCost);
   currentCreature.lastPlayed = now;
   currentCreature.needsAttention = false;
   
-  // Small chance to gain experience from play
-  if (Math.random() < 0.3) {
+  // Enhanced experience chance for highly playful VORTEKs
+  const expChance = currentCreature.playfulness >= 70 ? 0.5 : 0.3;
+  if (Math.random() < expChance) {
     gainExperience(1);
   }
   
@@ -326,12 +343,20 @@ export function playWithCreature() {
 export function meditateWithCreature() {
   if (!currentCreature) return false;
   
-  if (currentCreature.energy < 10) return false; // Need energy to meditate
+  const modifiers = getPerformanceModifiers(currentCreature);
+  const energyCost = Math.max(5, Math.floor(10 * modifiers.energyEfficiency));
   
-  currentCreature.wisdom = Math.min(100, currentCreature.wisdom + 5);
-  currentCreature.focus = Math.min(100, currentCreature.focus + 7);
-  currentCreature.loyalty = Math.min(100, currentCreature.loyalty + 2);
-  currentCreature.energy -= 10;
+  if (currentCreature.energy < energyCost) return false;
+  
+  // Enhanced gains for focused/wise VORTEKs
+  const wisdomGain = 5 + (currentCreature.focus >= 70 ? 3 : 0);
+  const focusGain = 7 + (currentCreature.wisdom >= 70 ? 3 : 0);
+  const loyaltyGain = 2 + Math.floor(modifiers.loyaltyBonus / 25);
+  
+  currentCreature.wisdom = Math.min(100, currentCreature.wisdom + wisdomGain);
+  currentCreature.focus = Math.min(100, currentCreature.focus + focusGain);
+  currentCreature.loyalty = Math.min(100, currentCreature.loyalty + loyaltyGain);
+  currentCreature.energy -= energyCost;
   currentCreature.happiness = Math.min(100, currentCreature.happiness + 5);
   
   gainExperience(1);
@@ -344,12 +369,15 @@ export function meditateWithCreature() {
 export function getCreatureInfo() {
   const creature = getCreature();
   const stage = CREATURE_STAGES[creature.stage];
+  const appearance = getCreatureAppearance(creature);
   
   return {
     ...creature,
     stageName: stage.name,
-    stageEmoji: stage.emoji,
+    stageEmoji: appearance.emoji,
     stageSize: stage.size,
+    visualEffects: appearance.effects,
+    personalityDisplay: appearance.personality,
     expNeeded: creature.level * 10,
     expProgress: (creature.experience / (creature.level * 10)) * 100,
     
@@ -378,7 +406,10 @@ export function getCreatureInfo() {
     // Status messages
     statusMessage: getStatusMessage(creature),
     moodMessage: getMoodMessage(creature),
-    roomActivity: getRoomActivityMessage(creature)
+    roomActivity: getRoomActivityMessage(creature),
+    
+    // Performance modifiers
+    performanceModifiers: getPerformanceModifiers(creature)
   };
 }
 
@@ -391,34 +422,233 @@ function getRoomActivityMessage(creature) {
   return "Living happily in a fully furnished room!";
 }
 
+// Dynamic appearance based on personality stats
+function getCreatureAppearance(creature) {
+  const stage = CREATURE_STAGES[creature.stage];
+  let baseEmoji = stage.emoji;
+  let effects = [];
+  let personality = '';
+  
+  // Find dominant personality traits (stats above 70)
+  const dominantTraits = [];
+  if (creature.curiosity >= 70) dominantTraits.push('curious');
+  if (creature.creativity >= 70) dominantTraits.push('creative');
+  if (creature.loyalty >= 70) dominantTraits.push('loyal');
+  if (creature.playfulness >= 70) dominantTraits.push('playful');
+  if (creature.focus >= 70) dominantTraits.push('focused');
+  if (creature.courage >= 70) dominantTraits.push('brave');
+  
+  // Modify appearance based on dominant traits and stage
+  if (creature.stage === 'EGG') {
+    // Egg variations based on stats
+    if (creature.happiness >= 80) baseEmoji = '✨🥚✨';
+    else if (creature.energy >= 80) baseEmoji = '⚡🥚⚡';
+    else if (creature.creativity >= 60) baseEmoji = '🎨🥚';
+    else if (creature.curiosity >= 60) baseEmoji = '🔍🥚';
+    
+    personality = dominantTraits.length > 0 ? `Showing signs of ${dominantTraits.join(', ')} nature` : 'Developing personality...';
+  } else {
+    // Post-hatch appearance modifications
+    if (dominantTraits.includes('creative') && dominantTraits.includes('playful')) {
+      baseEmoji = stage.emoji + '🎨';
+      personality = 'Artistic Entertainer';
+    } else if (dominantTraits.includes('brave') && dominantTraits.includes('focused')) {
+      baseEmoji = '⚔️' + stage.emoji;
+      personality = 'Fierce Warrior';
+    } else if (dominantTraits.includes('loyal') && dominantTraits.includes('curious')) {
+      baseEmoji = stage.emoji + '💎';
+      personality = 'Devoted Explorer';
+    } else if (dominantTraits.includes('creative')) {
+      baseEmoji = '🎭' + stage.emoji;
+      personality = 'Creative Soul';
+    } else if (dominantTraits.includes('brave')) {
+      baseEmoji = stage.emoji + '🛡️';
+      personality = 'Bold Adventurer';
+    } else if (dominantTraits.includes('playful')) {
+      baseEmoji = '🎈' + stage.emoji;
+      personality = 'Joyful Spirit';
+    } else if (dominantTraits.includes('focused')) {
+      baseEmoji = '🧩' + stage.emoji;
+      personality = 'Wise Scholar';
+    } else if (dominantTraits.includes('curious')) {
+      baseEmoji = '🔮' + stage.emoji;
+      personality = 'Keen Observer';
+    } else if (dominantTraits.includes('loyal')) {
+      baseEmoji = stage.emoji + '💝';
+      personality = 'Faithful Companion';
+    } else {
+      personality = 'Balanced Being';
+    }
+  }
+  
+  // Add visual effects based on current state
+  if (creature.happiness >= 90) effects.push('✨ Radiating Joy');
+  if (creature.energy >= 95) effects.push('⚡ Energetic Aura');
+  if (creature.wisdom >= 85) effects.push('🧠 Thoughtful Glow');
+  if (creature.power >= 85) effects.push('💪 Powerful Presence');
+  
+  // Special effects for extreme stat combinations
+  if (creature.courage >= 80 && creature.power >= 80) {
+    effects.push('🔥 Battle Ready');
+  }
+  if (creature.creativity >= 80 && creature.happiness >= 80) {
+    effects.push('🌈 Inspirational');
+  }
+  if (creature.loyalty >= 90 && creature.focus >= 80) {
+    effects.push('💫 Harmonious Bond');
+  }
+  
+  return {
+    emoji: baseEmoji,
+    effects: effects,
+    personality: personality
+  };
+}
+
+// Performance modifiers based on stats
+function getPerformanceModifiers(creature) {
+  return {
+    // Experience gain multiplier (0.5x to 2.0x based on wisdom and focus)
+    experienceMultiplier: 0.5 + ((creature.wisdom + creature.focus) / 200) * 1.5,
+    
+    // Battle performance boost (0% to 25% based on courage and power)
+    battleBonus: Math.floor(((creature.courage + creature.power) / 200) * 25),
+    
+    // Energy efficiency (better stats = less energy consumed)
+    energyEfficiency: 1 - ((creature.focus + creature.wisdom) / 300),
+    
+    // Interaction cooldown reduction (0% to 50% based on relevant stats)
+    cooldownReduction: Math.floor(((creature.playfulness + creature.energy) / 200) * 50),
+    
+    // Room exploration effectiveness (higher curiosity = better exploration)
+    explorationBonus: Math.floor((creature.curiosity / 100) * 100),
+    
+    // Creativity bonus for artistic interactions
+    creativityBonus: Math.floor((creature.creativity / 100) * 100),
+    
+    // Loyalty affects stat gains from interactions
+    loyaltyBonus: Math.floor((creature.loyalty / 100) * 50)
+  };
+}
+
 function getStatusMessage(creature) {
+  const modifiers = getPerformanceModifiers(creature);
+  
+  // Priority messages based on urgent needs
   if (creature.needsAttention) return "Needs attention!";
-  if (creature.energy < 20) return "Feeling tired...";
-  if (creature.happiness < 30) return "Feeling sad...";
-  if (creature.happiness > 80 && creature.energy > 60) return "Very happy!";
+  if (creature.energy < 20) {
+    if (creature.playfulness >= 70) return "Too tired to play...";
+    if (creature.focus >= 70) return "Too drained to concentrate...";
+    return "Feeling tired...";
+  }
+  if (creature.happiness < 30) {
+    if (creature.loyalty >= 70) return "Missing you deeply...";
+    if (creature.courage >= 70) return "Feeling discouraged...";
+    return "Feeling sad...";
+  }
+  
+  // Positive status messages based on personality
+  if (creature.happiness > 80 && creature.energy > 60) {
+    if (creature.playfulness >= 70) return "Bouncing with joy!";
+    if (creature.creativity >= 70) return "Bursting with inspiration!";
+    if (creature.courage >= 70) return "Ready for adventure!";
+    return "Very happy!";
+  }
+  
+  // Personality-driven neutral states
+  if (creature.curiosity >= 70 && creature.wisdom > 60) return "Pondering mysteries...";
+  if (creature.creativity >= 70) return "Feeling artistic...";
+  if (creature.focus >= 70) return "In deep concentration...";
+  if (creature.courage >= 70) return "Feeling bold...";
+  if (creature.loyalty >= 70) return "Devoted and faithful...";
+  if (creature.playfulness >= 70) return "Looking for fun...";
   if (creature.wisdom > 80) return "Deep in thought...";
+  
   return "Content";
 }
 
 function getMoodMessage(creature) {
   const telemetry = getTelemetry();
+  const modifiers = getPerformanceModifiers(creature);
   
-  if (creature.level >= 50) return "A legendary VORTEKS master!";
-  if (creature.level >= 30) return "Mastering the art of card combat...";
-  if (creature.level >= 15) return "Growing stronger with each battle!";
-  if (creature.level >= 5) return "Learning your battle strategies...";
+  // High-level achievement messages
+  if (creature.level >= 50) {
+    if (creature.loyalty >= 90) return "A legendary bond forged through countless battles!";
+    if (creature.courage >= 90) return "Fearless legendary VORTEKS master!";
+    return "A legendary VORTEKS master!";
+  }
   
-  if (telemetry.battles.currentStreak >= 10) return "Amazed by your incredible streak!";
-  if (telemetry.battles.currentStreak > 5) return "Inspired by your victories!";
-  if (telemetry.battles.currentStreak > 2) return "Excited by your winning streak!";
+  if (creature.level >= 30) {
+    if (creature.creativity >= 80) return "Masterfully creating new battle strategies!";
+    if (creature.focus >= 80) return "Precisely mastering card combat techniques!";
+    return "Mastering the art of card combat...";
+  }
   
-  if (telemetry.battles.total > 100) return "Studying your vast experience...";
-  if (telemetry.battles.total > 50) return "Learning from your many battles...";
-  if (telemetry.battles.total > 20) return "Watching your tactical evolution...";
-  if (telemetry.battles.total > 10) return "Observing your growing skill...";
+  if (creature.level >= 15) {
+    if (creature.curiosity >= 70) return "Eagerly studying your every move!";
+    if (creature.playfulness >= 70) return "Joyfully growing stronger through play!";
+    return "Growing stronger with each battle!";
+  }
   
-  if (creature.stage === 'EGG') return "Preparing to hatch into something amazing!";
-  if (creature.stage === 'HATCHLING') return "Taking first steps in the VORTEKS world!";
+  if (creature.level >= 5) {
+    if (creature.wisdom >= 60) return "Thoughtfully analyzing your battle strategies...";
+    if (creature.loyalty >= 70) return "Devotedly learning from your guidance...";
+    return "Learning your battle strategies...";
+  }
+  
+  // Battle streak responses with personality
+  if (telemetry.battles.currentStreak >= 10) {
+    if (creature.courage >= 70) return "Fearlessly celebrating your incredible victories!";
+    if (creature.loyalty >= 70) return "Proudly admiring your unbeatable streak!";
+    return "Amazed by your incredible streak!";
+  }
+  
+  if (telemetry.battles.currentStreak > 5) {
+    if (creature.playfulness >= 70) return "Dancing with excitement at your victories!";
+    if (creature.creativity >= 70) return "Artistically inspired by your winning style!";
+    return "Inspired by your victories!";
+  }
+  
+  if (telemetry.battles.currentStreak > 2) {
+    if (creature.focus >= 70) return "Intently studying your winning patterns!";
+    return "Excited by your winning streak!";
+  }
+  
+  // Experience-based messages with personality
+  if (telemetry.battles.total > 100) {
+    if (creature.wisdom >= 80) return "Deeply contemplating your vast expertise...";
+    if (creature.curiosity >= 70) return "Fascinated by your extensive battle knowledge!";
+    return "Studying your vast experience...";
+  }
+  
+  if (telemetry.battles.total > 50) {
+    if (creature.loyalty >= 70) return "Faithfully absorbing lessons from your battles...";
+    return "Learning from your many battles...";
+  }
+  
+  if (telemetry.battles.total > 20) {
+    if (creature.focus >= 60) return "Carefully observing your tactical evolution...";
+    return "Watching your tactical evolution...";
+  }
+  
+  if (telemetry.battles.total > 10) {
+    if (creature.curiosity >= 60) return "Curiously studying your developing skills...";
+    return "Observing your growing skill...";
+  }
+  
+  // Early stage messages with personality hints
+  if (creature.stage === 'EGG') {
+    if (creature.creativity >= 50) return "Dreaming of artistic possibilities!";
+    if (creature.courage >= 50) return "Preparing for brave adventures!";
+    if (creature.curiosity >= 50) return "Sensing exciting discoveries ahead!";
+    return "Preparing to hatch into something amazing!";
+  }
+  
+  if (creature.stage === 'HATCHLING') {
+    if (creature.playfulness >= 60) return "Playfully exploring the VORTEKS world!";
+    if (creature.loyalty >= 60) return "Bonding closely while taking first steps!";
+    return "Taking first steps in the VORTEKS world!";
+  }
   
   return "Beginning a new adventure together...";
 }
@@ -468,21 +698,31 @@ export function exploreRoom() {
   if (!currentCreature) return false;
   
   const now = Date.now();
+  const modifiers = getPerformanceModifiers(currentCreature);
+  
+  // Reduced cooldown for curious VORTEKs
+  const baseCooldown = 0.25; // 15 minutes
+  const adjustedCooldown = baseCooldown * (1 - modifiers.explorationBonus / 200);
   const hoursSinceLastExplore = (now - currentCreature.lastExplored) / (1000 * 60 * 60);
   
-  if (hoursSinceLastExplore < 0.25) return false; // Can't explore too often (15 min cooldown)
+  if (hoursSinceLastExplore < adjustedCooldown) return false;
   
-  // Exploration increases curiosity and may unlock room elements
-  currentCreature.curiosity = Math.min(100, currentCreature.curiosity + 3);
-  currentCreature.happiness = Math.min(100, currentCreature.happiness + 2);
-  currentCreature.energy = Math.max(0, currentCreature.energy - 3);
+  // Enhanced exploration gains for curious VORTEKs
+  const curiosityGain = 3 + (currentCreature.curiosity >= 70 ? 2 : 0);
+  const happinessGain = 2 + Math.floor(modifiers.explorationBonus / 50);
+  const energyCost = Math.max(1, Math.floor(3 * modifiers.energyEfficiency));
+  
+  currentCreature.curiosity = Math.min(100, currentCreature.curiosity + curiosityGain);
+  currentCreature.happiness = Math.min(100, currentCreature.happiness + happinessGain);
+  currentCreature.energy = Math.max(0, currentCreature.energy - energyCost);
   currentCreature.lastExplored = now;
   
   // Chance to unlock new room elements based on level and stats
   unlockRoomElements();
   
-  // Small chance to gain experience from exploration
-  if (Math.random() < 0.4) {
+  // Enhanced experience chance for curious VORTEKs
+  const expChance = 0.4 + (modifiers.explorationBonus / 200);
+  if (Math.random() < expChance) {
     gainExperience(1);
   }
   
@@ -530,51 +770,80 @@ export function interactWithRoomElement(elementName) {
   if (!currentCreature || !currentCreature.roomElements[elementName]?.unlocked) return false;
   
   const element = currentCreature.roomElements[elementName];
+  const modifiers = getPerformanceModifiers(currentCreature);
   let interacted = false;
   
   switch (elementName) {
     case 'bed':
       if (currentCreature.energy < 90) {
-        currentCreature.energy = Math.min(100, currentCreature.energy + 15);
-        currentCreature.happiness += 3;
+        // Enhanced rest for loyal VORTEKs
+        const energyGain = 15 + Math.floor(modifiers.loyaltyBonus / 10);
+        const happinessGain = 3 + (currentCreature.loyalty >= 70 ? 2 : 0);
+        
+        currentCreature.energy = Math.min(100, currentCreature.energy + energyGain);
+        currentCreature.happiness = Math.min(100, currentCreature.happiness + happinessGain);
         interacted = true;
       }
       break;
       
     case 'mirror':
-      currentCreature.curiosity = Math.min(100, currentCreature.curiosity + 2);
-      currentCreature.happiness += 2;
+      // Enhanced self-reflection for curious VORTEKs
+      const curiosityGain = 2 + (currentCreature.curiosity >= 70 ? 2 : 0);
+      const happinessGain = 2 + Math.floor(modifiers.explorationBonus / 50);
+      
+      currentCreature.curiosity = Math.min(100, currentCreature.curiosity + curiosityGain);
+      currentCreature.happiness = Math.min(100, currentCreature.happiness + happinessGain);
       interacted = true;
       break;
       
     case 'bookshelf':
-      if (currentCreature.energy >= 5) {
-        currentCreature.wisdom = Math.min(100, currentCreature.wisdom + 4);
-        currentCreature.focus = Math.min(100, currentCreature.focus + 2);
-        currentCreature.energy -= 5;
+      const energyCost = Math.max(3, Math.floor(5 * modifiers.energyEfficiency));
+      if (currentCreature.energy >= energyCost) {
+        // Enhanced learning for focused VORTEKs
+        const wisdomGain = 4 + (currentCreature.focus >= 70 ? 3 : 0);
+        const focusGain = 2 + (currentCreature.wisdom >= 70 ? 2 : 0);
+        
+        currentCreature.wisdom = Math.min(100, currentCreature.wisdom + wisdomGain);
+        currentCreature.focus = Math.min(100, currentCreature.focus + focusGain);
+        currentCreature.energy -= energyCost;
         interacted = true;
       }
       break;
       
     case 'toybox':
-      currentCreature.playfulness = Math.min(100, currentCreature.playfulness + 5);
-      currentCreature.happiness += 5;
-      currentCreature.energy = Math.max(0, currentCreature.energy - 3);
+      // Enhanced play for playful VORTEKs
+      const playfulnessGain = 5 + (currentCreature.playfulness >= 70 ? 3 : 0);
+      const happinessGain2 = 5 + Math.floor(modifiers.loyaltyBonus / 20);
+      const energyCost2 = Math.max(2, Math.floor(3 * modifiers.energyEfficiency));
+      
+      currentCreature.playfulness = Math.min(100, currentCreature.playfulness + playfulnessGain);
+      currentCreature.happiness = Math.min(100, currentCreature.happiness + happinessGain2);
+      currentCreature.energy = Math.max(0, currentCreature.energy - energyCost2);
       interacted = true;
       break;
       
     case 'plant':
-      currentCreature.focus = Math.min(100, currentCreature.focus + 3);
-      currentCreature.wisdom += 2;
-      currentCreature.energy -= 2;
+      const energyCost3 = Math.max(1, Math.floor(2 * modifiers.energyEfficiency));
+      // Enhanced gardening for focused VORTEKs
+      const focusGain2 = 3 + (currentCreature.focus >= 70 ? 2 : 0);
+      const wisdomGain2 = 2 + (currentCreature.wisdom >= 70 ? 1 : 0);
+      
+      currentCreature.focus = Math.min(100, currentCreature.focus + focusGain2);
+      currentCreature.wisdom = Math.min(100, currentCreature.wisdom + wisdomGain2);
+      currentCreature.energy -= energyCost3;
       interacted = true;
       break;
       
     case 'artEasel':
-      if (currentCreature.energy >= 8) {
-        currentCreature.creativity = Math.min(100, currentCreature.creativity + 6);
-        currentCreature.happiness += 4;
-        currentCreature.energy -= 8;
+      const energyCost4 = Math.max(5, Math.floor(8 * modifiers.energyEfficiency));
+      if (currentCreature.energy >= energyCost4) {
+        // Enhanced artistry for creative VORTEKs
+        const creativityGain = 6 + Math.floor(modifiers.creativityBonus / 20);
+        const happinessGain3 = 4 + (currentCreature.creativity >= 70 ? 3 : 0);
+        
+        currentCreature.creativity = Math.min(100, currentCreature.creativity + creativityGain);
+        currentCreature.happiness = Math.min(100, currentCreature.happiness + happinessGain3);
+        currentCreature.energy -= energyCost4;
         interacted = true;
       }
       break;
@@ -600,60 +869,82 @@ export function resetCreature() {
 export function updateCompanionFromGameplay(eventType, data = {}) {
   if (!currentCreature) return;
   
+  const modifiers = getPerformanceModifiers(currentCreature);
   let updated = false;
   
   switch (eventType) {
     case 'card_played':
-      // Small happiness boost for playing cards
-      currentCreature.happiness = Math.min(100, currentCreature.happiness + 0.5);
-      currentCreature.curiosity = Math.min(100, currentCreature.curiosity + 0.3);
-      // Small energy use for concentration
-      currentCreature.energy = Math.max(0, currentCreature.energy - 0.2);
+      // Enhanced curiosity gain for curious VORTEKs
+      const happinessGain = 0.5 + (currentCreature.playfulness >= 70 ? 0.3 : 0);
+      const curiosityGain = 0.3 + (modifiers.explorationBonus / 500);
+      const energyCost = Math.max(0.1, 0.2 * modifiers.energyEfficiency);
+      
+      currentCreature.happiness = Math.min(100, currentCreature.happiness + happinessGain);
+      currentCreature.curiosity = Math.min(100, currentCreature.curiosity + curiosityGain);
+      currentCreature.energy = Math.max(0, currentCreature.energy - energyCost);
       updated = true;
       break;
       
     case 'battle_won':
-      // Significant happiness and experience boost for winning
-      currentCreature.happiness = Math.min(100, currentCreature.happiness + 8);
-      currentCreature.courage = Math.min(100, currentCreature.courage + 2);
-      currentCreature.loyalty = Math.min(100, currentCreature.loyalty + 1);
-      gainExperience(3);
+      // Enhanced victory rewards based on courage and loyalty
+      const happinessBonus = 8 + Math.floor(modifiers.loyaltyBonus / 10);
+      const courageBonus = 2 + (currentCreature.courage >= 70 ? 1 : 0);
+      const loyaltyBonus = 1 + Math.floor(modifiers.loyaltyBonus / 50);
+      const expBonus = 3 + Math.floor(modifiers.battleBonus / 10);
+      
+      currentCreature.happiness = Math.min(100, currentCreature.happiness + happinessBonus);
+      currentCreature.courage = Math.min(100, currentCreature.courage + courageBonus);
+      currentCreature.loyalty = Math.min(100, currentCreature.loyalty + loyaltyBonus);
+      gainExperience(expBonus);
       currentCreature.lastPlayed = Date.now();
       currentCreature.needsAttention = false;
       updated = true;
       break;
       
     case 'battle_lost':
-      // Slight happiness decrease but wisdom gain from learning
-      currentCreature.happiness = Math.max(0, currentCreature.happiness - 3);
-      currentCreature.wisdom = Math.min(100, currentCreature.wisdom + 2);
-      currentCreature.focus = Math.min(100, currentCreature.focus + 1);
+      // Learning from defeat - enhanced for wise VORTEKs
+      const happinessLoss = Math.max(1, 3 - Math.floor(modifiers.loyaltyBonus / 30));
+      const wisdomGain = 2 + (currentCreature.wisdom >= 70 ? 1 : 0);
+      const focusGain = 1 + (currentCreature.focus >= 70 ? 1 : 0);
+      
+      currentCreature.happiness = Math.max(0, currentCreature.happiness - happinessLoss);
+      currentCreature.wisdom = Math.min(100, currentCreature.wisdom + wisdomGain);
+      currentCreature.focus = Math.min(100, currentCreature.focus + focusGain);
       gainExperience(1);
       updated = true;
       break;
       
     case 'damage_dealt':
-      // Power and courage boost from dealing damage
+      // Power growth enhanced for courageous VORTEKs
       if (data.amount >= 5) {
-        currentCreature.power = Math.min(100, currentCreature.power + 1);
-        currentCreature.courage = Math.min(100, currentCreature.courage + 0.5);
+        const powerGain = 1 + (currentCreature.courage >= 70 ? 0.5 : 0);
+        const courageGain = 0.5 + (currentCreature.power >= 70 ? 0.3 : 0);
+        
+        currentCreature.power = Math.min(100, currentCreature.power + powerGain);
+        currentCreature.courage = Math.min(100, currentCreature.courage + courageGain);
         updated = true;
       }
       break;
       
     case 'strategic_play':
-      // Wisdom and focus boost for complex plays (spending lots of energy)
+      // Enhanced strategic learning for focused VORTEKs
       if (data.energySpent >= 5) {
-        currentCreature.wisdom = Math.min(100, currentCreature.wisdom + 1);
-        currentCreature.focus = Math.min(100, currentCreature.focus + 1.5);
+        const wisdomGain = 1 + (currentCreature.focus >= 70 ? 0.5 : 0);
+        const focusGain = 1.5 + (currentCreature.wisdom >= 70 ? 0.5 : 0);
+        
+        currentCreature.wisdom = Math.min(100, currentCreature.wisdom + wisdomGain);
+        currentCreature.focus = Math.min(100, currentCreature.focus + focusGain);
         updated = true;
       }
       break;
       
     case 'creative_combo':
-      // Creativity boost for using card combinations
-      currentCreature.creativity = Math.min(100, currentCreature.creativity + 2);
-      currentCreature.playfulness = Math.min(100, currentCreature.playfulness + 1);
+      // Enhanced creativity for already creative VORTEKs
+      const creativityGain = 2 + Math.floor(modifiers.creativityBonus / 50);
+      const playfulnessGain = 1 + (currentCreature.creativity >= 70 ? 0.5 : 0);
+      
+      currentCreature.creativity = Math.min(100, currentCreature.creativity + creativityGain);
+      currentCreature.playfulness = Math.min(100, currentCreature.playfulness + playfulnessGain);
       updated = true;
       break;
   }

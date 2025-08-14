@@ -870,6 +870,87 @@ button.card:disabled {
 .vortek-large #companionEmoji { font-size: 48px; }
 .vortek-massive #companionEmoji { font-size: 56px; }
 
+/* Enhanced visual effects for high-stat VORTEKs */
+#companionEmoji {
+  transition: all 0.3s ease;
+}
+
+/* High happiness glow */
+.happiness-high #companionEmoji {
+  animation: joy-glow 3s ease-in-out infinite;
+}
+
+@keyframes joy-glow {
+  0%, 100% { 
+    filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.6)) !important;
+  }
+  50% { 
+    filter: drop-shadow(0 0 12px rgba(255, 215, 0, 0.9)) !important;
+  }
+}
+
+/* High energy spark */
+.energy-high #companionEmoji {
+  animation: energy-spark 2s ease-in-out infinite;
+}
+
+@keyframes energy-spark {
+  0%, 100% { 
+    filter: drop-shadow(0 0 8px rgba(0, 255, 255, 0.6)) !important;
+  }
+  50% { 
+    filter: drop-shadow(0 0 15px rgba(0, 255, 255, 0.9)) !important;
+  }
+}
+
+/* High courage/power aura */
+.power-high #companionEmoji {
+  animation: power-aura 4s ease-in-out infinite;
+}
+
+@keyframes power-aura {
+  0%, 100% { 
+    filter: drop-shadow(0 0 10px rgba(255, 0, 0, 0.6)) !important;
+    transform: scale(1);
+  }
+  50% { 
+    filter: drop-shadow(0 0 20px rgba(255, 0, 0, 0.8)) !important;
+    transform: scale(1.05);
+  }
+}
+
+/* High creativity rainbow effect */
+.creativity-high #companionEmoji {
+  animation: creativity-rainbow 5s linear infinite;
+}
+
+@keyframes creativity-rainbow {
+  0% { filter: drop-shadow(0 0 8px rgba(255, 0, 0, 0.6)) !important; }
+  16% { filter: drop-shadow(0 0 8px rgba(255, 165, 0, 0.6)) !important; }
+  33% { filter: drop-shadow(0 0 8px rgba(255, 255, 0, 0.6)) !important; }
+  50% { filter: drop-shadow(0 0 8px rgba(0, 255, 0, 0.6)) !important; }
+  66% { filter: drop-shadow(0 0 8px rgba(0, 0, 255, 0.6)) !important; }
+  83% { filter: drop-shadow(0 0 8px rgba(75, 0, 130, 0.6)) !important; }
+  100% { filter: drop-shadow(0 0 8px rgba(238, 130, 238, 0.6)) !important; }
+}
+
+/* Personality-based room ambiance */
+.creativity-high #vortekRoom {
+  background: linear-gradient(45deg, #2a2a3a, #3a3a4a, #4a3a4a) !important;
+}
+
+.courage-high #vortekRoom {
+  background: linear-gradient(45deg, #3a2a2a, #4a3a3a, #4a4a3a) !important;
+}
+
+.focus-high #vortekRoom {
+  background: linear-gradient(45deg, #2a2a4a, #3a3a5a, #3a4a5a) !important;
+}
+
+.playfulness-high #vortekRoom {
+  background: linear-gradient(45deg, #2a3a2a, #3a4a3a, #4a4a4a) !important;
+}
+
 /* Notification indicator for companion button */
 #companionBtn.needs-attention {
   animation: attention-pulse 2s ease-in-out infinite;
