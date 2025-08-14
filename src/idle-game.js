@@ -199,17 +199,41 @@ function gainExperience(amount) {
 function checkEvolution() {
   if (!currentCreature) return false;
   
+  const currentStage = CREATURE_STAGES[currentCreature.stage];
+  let evolved = false;
+  
   for (const [stageKey, stage] of Object.entries(CREATURE_STAGES)) {
     if (currentCreature.level >= stage.minLevel && 
-        CREATURE_STAGES[currentCreature.stage].minLevel < stage.minLevel) {
+        stage.minLevel > currentStage.minLevel) {
       currentCreature.stage = stageKey;
       currentCreature.happiness = 100; // Evolution makes creature very happy
       currentCreature.energy = 100;
-      return true; // Evolved
+      
+      // Add special evolution bonuses based on stage
+      switch (stageKey) {
+        case 'HATCHLING':
+          currentCreature.wisdom += 10;
+          break;
+        case 'JUVENILE':
+          currentCreature.power += 15;
+          break;
+        case 'ADULT':
+          currentCreature.wisdom += 15;
+          currentCreature.power += 10;
+          break;
+        case 'ELDER':
+          currentCreature.wisdom += 20;
+          currentCreature.power += 20;
+          currentCreature.happiness = 100;
+          break;
+      }
+      
+      evolved = true;
+      break; // Only evolve one stage at a time
     }
   }
   
-  return false;
+  return evolved;
 }
 
 // Player interactions
@@ -297,10 +321,24 @@ function getStatusMessage(creature) {
 function getMoodMessage(creature) {
   const telemetry = getTelemetry();
   
+  if (creature.level >= 50) return "A legendary VORTEKS master!";
+  if (creature.level >= 30) return "Mastering the art of card combat...";
+  if (creature.level >= 15) return "Growing stronger with each battle!";
+  if (creature.level >= 5) return "Learning your battle strategies...";
+  
+  if (telemetry.battles.currentStreak >= 10) return "Amazed by your incredible streak!";
   if (telemetry.battles.currentStreak > 5) return "Inspired by your victories!";
-  if (telemetry.battles.total > 50) return "Learning from your battles...";
-  if (creature.level > 20) return "Growing wise and powerful!";
-  return "Observing your journey...";
+  if (telemetry.battles.currentStreak > 2) return "Excited by your winning streak!";
+  
+  if (telemetry.battles.total > 100) return "Studying your vast experience...";
+  if (telemetry.battles.total > 50) return "Learning from your many battles...";
+  if (telemetry.battles.total > 20) return "Watching your tactical evolution...";
+  if (telemetry.battles.total > 10) return "Observing your growing skill...";
+  
+  if (creature.stage === 'EGG') return "Preparing to hatch into something amazing!";
+  if (creature.stage === 'HATCHLING') return "Taking first steps in the VORTEKS world!";
+  
+  return "Beginning a new adventure together...";
 }
 
 // Migration function for future versions
@@ -316,4 +354,60 @@ export function resetCreature() {
   currentCreature.lastChecked = Date.now();
   saveIdleGame();
   return currentCreature;
+}
+
+// Update companion based on real-time telemetry events
+export function updateCompanionFromGameplay(eventType, data = {}) {
+  if (!currentCreature) return;
+  
+  let updated = false;
+  
+  switch (eventType) {
+    case 'card_played':
+      // Small happiness boost for playing cards
+      currentCreature.happiness = Math.min(100, currentCreature.happiness + 0.5);
+      // Small energy use for concentration
+      currentCreature.energy = Math.max(0, currentCreature.energy - 0.2);
+      updated = true;
+      break;
+      
+    case 'battle_won':
+      // Significant happiness and experience boost for winning
+      currentCreature.happiness = Math.min(100, currentCreature.happiness + 8);
+      gainExperience(3);
+      currentCreature.lastPlayed = Date.now();
+      currentCreature.needsAttention = false;
+      updated = true;
+      break;
+      
+    case 'battle_lost':
+      // Slight happiness decrease but wisdom gain from learning
+      currentCreature.happiness = Math.max(0, currentCreature.happiness - 3);
+      currentCreature.wisdom = Math.min(100, currentCreature.wisdom + 2);
+      gainExperience(1);
+      updated = true;
+      break;
+      
+    case 'damage_dealt':
+      // Power boost from dealing damage
+      if (data.amount >= 5) {
+        currentCreature.power = Math.min(100, currentCreature.power + 1);
+        updated = true;
+      }
+      break;
+      
+    case 'strategic_play':
+      // Wisdom boost for complex plays (spending lots of energy)
+      if (data.energySpent >= 5) {
+        currentCreature.wisdom = Math.min(100, currentCreature.wisdom + 1);
+        updated = true;
+      }
+      break;
+  }
+  
+  if (updated) {
+    // Update telemetry-based stats
+    updateCreatureFromTelemetry();
+    saveIdleGame();
+  }
 }

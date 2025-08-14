@@ -46,7 +46,8 @@ import {
   feedCreature,
   playWithCreature,
   meditateWithCreature,
-  resetCreature
+  resetCreature,
+  updateCompanionFromGameplay
 } from './idle-game.js';
 
 const MUSIC_FILE = 'VORTEKS.mp3';
@@ -189,6 +190,11 @@ function setupDefeatedOpponents() {
 
   // Companion button click handler
   companionBtn.addEventListener('click', () => {
+    // Update companion from current telemetry before showing
+    const creature = getCreature();
+    if (creature) {
+      updateCreatureFromTelemetry(); // Refresh from latest telemetry
+    }
     renderCompanionData();
     companionModal.hidden = false;
   });
@@ -734,6 +740,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Victory modal event handlers
   document.getElementById('nextBattleBtn').onclick = () => {
     recordCurrentDefeatedOpponent();
+    
+    // Update companion for victory
+    updateCompanionFromGameplay('battle_won');
     
     // Check if we're in campaign mode
     if (Campaign.active) {
