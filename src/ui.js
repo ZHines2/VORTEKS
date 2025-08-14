@@ -16,7 +16,15 @@ export function renderCost(card) {
   if (card.id === 'reconsider') {
     return 'ALL';
   }
-  return card.cost.toString();
+  
+  let costStr = card.cost.toString();
+  
+  // Add life cost if the card has one
+  if (card.effects?.lifeCost) {
+    costStr += ` ${card.effects.lifeCost}❤`;
+  }
+  
+  return costStr;
 }
 
 // UI rendering and card display functions
@@ -89,6 +97,9 @@ export function cardText(c) {
   }
   if (c.id === 'droid' || self.droidProcArm) {
     parts.push('Start of next turn: random +1 (draw, energy, shield, heal, next atk).');
+  }
+  if (c.id === 'presto') {
+    parts.push('Steal a random card from opponent\'s discard pile. Return when used.');
   }
   return parts.join(' ');
 }

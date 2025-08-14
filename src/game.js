@@ -394,7 +394,24 @@ export const Game = {
     // apply via interpreter
     this.applyCard(card, p, (p === this.you ? this.opp : this.you), false);
     // now discard the card AFTER all effects are resolved (prevents infinite loops)
-    p.discard.push(playedCard);
+    // Check if this card was stolen via Presto and return to original owner
+    if (playedCard.stolenFrom && playedCard.originalOwner) {
+      // Return stolen card to original owner's discard pile
+      playedCard.originalOwner.discard.push(playedCard);
+      // Clean up the stolen markers
+      delete playedCard.stolenFrom;
+      delete playedCard.originalOwner;
+      
+      const isPlayer = (p === this.you);
+      if (isPlayer) {
+        logYou(`returns ${playedCard.name} to opponent's discard`);
+      } else {
+        logOpp(`returns ${playedCard.name} to your discard`);
+      }
+    } else {
+      // Normal discard to current player's discard pile
+      p.discard.push(playedCard);
+    }
     this.checkWin();
     if (window.render) window.render();
   },
@@ -592,6 +609,35 @@ export const Game = {
       
       // FX: Reconsider effect
       if (window.fxReconsider) window.fxReconsider();
+    }
+    if (effects.presto && !simulate) {
+      // Presto effect: steal a random card from opponent's discard pile
+      const isPlayer = (state.me === this.you);
+      if (state.them.discard.length > 0) {
+        // Pick a random card from opponent's discard pile
+        const randomIndex = Math.floor(Math.random() * state.them.discard.length);
+        const stolenCard = state.them.discard.splice(randomIndex, 1)[0];
+        
+        // Mark the card as stolen for proper return mechanics
+        stolenCard.stolenFrom = state.them.isAI ? 'opp' : 'you';
+        stolenCard.originalOwner = state.them;
+        
+        // Add to player's hand
+        state.me.hand.push(stolenCard);
+        
+        if (isPlayer) {
+          logYou(`steals ${stolenCard.name} from opponent's discard`);
+        } else {
+          logOpp(`steals ${stolenCard.name} from your discard`);
+        }
+      } else {
+        // No cards in opponent's discard pile
+        if (isPlayer) {
+          logYou('finds nothing to steal from opponent\'s discard');
+        } else {
+          logOpp('finds nothing to steal from your discard');
+        }
+      }
     }
     
     // 3) statuses
