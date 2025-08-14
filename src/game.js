@@ -821,6 +821,18 @@ export const Game = {
         }
       } else { 
         this.streak = 0; 
+        
+        // Handle campaign defeat
+        if (window.Campaign && window.Campaign.active) {
+          window.Campaign.abandon();
+          logAction('system', 'Campaign ended due to defeat. Returning to start screen.');
+          // Clear campaign UI and return to start after a brief delay
+          setTimeout(() => {
+            if (window.showStart) {
+              window.showStart();
+            }
+          }, 2000);
+        }
       }
       
       // Record battle results and emit achievement events

@@ -35,3 +35,14 @@ export const DEBUG = {
   EXPOSE_GAME_STATS: true, // Expose window.GameStats for QA
   LOG_MIGRATIONS: true, // Log storage migrations
 };
+
+// Campaign Configuration
+export const CAMPAIGN = {
+  STARTER_DECK: ['swords', 'shield', 'heart', 'fire', 'bolt', 'star', 'echo', 'focus', 'surge', 'reconsider'],
+  BOOSTER: {
+    K: 4, // Saturation constant for booster level scaling
+    P1_CAP: 0.7, // Maximum probability for first extra card
+    DIMINISH: 0.45, // Diminishing returns multiplier for additional cards
+  },
+  MIN_DECK_SIZE: 10, // Minimum deck size for campaign
+};

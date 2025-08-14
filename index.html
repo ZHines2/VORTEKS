@@ -44,6 +44,7 @@
         <div class="pill sh">🛡<span id="youSH"></span></div>
         <div class="pill en">⚡<span id="youEN"></span></div>
         <div class="pill" id="streakPill" title="Win streak">STREAK <span id="streak"></span></div>
+        <div class="pill" id="boosterPill" title="Campaign booster level" hidden>BOOSTER <span id="booster"></span></div>
       </div>
       <div class="status" id="youStatus"></div>
       <div class="hand" id="hand"></div>
@@ -69,6 +70,8 @@
         <div class="button-group">
           <button id="startBtn" class="btn" title="Choose your cards and quirk">BUILD DECK</button>
           <button id="quickBtn" class="btn" title="Jump straight into battle with a random deck">QUICK START</button>
+          <button id="campaignBtn" class="btn" title="Start a new campaign run">CAMPAIGN</button>
+          <button id="campaignContinueBtn" class="btn" title="Continue your current campaign run" hidden>CONTINUE CAMPAIGN</button>
         </div>
         <div class="debug-group">
           <button id="selfTest" class="btn debug-btn" title="Run built-in tests">DEBUG</button>
@@ -394,6 +397,42 @@
       <div style="display:flex; justify-content:center; gap:8px; margin-top:16px">
         <button id="telemetryCloseBtn" class="btn">CLOSE</button>
         <button id="telemetryResetBtn" class="btn" style="background:var(--bad); color:white">RESET STATS</button>
+      </div>
+    </div>
+  </div>
+  <!-- Campaign Reward Modal -->
+  <div class="modal" id="campaignRewardModal" hidden>
+    <div class="box" style="width:min(96vw, 500px)">
+      <div style="font-size:18px; color:var(--accent); margin:8px 0 16px; text-align:center"><strong>🎁 Campaign Rewards</strong></div>
+      <div style="margin-bottom:16px;">
+        <div style="font-size:14px; color:var(--accent); margin-bottom:8px"><strong>Victory! Choose your rewards:</strong></div>
+        <div id="campaignRewardsList" style="max-height:300px; overflow-y:auto; background:rgba(0,0,0,0.3); padding:12px; border-radius:4px;">
+          <!-- Reward cards will be populated here -->
+        </div>
+      </div>
+      <div style="display:flex; justify-content:center; gap:8px;">
+        <button id="campaignRewardsConfirmBtn" class="btn" style="background:var(--good); color:black; font-weight:bold">CONFIRM REWARDS</button>
+        <button id="campaignRewardsEditDeckBtn" class="btn">EDIT DECK</button>
+        <button id="campaignRewardsAbandonBtn" class="btn" style="background:var(--bad); color:white">ABANDON RUN</button>
+      </div>
+    </div>
+  </div>
+  <!-- Campaign Deck Edit Modal -->
+  <div class="modal" id="campaignDeckModal" hidden>
+    <div class="box" style="width:min(96vw, 500px)">
+      <div style="font-size:18px; color:var(--accent); margin:8px 0 16px; text-align:center"><strong>⚔️ Campaign Deck</strong></div>
+      <div style="margin-bottom:16px;">
+        <div style="font-size:14px; color:var(--accent); margin-bottom:8px"><strong>Current Deck (<span id="campaignDeckCount">0</span> cards):</strong></div>
+        <div id="campaignDeckList" style="max-height:300px; overflow-y:auto; background:rgba(0,0,0,0.3); padding:12px; border-radius:4px;">
+          <!-- Deck cards will be populated here -->
+        </div>
+        <div style="font-size:12px; color:var(--ink); opacity:0.7; margin-top:8px;">
+          Remove cards you don't want (minimum 10 cards required)
+        </div>
+      </div>
+      <div style="display:flex; justify-content:center; gap:8px;">
+        <button id="campaignDeckContinueBtn" class="btn" style="background:var(--good); color:black; font-weight:bold">CONTINUE</button>
+        <button id="campaignDeckAbandonBtn" class="btn" style="background:var(--bad); color:white">ABANDON RUN</button>
       </div>
     </div>
   </div>
