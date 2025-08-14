@@ -168,7 +168,7 @@ function updateCreatureFromIdle() {
 }
 
 // Update creature stats based on telemetry data
-function updateCreatureFromTelemetry() {
+export function updateCreatureFromTelemetry() {
   if (!currentCreature) return;
   
   const telemetry = getTelemetry();

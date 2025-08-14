@@ -50,7 +50,8 @@ import {
   interactWithRoomElement,
   setVortekName,
   resetCreature,
-  updateCompanionFromGameplay
+  updateCompanionFromGameplay,
+  updateCreatureFromTelemetry
 } from './idle-game.js';
 
 const MUSIC_FILE = 'VORTEKS.mp3';
