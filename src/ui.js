@@ -17,7 +17,7 @@ export function renderCost(card) {
     return 'ALL';
   }
   
-  let costStr = card.cost.toString();
+  let costStr = card.cost.toString() + '⚡';
   
   // Add life cost if the card has one
   if (card.effects?.lifeCost) {

@@ -339,7 +339,7 @@ function setupGlossary() {
           // Use card.name without sym prefix, render sym separately  
           const cardName = card.name.startsWith(card.sym) ? card.name.substring(card.sym.length).trim() : card.name;
           const title = `${card.sym} ${cardName}`;
-          const costText = ` (${renderCost(card)}⚡)`;
+          const costText = ` (${renderCost(card)})`;
           const description = getCardDescription(card);
           
           div.innerHTML = `<strong>${title}${costText}</strong><br/><small>${description}</small>`;
