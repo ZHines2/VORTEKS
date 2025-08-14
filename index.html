@@ -14,7 +14,7 @@
     <button id="unlocksBtn" aria-label="Unlocks" title="View unlocked cards and achievements">🏆</button>
     <button id="glossaryBtn" aria-label="Glossary" title="View card glossary">📖</button>
     <button id="defeatedBtn" aria-label="Defeated Opponents" title="View defeated opponents history">🏴</button>
-    <button id="companionBtn" aria-label="Vortex Companion" title="Check on your virtual companion">🌟</button>
+    <button id="companionBtn" aria-label="VORTEK Companion" title="Check on your VORTEK companion">🌟</button>
     <button id="muteBtn" aria-label="Mute music" title="Mute/unmute music">🔊</button>
     <button id="helpBtn" aria-label="Help" title="How to play VORTEKS">?</button>
     <h1>VORTEKS</h1>
@@ -437,22 +437,42 @@
       </div>
     </div>
   </div>
-  <!-- Vortex Companion Modal -->
+  <!-- VORTEK Companion Modal -->
   <div class="modal" id="companionModal" hidden>
-    <div class="box" style="width:min(96vw, 600px)">
-      <div style="font-size:18px; color:var(--accent); margin:8px 0 16px; text-align:center"><strong>🌟 Vortex Companion</strong></div>
+    <div class="box" style="width:min(96vw, 800px); max-height:90vh; overflow-y:auto;">
+      <div style="font-size:18px; color:var(--accent); margin:8px 0 16px; text-align:center">
+        <strong>🌟 VORTEK Companion</strong>
+        <button id="nameEditBtn" style="float:right; background:none; border:none; color:var(--accent); cursor:pointer; font-size:14px;">✏️</button>
+      </div>
       
-      <!-- Creature Display -->
-      <div style="text-align:center; margin-bottom:20px;">
-        <div id="companionEmoji" style="font-size:64px; margin-bottom:8px;">🥚</div>
-        <div id="companionName" style="font-size:20px; color:var(--accent); font-weight:bold;">Vortex</div>
-        <div id="companionStage" style="font-size:14px; color:var(--ink); opacity:0.8;">Egg</div>
+      <!-- Room Environment -->
+      <div id="vortekRoom" style="background:linear-gradient(45deg, #2a2a3a, #3a3a4a); border:2px solid var(--border); border-radius:8px; padding:20px; margin-bottom:20px; position:relative; min-height:200px;">
+        <!-- Room Elements -->
+        <div id="roomBed" class="room-element" style="position:absolute; bottom:10px; left:10px; font-size:20px;" title="Cozy bed for resting">🛏️</div>
+        <div id="roomMirror" class="room-element hidden" style="position:absolute; top:10px; right:10px; font-size:18px;" title="Mirror for self-reflection">🪞</div>
+        <div id="roomBookshelf" class="room-element hidden" style="position:absolute; top:10px; left:10px; font-size:18px;" title="Bookshelf for learning">📚</div>
+        <div id="roomToybox" class="room-element hidden" style="position:absolute; bottom:10px; right:50px; font-size:18px;" title="Toybox for fun">🧸</div>
+        <div id="roomPlant" class="room-element hidden" style="position:absolute; top:50px; right:10px; font-size:16px;" title="Plant for focus">🪴</div>
+        <div id="roomArtEasel" class="room-element hidden" style="position:absolute; bottom:50px; left:50px; font-size:16px;" title="Art easel for creativity">🎨</div>
+        
+        <!-- VORTEK Display (center of room) -->
+        <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center;">
+          <div id="companionEmoji" style="font-size:32px; margin-bottom:8px; text-shadow: 0 0 10px rgba(119, 255, 221, 0.3);">🥚</div>
+          <div id="companionName" style="font-size:16px; color:var(--accent); font-weight:bold;">VORTEK</div>
+          <div id="companionStage" style="font-size:12px; color:var(--ink); opacity:0.8;">Egg</div>
+        </div>
+        
+        <!-- Room Activity Display -->
+        <div style="position:absolute; bottom:5px; left:50%; transform:translateX(-50%); font-size:10px; color:var(--ink); opacity:0.6;">
+          <span id="roomActivity">Exploring the basic room setup...</span>
+        </div>
       </div>
       
       <!-- Stats Display -->
-      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom:20px;">
+      <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:16px; margin-bottom:20px;">
+        <!-- Core Stats -->
         <div>
-          <div style="font-size:14px; color:var(--accent); margin-bottom:8px;"><strong>Stats</strong></div>
+          <div style="font-size:14px; color:var(--accent); margin-bottom:8px;"><strong>Core Stats</strong></div>
           <div class="companion-stat">
             <div>❤️ Happiness: <span id="companionHappiness">50</span>/100</div>
             <div class="stat-bar"><div class="stat-fill" id="happinessBar" style="width:50%; background:var(--good);"></div></div>
@@ -470,6 +490,37 @@
             <div class="stat-bar"><div class="stat-fill" id="powerBar" style="width:50%; background:var(--bad);"></div></div>
           </div>
         </div>
+        
+        <!-- Personality Stats -->
+        <div>
+          <div style="font-size:14px; color:var(--accent); margin-bottom:8px;"><strong>Personality</strong></div>
+          <div class="companion-stat">
+            <div>🔍 Curiosity: <span id="companionCuriosity">40</span>/100</div>
+            <div class="stat-bar"><div class="stat-fill" id="curiosityBar" style="width:40%; background:#ff6b6b;"></div></div>
+          </div>
+          <div class="companion-stat">
+            <div>🎨 Creativity: <span id="companionCreativity">35</span>/100</div>
+            <div class="stat-bar"><div class="stat-fill" id="creativityBar" style="width:35%; background:#feca57;"></div></div>
+          </div>
+          <div class="companion-stat">
+            <div>💝 Loyalty: <span id="companionLoyalty">60</span>/100</div>
+            <div class="stat-bar"><div class="stat-fill" id="loyaltyBar" style="width:60%; background:#ff9ff3;"></div></div>
+          </div>
+          <div class="companion-stat">
+            <div>🎮 Playfulness: <span id="companionPlayfulness">55</span>/100</div>
+            <div class="stat-bar"><div class="stat-fill" id="playfulnessBar" style="width:55%; background:#54a0ff;"></div></div>
+          </div>
+          <div class="companion-stat">
+            <div>🎯 Focus: <span id="companionFocus">45</span>/100</div>
+            <div class="stat-bar"><div class="stat-fill" id="focusBar" style="width:45%; background:#5f27cd;"></div></div>
+          </div>
+          <div class="companion-stat">
+            <div>⚔️ Courage: <span id="companionCourage">40</span>/100</div>
+            <div class="stat-bar"><div class="stat-fill" id="courageBar" style="width:40%; background:#ff3838;"></div></div>
+          </div>
+        </div>
+        
+        <!-- Progress & Influence -->
         <div>
           <div style="font-size:14px; color:var(--accent); margin-bottom:8px;"><strong>Progress</strong></div>
           <div class="companion-stat">
@@ -494,10 +545,11 @@
       </div>
       
       <!-- Action Buttons -->
-      <div style="display:flex; gap:8px; justify-content:center; margin-bottom:16px;">
-        <button id="feedCompanionBtn" class="btn" title="Feed your companion to restore energy">🍎 Feed</button>
-        <button id="playCompanionBtn" class="btn" title="Play with your companion to boost happiness">🎾 Play</button>
+      <div style="display:flex; gap:8px; justify-content:center; margin-bottom:16px; flex-wrap:wrap;">
+        <button id="feedCompanionBtn" class="btn" title="Feed your VORTEK to restore energy">🍎 Feed</button>
+        <button id="playCompanionBtn" class="btn" title="Play with your VORTEK to boost happiness">🎾 Play</button>
         <button id="meditateCompanionBtn" class="btn" title="Meditate together to gain wisdom">🧘 Meditate</button>
+        <button id="exploreRoomBtn" class="btn" title="Explore the room together">🔍 Explore</button>
       </div>
       
       <!-- Close Button -->

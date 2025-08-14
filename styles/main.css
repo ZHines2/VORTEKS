@@ -819,6 +819,57 @@ button.card:disabled {
   50% { transform: scale(1.05); }
 }
 
+/* Room Environment Styles */
+#vortekRoom {
+  position: relative;
+  background: linear-gradient(45deg, #2a2a3a, #3a3a4a);
+  box-shadow: inset 0 0 20px rgba(0,0,0,0.3);
+}
+
+.room-element {
+  cursor: pointer;
+  opacity: 0.7;
+  transition: all 0.3s ease;
+  user-select: none;
+}
+
+.room-element:hover {
+  opacity: 1;
+  transform: scale(1.1);
+  filter: brightness(1.2);
+}
+
+.room-element.hidden {
+  display: none;
+}
+
+.room-element.unlocked {
+  display: block;
+  animation: element-unlock 0.8s ease-out;
+}
+
+@keyframes element-unlock {
+  0% { 
+    opacity: 0; 
+    transform: scale(0.5) rotate(180deg); 
+  }
+  50% { 
+    opacity: 0.8; 
+    transform: scale(1.2) rotate(90deg); 
+  }
+  100% { 
+    opacity: 0.7; 
+    transform: scale(1) rotate(0deg); 
+  }
+}
+
+/* VORTEK size based on evolution stage */
+.vortek-tiny #companionEmoji { font-size: 24px; }
+.vortek-small #companionEmoji { font-size: 32px; }
+.vortek-medium #companionEmoji { font-size: 40px; }
+.vortek-large #companionEmoji { font-size: 48px; }
+.vortek-massive #companionEmoji { font-size: 56px; }
+
 /* Notification indicator for companion button */
 #companionBtn.needs-attention {
   animation: attention-pulse 2s ease-in-out infinite;
@@ -828,4 +879,24 @@ button.card:disabled {
 @keyframes attention-pulse {
   0%, 100% { opacity: 0.85; }
   50% { opacity: 1; }
+}
+
+/* Name editing styles */
+#nameEditInput {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--accent);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: bold;
+  text-align: center;
+  max-width: 150px;
+}
+
+#nameEditInput:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 5px rgba(119, 255, 221, 0.5);
 }

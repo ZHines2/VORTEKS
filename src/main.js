@@ -46,6 +46,9 @@ import {
   feedCreature,
   playWithCreature,
   meditateWithCreature,
+  exploreRoom,
+  interactWithRoomElement,
+  setVortekName,
   resetCreature,
   updateCompanionFromGameplay
 } from './idle-game.js';
@@ -181,16 +184,18 @@ function setupDefeatedOpponents() {
     }
   });
 
-  // Companion modal setup
+  // VORTEK Companion modal setup
   const companionModal = document.getElementById('companionModal');
   const companionCloseBtn = document.getElementById('companionCloseBtn');
   const feedCompanionBtn = document.getElementById('feedCompanionBtn');
   const playCompanionBtn = document.getElementById('playCompanionBtn');
   const meditateCompanionBtn = document.getElementById('meditateCompanionBtn');
+  const exploreRoomBtn = document.getElementById('exploreRoomBtn');
+  const nameEditBtn = document.getElementById('nameEditBtn');
 
-  // Companion button click handler
+  // VORTEK button click handler
   companionBtn.addEventListener('click', () => {
-    // Update companion from current telemetry before showing
+    // Update VORTEK from current telemetry before showing
     const creature = getCreature();
     if (creature) {
       updateCreatureFromTelemetry(); // Refresh from latest telemetry
@@ -204,54 +209,134 @@ function setupDefeatedOpponents() {
     companionModal.hidden = true;
   });
 
-  // Companion interaction handlers
+  // Name editing functionality
+  nameEditBtn.addEventListener('click', () => {
+    const currentName = document.getElementById('companionName').textContent;
+    const nameElement = document.getElementById('companionName');
+    
+    // Create input field
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.id = 'nameEditInput';
+    input.value = currentName;
+    input.maxLength = 20;
+    
+    // Replace name display with input
+    nameElement.style.display = 'none';
+    nameElement.parentNode.insertBefore(input, nameElement.nextSibling);
+    input.focus();
+    input.select();
+    
+    // Handle input completion
+    function finishEditing() {
+      const newName = input.value.trim();
+      if (newName && newName !== currentName && setVortekName(newName)) {
+        nameElement.textContent = newName;
+        showCompanionMessage(`VORTEK renamed to ${newName}!`);
+      }
+      input.remove();
+      nameElement.style.display = 'block';
+    }
+    
+    input.addEventListener('blur', finishEditing);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') finishEditing();
+      if (e.key === 'Escape') {
+        input.remove();
+        nameElement.style.display = 'block';
+      }
+    });
+  });
+
+  // Room interaction handlers
+  document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('room-element')) {
+      const elementName = e.target.id.replace('room', '').toLowerCase();
+      if (interactWithRoomElement(elementName)) {
+        renderCompanionData();
+        showCompanionMessage(`Interacted with ${elementName}!`);
+      } else {
+        showCompanionMessage(`Can't interact with ${elementName} right now.`);
+      }
+    }
+  });
+
+  // VORTEK interaction handlers
   feedCompanionBtn.addEventListener('click', () => {
     if (feedCreature()) {
       renderCompanionData();
-      showCompanionMessage('Fed your companion! Energy restored.');
+      showCompanionMessage('Fed your VORTEK! Energy restored.');
     } else {
-      showCompanionMessage('Your companion is not hungry right now.');
+      showCompanionMessage('Your VORTEK is not hungry right now.');
     }
   });
 
   playCompanionBtn.addEventListener('click', () => {
     if (playWithCreature()) {
       renderCompanionData();
-      showCompanionMessage('Played with your companion! Happiness increased.');
+      showCompanionMessage('Played with your VORTEK! Happiness increased.');
     } else {
-      showCompanionMessage('Your companion is too tired to play right now.');
+      showCompanionMessage('Your VORTEK is too tired to play right now.');
     }
   });
 
   meditateCompanionBtn.addEventListener('click', () => {
     if (meditateWithCreature()) {
       renderCompanionData();
-      showCompanionMessage('Meditated together! Wisdom increased.');
+      showCompanionMessage('Meditated together! Wisdom and focus increased.');
     } else {
-      showCompanionMessage('Your companion needs more energy to meditate.');
+      showCompanionMessage('Your VORTEK needs more energy to meditate.');
+    }
+  });
+
+  exploreRoomBtn.addEventListener('click', () => {
+    if (exploreRoom()) {
+      renderCompanionData();
+      showCompanionMessage('Explored the room together! Curiosity increased.');
+    } else {
+      showCompanionMessage('Need to wait before exploring again.');
     }
   });
 
   function renderCompanionData() {
     const creatureInfo = getCreatureInfo();
     
-    // Update display elements
+    // Update VORTEK display elements
     document.getElementById('companionEmoji').textContent = creatureInfo.stageEmoji;
     document.getElementById('companionName').textContent = creatureInfo.name;
     document.getElementById('companionStage').textContent = creatureInfo.stageName;
     document.getElementById('companionLevel').textContent = creatureInfo.level;
     
-    // Update stats
+    // Update room size class based on evolution stage
+    const roomElement = document.getElementById('vortekRoom');
+    roomElement.className = `vortek-${creatureInfo.stageSize}`;
+    
+    // Update core stats
     document.getElementById('companionHappiness').textContent = Math.floor(creatureInfo.happiness);
     document.getElementById('companionEnergy').textContent = Math.floor(creatureInfo.energy);
     document.getElementById('companionWisdom').textContent = Math.floor(creatureInfo.wisdom);
     document.getElementById('companionPower').textContent = Math.floor(creatureInfo.power);
+    
+    // Update extended stats
+    document.getElementById('companionCuriosity').textContent = Math.floor(creatureInfo.curiosity);
+    document.getElementById('companionCreativity').textContent = Math.floor(creatureInfo.creativity);
+    document.getElementById('companionLoyalty').textContent = Math.floor(creatureInfo.loyalty);
+    document.getElementById('companionPlayfulness').textContent = Math.floor(creatureInfo.playfulness);
+    document.getElementById('companionFocus').textContent = Math.floor(creatureInfo.focus);
+    document.getElementById('companionCourage').textContent = Math.floor(creatureInfo.courage);
     
     // Update progress bars
     document.getElementById('happinessBar').style.width = `${creatureInfo.happiness}%`;
     document.getElementById('energyBar').style.width = `${creatureInfo.energy}%`;
     document.getElementById('wisdomBar').style.width = `${creatureInfo.wisdom}%`;
     document.getElementById('powerBar').style.width = `${creatureInfo.power}%`;
+    
+    document.getElementById('curiosityBar').style.width = `${creatureInfo.curiosity}%`;
+    document.getElementById('creativityBar').style.width = `${creatureInfo.creativity}%`;
+    document.getElementById('loyaltyBar').style.width = `${creatureInfo.loyalty}%`;
+    document.getElementById('playfulnessBar').style.width = `${creatureInfo.playfulness}%`;
+    document.getElementById('focusBar').style.width = `${creatureInfo.focus}%`;
+    document.getElementById('courageBar').style.width = `${creatureInfo.courage}%`;
     
     // Update experience
     document.getElementById('companionExp').textContent = Math.floor(creatureInfo.experience);
@@ -266,22 +351,46 @@ function setupDefeatedOpponents() {
     // Update status messages
     document.getElementById('companionStatus').textContent = creatureInfo.statusMessage;
     document.getElementById('companionMood').textContent = creatureInfo.moodMessage;
+    document.getElementById('roomActivity').textContent = creatureInfo.roomActivity;
     
-    // Update companion button notification
+    // Update room elements visibility
+    updateRoomElements(creatureInfo);
+    
+    // Update VORTEK button notification
     updateCompanionNotification();
   }
 
+  function updateRoomElements(creatureInfo) {
+    const elements = ['bed', 'mirror', 'bookshelf', 'toybox', 'plant', 'artEasel'];
+    
+    elements.forEach(elementName => {
+      const element = document.getElementById(`room${elementName.charAt(0).toUpperCase() + elementName.slice(1)}`);
+      if (element) {
+        if (creatureInfo.unlockedRoomElements.includes(elementName)) {
+          element.classList.remove('hidden');
+          element.classList.add('unlocked');
+        } else {
+          element.classList.add('hidden');
+          element.classList.remove('unlocked');
+        }
+      }
+    });
+  }
+
   function showCompanionMessage(message) {
-    // Simple message display - could be enhanced with animations
+    // Enhanced message display with better animations
     const statusEl = document.getElementById('companionStatus');
     const originalMessage = statusEl.textContent;
     statusEl.textContent = message;
     statusEl.style.color = 'var(--good)';
+    statusEl.style.transform = 'scale(1.05)';
+    statusEl.style.transition = 'all 0.3s ease';
     
     setTimeout(() => {
       statusEl.textContent = originalMessage;
       statusEl.style.color = 'var(--accent)';
-    }, 2000);
+      statusEl.style.transform = 'scale(1)';
+    }, 2500);
   }
 
   function updateCompanionNotification() {
@@ -293,7 +402,7 @@ function setupDefeatedOpponents() {
     }
   }
 
-  // Update companion notification periodically
+  // Update VORTEK notification periodically
   setInterval(() => {
     if (!companionModal.hidden) {
       renderCompanionData();
