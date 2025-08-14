@@ -293,17 +293,7 @@ button.card:disabled {
   font-size:10px;
 }
 
-.cost::before{
-  content:'⚡'; 
-  margin-right:2px; 
-  font-size:10px;
-}
 
-.cost::after{
-  content:'⚡'; 
-  margin-left:2px; 
-  font-size:10px;
-}
 
 .card-type {
   position: absolute;
