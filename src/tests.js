@@ -1,5 +1,6 @@
 import { CARDS } from '../data/cards.js';
 import { createPlayer } from './player.js';
+import { predictCard } from './ui.js';
 
 // Self-test functionality
 function assertEqual(name, a, b, log) { 
@@ -360,6 +361,33 @@ export function runSelfTests(Game, log, showStart) {
     
     // Restore window log
     window.log = originalLog;
+  }
+
+  // Test Presto card circular reference fix (UI bug reproduction)
+  {
+    log('Testing Presto card circular reference handling...');
+    const me = createPlayer(false);
+    const foe = createPlayer(true);
+    
+    // Create a mock stolen card with circular reference
+    const stolenCard = CARDS.find(c => c.id === 'dagger');
+    const cardWithCircularRef = { ...stolenCard };
+    cardWithCircularRef.stolenFrom = 'opp';
+    cardWithCircularRef.originalOwner = foe; // This creates circular reference
+    
+    me.hand = [cardWithCircularRef];
+    
+    // This should not throw an error after our fix
+    let predictError = false;
+    try {
+      const result = predictCard(cardWithCircularRef, me, foe, Game);
+      assertEqual('Predict function handles circular references', typeof result, 'string', log);
+    } catch (error) {
+      predictError = true;
+      log('ERROR: predictCard failed with circular reference: ' + error.message);
+    }
+    
+    assertEqual('No circular reference error in predictCard', predictError, false, log);
   }
 
   // Test Presto card stealing mechanism
