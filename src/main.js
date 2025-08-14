@@ -51,7 +51,8 @@ import {
   setVortekName,
   resetCreature,
   updateCompanionFromGameplay,
-  updateCreatureFromTelemetry
+  updateCreatureFromTelemetry,
+  getRoomInteractionMessage
 } from './idle-game.js';
 import { initVortekGenerator, generateVortekAppearance, playVortekSound } from './vortek-generator.js';
 
@@ -250,15 +251,18 @@ function setupDefeatedOpponents() {
     });
   });
 
-  // Room interaction handlers
+  // Room interaction handlers with mystical flavor
   document.addEventListener('click', (e) => {
     if (e.target.classList.contains('room-element')) {
       const elementName = e.target.id.replace('room', '').toLowerCase();
+      const creature = getCreature();
       if (interactWithRoomElement(elementName)) {
         renderCompanionData();
-        showCompanionMessage(`Interacted with ${elementName}!`);
+        const mysticalMessage = getRoomInteractionMessage(elementName, creature, true);
+        showCompanionMessage(mysticalMessage);
       } else {
-        showCompanionMessage(`Can't interact with ${elementName} right now.`);
+        const failMessage = getRoomInteractionMessage(elementName, creature, false);
+        showCompanionMessage(failMessage);
       }
     }
   });
@@ -270,17 +274,31 @@ function setupDefeatedOpponents() {
       const creature = getCreature();
       let message = 'Fed your VORTEK! Energy restored.';
       
-      if (creature.loyalty >= 70) message = `${creature.name} gratefully accepts your gift! Energy restored.`;
-      else if (creature.playfulness >= 70) message = `${creature.name} happily munches away! Energy restored.`;
-      else if (creature.happiness >= 80) message = `${creature.name} joyfully enjoys the meal! Energy restored.`;
+      // Enhanced spiritual/philosophical feeding messages
+      if (creature.loyalty >= 90) message = `${creature.name} receives your offering with infinite gratitude! Sacred energy flows.`;
+      else if (creature.loyalty >= 70) message = `${creature.name} accepts your gift as communion of souls! Energy restored.`;
+      else if (creature.playfulness >= 90) message = `${creature.name} transforms nourishment into pure joy! Energy dances!`;
+      else if (creature.playfulness >= 70) message = `${creature.name} finds celebration in each morsel! Energy restored.`;
+      else if (creature.wisdom >= 90) message = `${creature.name} contemplates the gift of sustenance! Energy flows like wisdom.`;
+      else if (creature.wisdom >= 70) message = `${creature.name} understands: food is love made manifest! Energy restored.`;
+      else if (creature.happiness >= 80) message = `${creature.name} radiates contentment with each bite! Energy restored.`;
+      else if (creature.creativity >= 70) message = `${creature.name} tastes artistry in simple nourishment! Energy restored.`;
+      else if (creature.focus >= 70) message = `${creature.name} mindfully savors each moment! Energy restored.`;
+      else if (creature.courage >= 70) message = `${creature.name} grows stronger for future challenges! Energy restored.`;
       
       showCompanionMessage(message);
     } else {
       const creature = getCreature();
       let message = 'Your VORTEK is not hungry right now.';
       
-      if (creature.loyalty >= 70) message = `${creature.name} appreciates the offer but isn't hungry.`;
-      else if (creature.focus >= 70) message = `${creature.name} is focused on other things right now.`;
+      // Enhanced spiritual rejection messages
+      if (creature.loyalty >= 90) message = `${creature.name} sends waves of gratitude but needs no earthly sustenance right now.`;
+      else if (creature.loyalty >= 70) message = `${creature.name} feels your love but is content for now.`;
+      else if (creature.focus >= 90) message = `${creature.name} dwells in perfect satiation of spirit.`;
+      else if (creature.focus >= 70) message = `${creature.name} is absorbed in higher contemplation.`;
+      else if (creature.wisdom >= 90) message = `${creature.name} has transcended the need for material nourishment.`;
+      else if (creature.wisdom >= 70) message = `${creature.name} is sustained by wisdom alone right now.`;
+      else if (creature.playfulness >= 70) message = `${creature.name} is too excited about other things to eat!`;
       
       showCompanionMessage(message);
     }
@@ -292,17 +310,30 @@ function setupDefeatedOpponents() {
       const creature = getCreature();
       let message = 'Played with your VORTEK! Happiness increased.';
       
-      if (creature.playfulness >= 70) message = `${creature.name} absolutely loves playing! Happiness soars!`;
-      else if (creature.loyalty >= 70) message = `${creature.name} cherishes this bonding time! Happiness increased.`;
-      else if (creature.creativity >= 70) message = `${creature.name} plays with artistic flair! Happiness increased.`;
+      // Enhanced mystical play messages
+      if (creature.playfulness >= 90) message = `${creature.name} transcends into pure play-bliss! Happiness becomes radiance!`;
+      else if (creature.playfulness >= 70) message = `${creature.name} dances with the cosmic joy of existence! Happiness soars!`;
+      else if (creature.loyalty >= 90) message = `${creature.name} weaves sacred bonds through shared laughter! Happiness deepens.`;
+      else if (creature.loyalty >= 70) message = `${creature.name} treasures these moments beyond measure! Happiness increased.`;
+      else if (creature.creativity >= 90) message = `${creature.name} paints reality with pure imagination! Happiness sparkles!`;
+      else if (creature.creativity >= 70) message = `${creature.name} creates art from the moment itself! Happiness increased.`;
+      else if (creature.courage >= 70) message = `${creature.name} finds strength in joyful connection! Happiness increased.`;
+      else if (creature.wisdom >= 70) message = `${creature.name} discovers wisdom hidden in play! Happiness increased.`;
+      else if (creature.focus >= 70) message = `${creature.name} enters the meditative flow of pure fun! Happiness increased.`;
+      else if (creature.curiosity >= 70) message = `${creature.name} explores the mysteries of joy! Happiness increased.`;
       
       showCompanionMessage(message);
     } else {
       const creature = getCreature();
       let message = 'Your VORTEK is too tired to play right now.';
       
-      if (creature.loyalty >= 70) message = `${creature.name} wants to play but needs rest first.`;
-      else if (creature.wisdom >= 70) message = `${creature.name} wisely knows rest is needed before play.`;
+      // Enhanced tired/rejection messages
+      if (creature.loyalty >= 90) message = `${creature.name} yearns to play but spirit needs restoration first.`;
+      else if (creature.loyalty >= 70) message = `${creature.name} loves you too much to play half-heartedly.`;
+      else if (creature.wisdom >= 90) message = `${creature.name} embraces the wisdom of rest before joy.`;
+      else if (creature.wisdom >= 70) message = `${creature.name} knows all things have their season.`;
+      else if (creature.focus >= 70) message = `${creature.name} cannot focus enough energy for proper play.`;
+      else if (creature.playfulness >= 70) message = `${creature.name} will play with renewed spirit once rested!`;
       
       showCompanionMessage(message);
     }
@@ -314,17 +345,29 @@ function setupDefeatedOpponents() {
       const creature = getCreature();
       let message = 'Meditated together! Wisdom and focus increased.';
       
-      if (creature.focus >= 70) message = `${creature.name} enters deep meditation! Wisdom and focus greatly increased.`;
-      else if (creature.wisdom >= 70) message = `${creature.name} shares profound insights! Wisdom and focus increased.`;
-      else if (creature.loyalty >= 70) message = `${creature.name} finds peace in your presence! Wisdom and focus increased.`;
+      // Enhanced mystical meditation messages
+      if (creature.focus >= 90 && creature.wisdom >= 90) message = `${creature.name} touches the infinite mind! Transcendence achieved!`;
+      else if (creature.focus >= 90) message = `${creature.name} achieves diamond-clarity awareness! Focus perfected!`;
+      else if (creature.wisdom >= 90) message = `${creature.name} drinks from the eternal well! Wisdom overflows!`;
+      else if (creature.focus >= 70) message = `${creature.name} enters the stillness beyond thought! Wisdom and focus greatly increased.`;
+      else if (creature.wisdom >= 70) message = `${creature.name} channels ancient understanding! Profound insights flow.`;
+      else if (creature.loyalty >= 90) message = `${creature.name} merges consciousness with yours! Unity achieved!`;
+      else if (creature.loyalty >= 70) message = `${creature.name} finds divine peace in your presence! Wisdom and focus increased.`;
+      else if (creature.creativity >= 70) message = `${creature.name} paints visions in the mind's eye! Wisdom and focus increased.`;
+      else if (creature.courage >= 70) message = `${creature.name} faces inner depths fearlessly! Wisdom and focus increased.`;
+      else if (creature.curiosity >= 70) message = `${creature.name} explores infinite inner worlds! Wisdom and focus increased.`;
       
       showCompanionMessage(message);
     } else {
       const creature = getCreature();
       let message = 'Your VORTEK needs more energy to meditate.';
       
-      if (creature.wisdom >= 70) message = `${creature.name} knows meditation requires proper energy.`;
-      else if (creature.focus >= 70) message = `${creature.name} cannot concentrate without sufficient energy.`;
+      // Enhanced meditation rejection messages
+      if (creature.wisdom >= 90) message = `${creature.name} knows true meditation requires complete presence of energy.`;
+      else if (creature.wisdom >= 70) message = `${creature.name} understands: the mind needs fuel for deep contemplation.`;
+      else if (creature.focus >= 90) message = `${creature.name} maintains perfect awareness of energy limitations.`;
+      else if (creature.focus >= 70) message = `${creature.name} cannot achieve focus without sufficient life force.`;
+      else if (creature.loyalty >= 70) message = `${creature.name} honors meditation too much to practice it weakly.`;
       
       showCompanionMessage(message);
     }
@@ -336,17 +379,29 @@ function setupDefeatedOpponents() {
       const creature = getCreature();
       let message = 'Explored the room together! Curiosity increased.';
       
-      if (creature.curiosity >= 70) message = `${creature.name} discovers fascinating details! Curiosity greatly increased.`;
-      else if (creature.creativity >= 70) message = `${creature.name} finds artistic inspiration! Curiosity increased.`;
-      else if (creature.playfulness >= 70) message = `${creature.name} turns exploration into play! Curiosity increased.`;
+      // Enhanced mystical exploration messages
+      if (creature.curiosity >= 90) message = `${creature.name} unravels cosmic mysteries hidden in plain sight! Curiosity transcends!`;
+      else if (creature.curiosity >= 70) message = `${creature.name} discovers infinite worlds within finite space! Curiosity greatly increased.`;
+      else if (creature.creativity >= 90) message = `${creature.name} reimagines reality through artistic vision! Curiosity inspired!`;
+      else if (creature.creativity >= 70) message = `${creature.name} finds beauty in every hidden corner! Curiosity increased.`;
+      else if (creature.playfulness >= 90) message = `${creature.name} transforms exploration into cosmic dance! Curiosity celebrates!`;
+      else if (creature.playfulness >= 70) message = `${creature.name} makes adventure from simple discovery! Curiosity increased.`;
+      else if (creature.wisdom >= 70) message = `${creature.name} seeks understanding in all things! Curiosity increased.`;
+      else if (creature.courage >= 70) message = `${creature.name} boldly ventures into unknown territory! Curiosity increased.`;
+      else if (creature.focus >= 70) message = `${creature.name} perceives details invisible to others! Curiosity increased.`;
       
       showCompanionMessage(message);
     } else {
       const creature = getCreature();
       let message = 'Need to wait before exploring again.';
       
-      if (creature.curiosity >= 70) message = `${creature.name} is still processing the last discovery.`;
-      else if (creature.wisdom >= 70) message = `${creature.name} believes good exploration takes time.`;
+      // Enhanced exploration cooldown messages
+      if (creature.curiosity >= 90) message = `${creature.name} dwells in contemplation of infinite discoveries already made.`;
+      else if (creature.curiosity >= 70) message = `${creature.name} is still absorbing the wisdom of the last revelation.`;
+      else if (creature.wisdom >= 90) message = `${creature.name} knows all knowledge needs time to ripen in the soul.`;
+      else if (creature.wisdom >= 70) message = `${creature.name} believes true understanding cannot be rushed.`;
+      else if (creature.focus >= 70) message = `${creature.name} is processing profound insights from recent exploration.`;
+      else if (creature.loyalty >= 70) message = `${creature.name} wants to share discoveries when the time is right.`;
       
       showCompanionMessage(message);
     }

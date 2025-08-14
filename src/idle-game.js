@@ -536,122 +536,153 @@ function getStatusMessage(creature) {
   const modifiers = getPerformanceModifiers(creature);
   
   // Priority messages based on urgent needs
-  if (creature.needsAttention) return "Needs attention!";
+  if (creature.needsAttention) return "Yearning for your presence...";
   if (creature.energy < 20) {
-    if (creature.playfulness >= 70) return "Too tired to play...";
-    if (creature.focus >= 70) return "Too drained to concentrate...";
-    return "Feeling tired...";
+    if (creature.playfulness >= 70) return "Spirit willing, but body weary...";
+    if (creature.focus >= 70) return "Mind clouded by exhaustion...";
+    if (creature.wisdom >= 70) return "Seeking rest to restore inner balance...";
+    return "Energy flows low like a distant stream...";
   }
   if (creature.happiness < 30) {
-    if (creature.loyalty >= 70) return "Missing you deeply...";
-    if (creature.courage >= 70) return "Feeling discouraged...";
-    return "Feeling sad...";
+    if (creature.loyalty >= 70) return "Heart aches in your absence...";
+    if (creature.courage >= 70) return "Courage falters without your guidance...";
+    if (creature.wisdom >= 70) return "Even the wise know sorrow...";
+    return "Shadows gather in the soul...";
   }
+  
+  // Enlightened/Transcendent status messages for high stats
+  if (creature.wisdom >= 90 && creature.focus >= 90) return "Dwelling in perfect mindfulness...";
+  if (creature.courage >= 95) return "Fearless as the mountain, flowing as the stream...";
+  if (creature.creativity >= 95) return "Reality bends to artistic vision...";
+  if (creature.loyalty >= 95) return "United in spirit across all dimensions...";
   
   // Positive status messages based on personality
   if (creature.happiness > 80 && creature.energy > 60) {
-    if (creature.playfulness >= 70) return "Bouncing with joy!";
-    if (creature.creativity >= 70) return "Bursting with inspiration!";
-    if (creature.courage >= 70) return "Ready for adventure!";
-    return "Very happy!";
+    if (creature.playfulness >= 70) return "Dancing with the joy of existence!";
+    if (creature.creativity >= 70) return "Painting reality with pure inspiration!";
+    if (creature.courage >= 70) return "Heart blazing with warrior's fire!";
+    if (creature.wisdom >= 70) return "Radiating serene contentment...";
+    return "Soul shining like a beacon!";
   }
   
-  // Personality-driven neutral states
-  if (creature.curiosity >= 70 && creature.wisdom > 60) return "Pondering mysteries...";
-  if (creature.creativity >= 70) return "Feeling artistic...";
-  if (creature.focus >= 70) return "In deep concentration...";
-  if (creature.courage >= 70) return "Feeling bold...";
-  if (creature.loyalty >= 70) return "Devoted and faithful...";
-  if (creature.playfulness >= 70) return "Looking for fun...";
-  if (creature.wisdom > 80) return "Deep in thought...";
+  // Mystical personality-driven neutral states
+  if (creature.curiosity >= 70 && creature.wisdom > 60) return "Contemplating the eternal mysteries...";
+  if (creature.creativity >= 70 && creature.focus >= 60) return "Weaving dreams into reality...";
+  if (creature.focus >= 70 && creature.wisdom >= 60) return "Mind sharp as diamond, clear as water...";
+  if (creature.courage >= 70 && creature.loyalty >= 60) return "Standing guard over sacred bonds...";
+  if (creature.loyalty >= 70 && creature.wisdom >= 60) return "Heart anchored in unwavering devotion...";
+  if (creature.playfulness >= 70 && creature.curiosity >= 60) return "Finding wonder in each moment...";
+  if (creature.wisdom > 80) return "Touching the infinite with understanding...";
+  if (creature.creativity >= 70) return "Channeling cosmic artistry...";
+  if (creature.focus >= 70) return "Centered in perfect awareness...";
+  if (creature.courage >= 70) return "Spirit unshakeable as ancient stone...";
+  if (creature.loyalty >= 70) return "Bound by threads stronger than starlight...";
+  if (creature.playfulness >= 70) return "Discovering magic in the ordinary...";
   
-  return "Content";
+  return "Peacefully being...";
 }
 
 function getMoodMessage(creature) {
   const telemetry = getTelemetry();
   const modifiers = getPerformanceModifiers(creature);
   
-  // High-level achievement messages
+  // High-level achievement messages with spiritual themes
   if (creature.level >= 50) {
-    if (creature.loyalty >= 90) return "A legendary bond forged through countless battles!";
-    if (creature.courage >= 90) return "Fearless legendary VORTEKS master!";
-    return "A legendary VORTEKS master!";
+    if (creature.loyalty >= 90) return "A sacred bond transcending space and time itself!";
+    if (creature.courage >= 90) return "Fearless legend walking between worlds!";
+    if (creature.wisdom >= 90) return "Ancient wisdom flowing through mortal form!";
+    if (creature.creativity >= 90) return "Master artist painting reality with pure will!";
+    return "Enlightened VORTEKS master dwelling in eternal now!";
   }
   
   if (creature.level >= 30) {
-    if (creature.creativity >= 80) return "Masterfully creating new battle strategies!";
-    if (creature.focus >= 80) return "Precisely mastering card combat techniques!";
-    return "Mastering the art of card combat...";
+    if (creature.creativity >= 80) return "Weaving battle-poetry from the threads of strategy!";
+    if (creature.focus >= 80) return "Mind like still water reflecting perfect truth!";
+    if (creature.wisdom >= 80) return "Walking the middle path of tactical balance!";
+    return "Ascending the mountain of mastery, step by step...";
   }
   
   if (creature.level >= 15) {
-    if (creature.curiosity >= 70) return "Eagerly studying your every move!";
-    if (creature.playfulness >= 70) return "Joyfully growing stronger through play!";
-    return "Growing stronger with each battle!";
+    if (creature.curiosity >= 70) return "Drinking deeply from the wellspring of knowledge!";
+    if (creature.playfulness >= 70) return "Finding the sacred within the play of existence!";
+    if (creature.courage >= 70) return "Growing bold through trials of heart and mind!";
+    return "Strength blooms from seeds of perseverance!";
   }
   
   if (creature.level >= 5) {
-    if (creature.wisdom >= 60) return "Thoughtfully analyzing your battle strategies...";
-    if (creature.loyalty >= 70) return "Devotedly learning from your guidance...";
-    return "Learning your battle strategies...";
+    if (creature.wisdom >= 60) return "Meditation in motion, learning through being...";
+    if (creature.loyalty >= 70) return "Trust deepening like roots in sacred soil...";
+    if (creature.focus >= 60) return "Awareness sharpening like a blade in moonlight...";
+    return "Absorbing the subtle art of strategic flow...";
   }
   
-  // Battle streak responses with personality
+  // Battle streak responses with mystical personality
   if (telemetry.battles.currentStreak >= 10) {
-    if (creature.courage >= 70) return "Fearlessly celebrating your incredible victories!";
-    if (creature.loyalty >= 70) return "Proudly admiring your unbeatable streak!";
-    return "Amazed by your incredible streak!";
+    if (creature.courage >= 70) return "Riding the winds of destiny fearlessly!";
+    if (creature.loyalty >= 70) return "Witnessing your legend unfold with devoted pride!";
+    if (creature.wisdom >= 70) return "Your victories echo in the chambers of eternity!";
+    return "Marveling at this dance of triumph and time!";
   }
   
   if (telemetry.battles.currentStreak > 5) {
-    if (creature.playfulness >= 70) return "Dancing with excitement at your victories!";
-    if (creature.creativity >= 70) return "Artistically inspired by your winning style!";
-    return "Inspired by your victories!";
+    if (creature.playfulness >= 70) return "Celebrating the joyous rhythm of success!";
+    if (creature.creativity >= 70) return "Your victories paint masterpieces in the air!";
+    if (creature.focus >= 70) return "Witnessing the flow state of perfect execution!";
+    return "Heart soaring with each victorious moment!";
   }
   
   if (telemetry.battles.currentStreak > 2) {
-    if (creature.focus >= 70) return "Intently studying your winning patterns!";
-    return "Excited by your winning streak!";
+    if (creature.focus >= 70) return "Studying the sacred patterns of your success!";
+    if (creature.curiosity >= 70) return "Discovering the secrets hidden in triumph!";
+    return "Energy building like gathering storm clouds!";
   }
   
-  // Experience-based messages with personality
+  // Experience-based messages with deeper wisdom
   if (telemetry.battles.total > 100) {
-    if (creature.wisdom >= 80) return "Deeply contemplating your vast expertise...";
-    if (creature.curiosity >= 70) return "Fascinated by your extensive battle knowledge!";
-    return "Studying your vast experience...";
+    if (creature.wisdom >= 80) return "Swimming in the ocean of accumulated wisdom...";
+    if (creature.curiosity >= 70) return "Each battle a universe of infinite learning!";
+    if (creature.courage >= 70) return "A warrior's thousand trials forge the soul!";
+    return "Walking libraries of battle lore and legend...";
   }
   
   if (telemetry.battles.total > 50) {
-    if (creature.loyalty >= 70) return "Faithfully absorbing lessons from your battles...";
-    return "Learning from your many battles...";
+    if (creature.loyalty >= 70) return "Drinking from the fountain of shared experience...";
+    if (creature.focus >= 70) return "Patterns emerging from the chaos of conflict...";
+    return "Wisdom crystallizing from the fires of experience...";
   }
   
   if (telemetry.battles.total > 20) {
-    if (creature.focus >= 60) return "Carefully observing your tactical evolution...";
-    return "Watching your tactical evolution...";
+    if (creature.focus >= 60) return "Watching the spiral dance of strategic evolution...";
+    if (creature.creativity >= 60) return "Art emerging from the canvas of combat...";
+    return "Seeds of mastery taking root in fertile ground...";
   }
   
   if (telemetry.battles.total > 10) {
-    if (creature.curiosity >= 60) return "Curiously studying your developing skills...";
-    return "Observing your growing skill...";
+    if (creature.curiosity >= 60) return "Wonder grows with each revealed mystery...";
+    if (creature.playfulness >= 60) return "Finding joy in the game within the game...";
+    return "First steps on the thousand-mile journey...";
   }
   
-  // Early stage messages with personality hints
+  // Early stage messages with mystical personality hints
   if (creature.stage === 'EGG') {
-    if (creature.creativity >= 50) return "Dreaming of artistic possibilities!";
-    if (creature.courage >= 50) return "Preparing for brave adventures!";
-    if (creature.curiosity >= 50) return "Sensing exciting discoveries ahead!";
-    return "Preparing to hatch into something amazing!";
+    if (creature.creativity >= 50) return "Dreams of cosmic artistry swirling within...";
+    if (creature.courage >= 50) return "Warrior spirit stirring in primordial depths...";
+    if (creature.curiosity >= 50) return "Ancient questions awakening in the shell...";
+    if (creature.wisdom >= 50) return "Timeless knowledge gathering like morning dew...";
+    if (creature.loyalty >= 50) return "Heart-bonds forming across the veil of being...";
+    if (creature.focus >= 50) return "Consciousness crystallizing into perfect form...";
+    return "Life force gathering like stars before dawn...";
   }
   
   if (creature.stage === 'HATCHLING') {
-    if (creature.playfulness >= 60) return "Playfully exploring the VORTEKS world!";
-    if (creature.loyalty >= 60) return "Bonding closely while taking first steps!";
-    return "Taking first steps in the VORTEKS world!";
+    if (creature.playfulness >= 60) return "Dancing through the first steps of existence!";
+    if (creature.loyalty >= 60) return "Soul-threads weaving between kindred spirits!";
+    if (creature.wisdom >= 60) return "Ancient memory awakening in youthful form...";
+    if (creature.curiosity >= 60) return "Wonder-filled eyes seeing infinity everywhere!";
+    return "Innocent wonder meeting infinite possibility!";
   }
   
-  return "Beginning a new adventure together...";
+  return "Two souls beginning their eternal dance together...";
 }
 
 // Migration function for future versions
@@ -954,5 +985,87 @@ export function updateCompanionFromGameplay(eventType, data = {}) {
     // Update telemetry-based stats
     updateCreatureFromTelemetry();
     saveIdleGame();
+  }
+}
+
+// Get mystical flavor text for room interactions
+export function getRoomInteractionMessage(elementName, creature, success = true) {
+  if (!success) return getRoomInteractionFailMessage(elementName, creature);
+  
+  switch (elementName) {
+    case 'bed':
+      if (creature.loyalty >= 90) return `${creature.name} surrenders to dreams where souls dance eternally...`;
+      else if (creature.loyalty >= 70) return `${creature.name} rests in the sanctuary of your shared bond...`;
+      else if (creature.wisdom >= 90) return `${creature.name} sleeps to commune with ancient wisdom...`;
+      else if (creature.wisdom >= 70) return `${creature.name} finds restoration in the temple of rest...`;
+      else if (creature.focus >= 70) return `${creature.name} recharges with meditative slumber...`;
+      else if (creature.creativity >= 70) return `${creature.name} dreams in colors beyond imagination...`;
+      else if (creature.playfulness >= 70) return `${creature.name} rests to gather energy for cosmic play...`;
+      return `${creature.name} finds peace in sacred repose...`;
+      
+    case 'mirror':
+      if (creature.curiosity >= 90) return `${creature.name} gazes beyond reflection into infinite possibility...`;
+      else if (creature.curiosity >= 70) return `${creature.name} discovers universes hidden in their own eyes...`;
+      else if (creature.wisdom >= 90) return `${creature.name} sees the eternal self beyond temporal form...`;
+      else if (creature.wisdom >= 70) return `${creature.name} contemplates the mirror of consciousness...`;
+      else if (creature.creativity >= 70) return `${creature.name} finds artistic inspiration in self-reflection...`;
+      else if (creature.focus >= 70) return `${creature.name} practices mindful self-awareness...`;
+      return `${creature.name} ponders their own mysterious nature...`;
+      
+    case 'bookshelf':
+      if (creature.wisdom >= 90) return `${creature.name} absorbs knowledge directly into their eternal essence...`;
+      else if (creature.wisdom >= 70) return `${creature.name} drinks from the wellspring of accumulated wisdom...`;
+      else if (creature.focus >= 90) return `${creature.name} reads between dimensions, understanding all...`;
+      else if (creature.focus >= 70) return `${creature.name} concentrates intensely on profound teachings...`;
+      else if (creature.curiosity >= 70) return `${creature.name} devours knowledge with insatiable wonder...`;
+      else if (creature.creativity >= 70) return `${creature.name} finds inspiration in ancient stories...`;
+      return `${creature.name} studies with reverent attention...`;
+      
+    case 'toybox':
+      if (creature.playfulness >= 90) return `${creature.name} transforms toys into portals of pure joy...`;
+      else if (creature.playfulness >= 70) return `${creature.name} plays with the innocent wisdom of eternal youth...`;
+      else if (creature.creativity >= 90) return `${creature.name} reimagines toys as tools of cosmic artistry...`;
+      else if (creature.creativity >= 70) return `${creature.name} creates masterpieces from simple playthings...`;
+      else if (creature.curiosity >= 70) return `${creature.name} explores new dimensions of fun...`;
+      else if (creature.loyalty >= 70) return `${creature.name} plays with thoughts of shared happiness...`;
+      return `${creature.name} finds wonder in simple pleasures...`;
+      
+    case 'plant':
+      if (creature.focus >= 90) return `${creature.name} communes with the plant's silent enlightenment...`;
+      else if (creature.focus >= 70) return `${creature.name} meditates on the patient wisdom of growth...`;
+      else if (creature.wisdom >= 90) return `${creature.name} learns from nature's eternal teachings...`;
+      else if (creature.wisdom >= 70) return `${creature.name} finds profound lessons in green simplicity...`;
+      else if (creature.creativity >= 70) return `${creature.name} draws artistic inspiration from living beauty...`;
+      else if (creature.curiosity >= 70) return `${creature.name} marvels at the mysteries of life...`;
+      return `${creature.name} tends to the sacred connection with nature...`;
+      
+    case 'artEasel':
+      if (creature.creativity >= 90) return `${creature.name} paints visions that reshape reality itself...`;
+      else if (creature.creativity >= 70) return `${creature.name} channels cosmic beauty through artistic expression...`;
+      else if (creature.wisdom >= 90) return `${creature.name} creates art that teaches without words...`;
+      else if (creature.wisdom >= 70) return `${creature.name} expresses profound truths through visual poetry...`;
+      else if (creature.focus >= 70) return `${creature.name} enters perfect flow state while creating...`;
+      else if (creature.playfulness >= 70) return `${creature.name} plays with colors like a child of light...`;
+      return `${creature.name} brings inner visions into form...`;
+      
+    default:
+      return `${creature.name} interacts with mysterious purpose...`;
+  }
+}
+
+function getRoomInteractionFailMessage(elementName, creature) {
+  switch (elementName) {
+    case 'bed':
+      if (creature.wisdom >= 90) return `${creature.name} knows rest is not needed when energy overflows...`;
+      else if (creature.focus >= 70) return `${creature.name} is too energized for peaceful slumber...`;
+      return `${creature.name} feels too alert for rest...`;
+      
+    case 'bookshelf':
+      if (creature.wisdom >= 90) return `${creature.name} needs vital energy to properly honor the teachings...`;
+      else if (creature.focus >= 70) return `${creature.name} requires clear mind-energy for deep study...`;
+      return `${creature.name} lacks energy for concentrated learning...`;
+      
+    default:
+      return `${creature.name} cannot interact with this right now...`;
   }
 }
