@@ -21,7 +21,7 @@ export function renderCost(card) {
   
   // Add energy cost if card has one
   if (card.cost > 0) {
-    costStr += `${card.cost}⚡`;
+    costStr += `${card.cost}🔆`;
   }
   
   // Add life cost if the card has one
@@ -81,16 +81,16 @@ export function cardText(c) {
     parts.push(`Burn ${st.burn.amount} for ${st.burn.turns}.`); 
   }
   if (st.freezeEnergy) { 
-    parts.push(`Foe -${st.freezeEnergy} ⚡ next.`); 
+    parts.push(`Foe -${st.freezeEnergy} 🔆 next.`); 
   }
   if (self.nextPlus) { 
     parts.push(`+${self.nextPlus} next atk.`); 
   }
   if (self.maxEnergyDelta) { 
-    parts.push(`+${self.maxEnergyDelta} max ⚡.`); 
+    parts.push(`+${self.maxEnergyDelta} max 🔆.`); 
   }
   if (self.energyNowDelta) { 
-    parts.push(`+${self.energyNowDelta} ⚡ now.`); 
+    parts.push(`+${self.energyNowDelta} 🔆 now.`); 
   }
   if (c.id === 'echo') { 
     parts.push('Repeat last non‑Echo, else draw 1.'); 
@@ -145,13 +145,13 @@ export function predictCard(card, me, them, Game) {
     }
   }
   if (card.id === 'snow') { 
-    out.push(`-1⚡ next`); 
+    out.push(`-1🔆 next`); 
   }
   if (card.id === 'star') { 
     out.push(`next +2`); 
   }
   if (card.id === 'loop') { 
-    out.push(`+1⚡ max`); 
+    out.push(`+1🔆 max`); 
   }
   if (card.id === 'echo' && (!me.lastPlayed || me.lastPlayed.id === 'echo')) {
     out = ['draw 1'];

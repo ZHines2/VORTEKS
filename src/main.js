@@ -3,9 +3,11 @@ import { createRenderFunction, bump, bumpHP, bumpShield, fxBurn, fxFreeze, fxZap
 import { openDeckBuilder, buildRandomDeck } from './deck-builder.js';
 import { runSelfTests } from './tests.js';
 import { initFaceGenerator, drawOppFace, setOpponentName } from './face-generator.js';
-import { makePersonaDeck } from './ai.js';
+import { makePersonaDeck, createAIPlayer, createCampaignOpponent } from './ai.js';
+import { createPlayer } from './player.js';
 import { MOTTOS } from './mottos.js';
 import { CARDS } from '../data/cards.js';
+import { Campaign } from './campaign.js';
 import { 
   getUnlockedCards, 
   isCardUnlocked, 
@@ -531,6 +533,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Setup clear unlocks functionality
   setupClearUnlocks();
 
+  // Setup Campaign functionality
+  setupCampaign();
+
   // Usual game boot
   const logFunction = function log(entry){
     const logBox = document.getElementById('log');
@@ -589,7 +594,14 @@ document.addEventListener('DOMContentLoaded', () => {
   // Victory modal event handlers
   document.getElementById('nextBattleBtn').onclick = () => {
     recordCurrentDefeatedOpponent();
-    Game.nextBattle();
+    
+    // Check if we're in campaign mode
+    if (Campaign.active) {
+      // Handle campaign victory flow instead of normal next battle
+      handleCampaignVictory();
+    } else {
+      Game.nextBattle();
+    }
   };
   document.getElementById('victoryUnlocksBtn').onclick = () => {
     renderUnlocksModal();
@@ -792,6 +804,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Setup Campaign functionality
+  function setupCampaign() {
+    // Load existing campaign and show continue button if active
+    if (Campaign.load()) {
+      const continueBtn = document.getElementById('campaignContinueBtn');
+      if (continueBtn) {
+        continueBtn.hidden = false;
+      }
+    }
+  }
+
   // Start screen logic
   function showStart() {
     const modal = document.getElementById('startModal');
@@ -866,11 +889,242 @@ document.addEventListener('DOMContentLoaded', () => {
     renderQuirkGrid(); // Render dynamic quirk grid when showing start
     document.getElementById('startBtn').onclick = ()=>{ modal.hidden=true; Game.init(); };
     document.getElementById('quickBtn').onclick = ()=>{ modal.hidden=true; Game.initQuick(); };
+    
+    // Campaign button handlers
+    document.getElementById('campaignBtn').onclick = () => {
+      modal.hidden = true;
+      startNewCampaign();
+    };
+    
+    document.getElementById('campaignContinueBtn').onclick = () => {
+      modal.hidden = true;
+      continueCampaign();
+    };
   }
   window.showStart = showStart;
 
   // Expose Game functions for UI event handlers
   window.Game = Game;
+
+  // Campaign Functions
+  function startNewCampaign() {
+    // Show quirk picker for campaign
+    const quirkModal = document.getElementById('quirkModal');
+    quirkModal.hidden = false;
+    
+    // Override quirk selection for campaign
+    window.onQuirkSelected = (quirkId) => {
+      Campaign.start(quirkId);
+      quirkModal.hidden = true;
+      initCampaignBattle();
+    };
+  }
+
+  function continueCampaign() {
+    if (Campaign.load()) {
+      initCampaignBattle();
+    } else {
+      console.error('No campaign to continue');
+      showStart();
+    }
+  }
+
+  function initCampaignBattle() {
+    // Initialize game with campaign settings
+    Game.you = createPlayer(false);
+    Game.opp = createPlayer(true);
+    Game.ai = createAIPlayer(Game);
+    
+    // Set campaign deck
+    Game.you.deck = Campaign.deck.map(cardId => ({ ...CARDS.find(c => c.id === cardId) }));
+    Game.you.hand = [];
+    Game.you.discard = [];
+    Game.you.draw(5);
+    
+    // Set campaign quirk
+    Game.selectedQuirk = Campaign.selectedQuirk;
+    Game.you.quirk = Campaign.selectedQuirk;
+    
+    // Apply quirk effects
+    Game.applyQuirkBattleStart(Game.you);
+    
+    // Generate opponent with campaign scaling
+    const faceInfo = drawOppFace();
+    Game.persona = faceInfo.persona;
+    Game.oppFeatures = faceInfo.features;
+    setOpponentName(Game.persona, Game.oppFeatures);
+    
+    // Create enhanced deck with campaign booster scaling
+    const campaignBooster = Campaign.boosterLevel;
+    Game.opp.deck = makePersonaDeck(Game.persona, getUnlockedCards(), campaignBooster);
+    
+    // Apply campaign stat bonuses to opponent
+    if (campaignBooster > 0) {
+      const hpBonus = Math.floor(campaignBooster * 2); // +2 HP per booster level
+      const energyBonus = Math.min(Math.floor(campaignBooster * 0.5), 3); // +0.5 energy per level, capped at +3
+      
+      Game.opp.maxHP += hpBonus;
+      Game.opp.hp += hpBonus;
+      Game.opp.maxEnergy += energyBonus;
+      Game.opp.energy += energyBonus;
+      
+      // Log the enhanced opponent
+      if (campaignBooster >= 5) {
+        logMessage(`⚠️ ELITE OPPONENT: Enhanced ${Game.persona} (+${hpBonus} HP, +${energyBonus} Energy)!`);
+      } else if (campaignBooster >= 2) {
+        logMessage(`💪 Stronger ${Game.persona} appears (+${hpBonus} HP, +${energyBonus} Energy)!`);
+      }
+    }
+    
+    // Initialize game state
+    Game.over = false;
+    Game.turn = 'you';
+    Game.turnTypes = new Set();
+    Game.playerTurnDamage = 0;
+    
+    // Show/hide appropriate UI elements
+    updateCampaignUI();
+    
+    // Hide start modal and render
+    document.getElementById('startModal').hidden = true;
+    if (window.render) window.render();
+    
+    console.log('Campaign battle initialized');
+  }
+
+  function updateCampaignUI() {
+    const streakPill = document.getElementById('streakPill');
+    const boosterPill = document.getElementById('boosterPill');
+    
+    if (Campaign.active) {
+      // Hide streak, show booster
+      streakPill.hidden = true;
+      boosterPill.hidden = false;
+      document.getElementById('booster').textContent = Campaign.boosterLevel;
+    } else {
+      // Show streak, hide booster
+      streakPill.hidden = false;
+      boosterPill.hidden = true;
+    }
+  }
+
+  // Setup Campaign modal event handlers
+  setupCampaignModals();
+
+  function setupCampaignModals() {
+    // Campaign Reward Modal handlers
+    document.getElementById('campaignRewardsConfirmBtn').onclick = () => {
+      confirmCampaignRewards();
+    };
+    
+    document.getElementById('campaignRewardsEditDeckBtn').onclick = () => {
+      confirmCampaignRewards();
+      showCampaignDeckEdit();
+    };
+    
+    document.getElementById('campaignRewardsAbandonBtn').onclick = () => {
+      if (confirm('Abandon this campaign run? All progress will be lost.')) {
+        Campaign.abandon();
+        document.getElementById('campaignRewardModal').hidden = true;
+        showStart();
+      }
+    };
+    
+    // Campaign Deck Edit Modal handlers
+    document.getElementById('campaignDeckContinueBtn').onclick = () => {
+      document.getElementById('campaignDeckModal').hidden = true;
+      initCampaignBattle(); // Start next battle
+    };
+    
+    document.getElementById('campaignDeckAbandonBtn').onclick = () => {
+      if (confirm('Abandon this campaign run? All progress will be lost.')) {
+        Campaign.abandon();
+        document.getElementById('campaignDeckModal').hidden = true;
+        showStart();
+      }
+    };
+  }
+
+  function confirmCampaignRewards() {
+    // Get reward selections from checkboxes
+    const rewardElements = document.querySelectorAll('.campaign-reward-item input[type="checkbox"]');
+    const selections = Array.from(rewardElements).map(el => el.checked);
+    
+    Campaign.acceptRewards(selections);
+    document.getElementById('campaignRewardModal').hidden = true;
+  }
+
+  function showCampaignDeckEdit() {
+    const modal = document.getElementById('campaignDeckModal');
+    const deckList = document.getElementById('campaignDeckList');
+    const deckCount = document.getElementById('campaignDeckCount');
+    
+    deckCount.textContent = Campaign.deck.length;
+    
+    // Render deck cards
+    deckList.innerHTML = '';
+    Campaign.deck.forEach((cardId, index) => {
+      const card = CARDS.find(c => c.id === cardId);
+      if (card) {
+        const cardEl = document.createElement('div');
+        cardEl.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:8px; margin:4px 0; background:rgba(255,255,255,0.1); border-radius:4px;';
+        cardEl.innerHTML = `
+          <span>${card.sym} ${card.name}</span>
+          <button class="btn" ${Campaign.deck.length <= 10 ? 'disabled style="opacity:0.5"' : ''} onclick="removeCampaignCard(${index})">✖</button>
+        `;
+        deckList.appendChild(cardEl);
+      }
+    });
+    
+    modal.hidden = false;
+  }
+
+  function renderCampaignRewards(rewards) {
+    const rewardsList = document.getElementById('campaignRewardsList');
+    
+    rewardsList.innerHTML = '';
+    rewards.forEach((reward, index) => {
+      const card = CARDS.find(c => c.id === reward.cardId);
+      if (card) {
+        const rewardEl = document.createElement('div');
+        rewardEl.className = 'campaign-reward-item';
+        rewardEl.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:8px; margin:4px 0; background:rgba(255,255,255,0.1); border-radius:4px;';
+        
+        const mandatoryLabel = reward.mandatory ? ' <span style="color:var(--bad)">(MANDATORY)</span>' : '';
+        rewardEl.innerHTML = `
+          <span>${card.sym} ${card.name}${mandatoryLabel}</span>
+          <input type="checkbox" ${reward.accepted ? 'checked' : ''} ${reward.mandatory ? 'disabled' : ''}>
+        `;
+        rewardsList.appendChild(rewardEl);
+      }
+    });
+  }
+
+  // Global function for removing campaign cards
+  window.removeCampaignCard = function(index) {
+    if (Campaign.removeCard(index)) {
+      showCampaignDeckEdit(); // Refresh the deck edit modal
+    }
+  };
+
+  // Handle campaign victory flow
+  function handleCampaignVictory() {
+    // Hide victory modal first
+    document.getElementById('victoryModal').hidden = true;
+    
+    // Get opponent deck for rewards
+    const opponentDeck = Game.opp.deck.map(card => card.id);
+    
+    // Record victory and generate rewards
+    const rewards = Campaign.recordVictory(opponentDeck);
+    
+    // Update UI
+    updateCampaignUI();
+    
+    // Show campaign reward modal
+    renderCampaignRewards(rewards);
+    document.getElementById('campaignRewardModal').hidden = false;
+  }
 
   showStart();
 });

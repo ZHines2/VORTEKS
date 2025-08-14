@@ -2,11 +2,45 @@ import { CARDS } from '../data/cards.js';
 import { shuffle } from './utils.js';
 
 // AI opponent logic and deck building
-export function makePersonaDeck(kind) {
+export function makePersonaDeck(kind, unlockedCards = null, campaignBooster = 0) {
   const counts = { 
     heart: 2, swords: 2, shield: 2, echo: 2, fire: 2, 
     snow: 2, bolt: 2, star: 2, dagger: 2, loop: 2 
   };
+  
+  // Campaign scaling: Make opponents more challenging as booster level increases
+  if (campaignBooster > 0) {
+    // High risk, high reward scaling
+    const scalingFactor = Math.min(campaignBooster * 0.3, 3); // Cap scaling at booster 10
+    
+    // Boost aggressive cards for higher risk/reward
+    if (campaignBooster >= 2) {
+      counts.dagger += Math.floor(scalingFactor);
+      counts.fire += Math.floor(scalingFactor * 0.5);
+    }
+    
+    // Add powerful cards at higher levels
+    if (campaignBooster >= 4) {
+      counts.wallop = Math.max(1, Math.floor(scalingFactor * 0.5));
+      counts.purge = Math.max(1, Math.floor(scalingFactor * 0.3));
+    }
+    
+    // Elite opponents at very high levels
+    if (campaignBooster >= 7) {
+      counts.presto = Math.max(1, Math.floor(scalingFactor * 0.2));
+      // Reduce some basic cards to make room for powerful ones
+      counts.heart = Math.max(1, counts.heart - 1);
+      counts.shield = Math.max(1, counts.shield - 1);
+    }
+    
+    // Ultra-elite scaling at extreme levels
+    if (campaignBooster >= 10) {
+      // Add more copies of the most powerful cards
+      counts.wallop += 1;
+      counts.presto += 1;
+      counts.dagger += 1;
+    }
+  }
   
   if (kind === 'Doctor') { 
     counts.heart += 2; 
@@ -58,6 +92,23 @@ export function makePersonaDeck(kind) {
     }
   }
   return shuffle(deck);
+}
+
+// Create campaign-enhanced opponent with scaled stats
+export function createCampaignOpponent(baseOpponent, campaignBooster = 0) {
+  if (campaignBooster === 0) return baseOpponent;
+  
+  // Scale HP and Energy for high risk/high reward
+  const hpBonus = Math.floor(campaignBooster * 2); // +2 HP per booster level
+  const energyBonus = Math.min(Math.floor(campaignBooster * 0.5), 3); // +0.5 energy per level, capped at +3
+  
+  return {
+    ...baseOpponent,
+    maxHP: baseOpponent.maxHP + hpBonus,
+    hp: baseOpponent.hp + hpBonus,
+    maxEnergy: baseOpponent.maxEnergy + energyBonus,
+    energy: baseOpponent.energy + energyBonus
+  };
 }
 
 export function createAIPlayer(game) {

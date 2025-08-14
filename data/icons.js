@@ -6,7 +6,7 @@ export const icons = {
   echo: '🔁', 
   fire: '🔥', 
   snow: '❄', 
-  bolt: '🗲', 
+  bolt: '🔆', 
   star: '✨', 
   dagger: '🗡', 
   loop: '⟳',
