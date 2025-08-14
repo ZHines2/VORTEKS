@@ -116,9 +116,51 @@ export function cardText(c) {
   return parts.join(' ');
 }
 
+// Helper function to safely clone player objects for prediction, handling circular references from stolen cards
+function clonePlayerForPrediction(player) {
+  const clone = {
+    isAI: player.isAI,
+    hp: player.hp,
+    maxHP: player.maxHP,
+    shield: player.shield,
+    energy: player.energy,
+    maxEnergy: player.maxEnergy,
+    lastPlayed: player.lastPlayed ? cloneCardForPrediction(player.lastPlayed) : null,
+    status: { ...player.status },
+    quirk: player.quirk,
+    deck: player.deck.map(cloneCardForPrediction),
+    hand: player.hand.map(cloneCardForPrediction),
+    discard: player.discard.map(cloneCardForPrediction)
+  };
+  
+  // Add player methods needed for prediction
+  clone.canAfford = player.canAfford;
+  clone.spend = player.spend;
+  clone.draw = player.draw;
+  clone.removeFromHand = player.removeFromHand;
+  
+  return clone;
+}
+
+// Helper function to clone cards without circular references
+function cloneCardForPrediction(card) {
+  if (!card) return null;
+  
+  const cardClone = { ...card };
+  
+  // Remove circular references that could cause issues
+  if (cardClone.stolenFrom) {
+    cardClone.stolenFrom = cardClone.stolenFrom; // Keep the string identifier
+    delete cardClone.originalOwner; // Remove the circular reference to player object
+  }
+  
+  return cardClone;
+}
+
 export function predictCard(card, me, them, Game) {
-  const meClone = JSON.parse(JSON.stringify(me));
-  const themClone = JSON.parse(JSON.stringify(them));
+  // Deep clone players while handling circular references from stolen cards
+  const meClone = clonePlayerForPrediction(me);
+  const themClone = clonePlayerForPrediction(them);
   const g = Object.create(Game);
   g.you = meClone; 
   g.opp = themClone; 
