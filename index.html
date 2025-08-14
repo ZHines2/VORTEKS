@@ -9,7 +9,8 @@
 </head>
 <body>
   <div class="wrap">
-    <!-- Top-right buttons: unlocks, glossary, defeated, mute, and help -->
+    <!-- Top-right buttons: telemetry, unlocks, glossary, defeated, mute, and help -->
+    <button id="telemetryBtn" aria-label="Telemetry" title="View your gameplay stats and analytics">📊</button>
     <button id="unlocksBtn" aria-label="Unlocks" title="View unlocked cards and achievements">🏆</button>
     <button id="glossaryBtn" aria-label="Glossary" title="View card glossary">📖</button>
     <button id="defeatedBtn" aria-label="Defeated Opponents" title="View defeated opponents history">🏴</button>
@@ -340,6 +341,49 @@
       <div style="display:flex; justify-content:center; gap:8px">
         <button id="defeatedCloseBtn" class="btn">CLOSE</button>
         <button id="defeatedClearBtn" class="btn" style="background:var(--bad); color:white">CLEAR HISTORY</button>
+      </div>
+    </div>
+  </div>
+  <!-- Telemetry Modal -->
+  <div class="modal" id="telemetryModal" hidden>
+    <div class="box" style="width:min(96vw, 700px); max-height:80vh; overflow-y:auto">
+      <div style="font-size:18px; color:var(--accent); margin:8px 0 16px; text-align:center"><strong>📊 Player Analytics</strong></div>
+      
+      <!-- Battle Statistics -->
+      <div style="margin-bottom:16px">
+        <div style="font-size:14px; color:var(--accent); margin-bottom:8px"><strong>Battle Statistics</strong></div>
+        <div id="telemetryBattleStats" style="background:rgba(0,0,0,0.3); padding:12px; border-radius:4px; line-height:1.6">
+          <div>Loading battle statistics...</div>
+        </div>
+      </div>
+      
+      <!-- Favorite Cards -->
+      <div style="margin-bottom:16px">
+        <div style="font-size:14px; color:var(--accent); margin-bottom:8px"><strong>Card Usage Analysis</strong></div>
+        <div id="telemetryCardStats" style="background:rgba(0,0,0,0.3); padding:12px; border-radius:4px; line-height:1.6">
+          <div>Loading card usage data...</div>
+        </div>
+      </div>
+      
+      <!-- Gameplay Patterns -->
+      <div style="margin-bottom:16px">
+        <div style="font-size:14px; color:var(--accent); margin-bottom:8px"><strong>Gameplay Patterns</strong></div>
+        <div id="telemetryPatterns" style="background:rgba(0,0,0,0.3); padding:12px; border-radius:4px; line-height:1.6">
+          <div>Loading gameplay patterns...</div>
+        </div>
+      </div>
+      
+      <!-- Achievement Progress -->
+      <div style="margin-bottom:16px">
+        <div style="font-size:14px; color:var(--accent); margin-bottom:8px"><strong>Achievement Progress</strong></div>
+        <div id="telemetryAchievements" style="background:rgba(0,0,0,0.3); padding:12px; border-radius:4px; line-height:1.6">
+          <div>Loading achievement data...</div>
+        </div>
+      </div>
+      
+      <div style="display:flex; justify-content:center; gap:8px; margin-top:16px">
+        <button id="telemetryCloseBtn" class="btn">CLOSE</button>
+        <button id="telemetryResetBtn" class="btn" style="background:var(--bad); color:white">RESET STATS</button>
       </div>
     </div>
   </div>

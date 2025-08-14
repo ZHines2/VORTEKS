@@ -3,6 +3,7 @@ import { createPlayer } from './player.js';
 import { drawOppFace, setOpponentName } from './face-generator.js';
 import { makePersonaDeck, createAIPlayer } from './ai.js';
 import { checkAchievementUnlocks, checkPersonaDefeatUnlocks, recordBattleResult, getUnlockableCardsInfo, STARTER_CARDS } from './card-unlock.js';
+import { recordBattle, recordCardPlayed, recordCombat, recordTurn, recordQuirk, recordOpponent } from './telemetry.js';
 import { CARDS } from '../data/cards.js';
 import { 
   OVERHEAL_LIMIT_MULT, 
@@ -169,6 +170,10 @@ export const Game = {
     // We'll set up a global selection handler
     window.onQuirkSelected = (quirkId) => {
       this.you.quirk = quirkId;
+      
+      // Record quirk usage for telemetry
+      recordQuirk(quirkId);
+      
       if (quirkId === 'minty') { 
         this.you.maxEnergy = Math.max(this.you.maxEnergy + 1, 1); // Remove cap
         this.you.energy = this.applyEnergyGain(this.you, 1); 
@@ -378,6 +383,12 @@ export const Game = {
       const energyToSpend = card.id === 'reconsider' ? p.energy : card.cost;
       this.playerTurnEnergySpent += energyToSpend;
       
+      // Record card usage for telemetry
+      recordCardPlayed(card.id, card.type, energyToSpend);
+      recordCombat({
+        energySpent: energyToSpend
+      });
+      
       checkAchievementUnlocks({
         event: 'cardPlayed',
         cardId: card.id,
@@ -465,6 +476,13 @@ export const Game = {
       // Track player damage for achievements
       if (attackerIsPlayer && dmg > 0) {
         this.playerTurnDamage += dmg;
+        
+        // Record combat data for telemetry
+        recordCombat({
+          damageDealt: dmg,
+          pierceDamage: pierce || extraPierce > 0 ? dmg : 0
+        });
+        
         checkAchievementUnlocks({
           event: 'damage',
           source: 'you',
@@ -483,6 +501,11 @@ export const Game = {
       
       // Track damage taken by player (for Guardian unlock)
       if (targetIsPlayer && dmg > 0) {
+        // Record damage taken for telemetry
+        recordCombat({
+          damageTaken: dmg
+        });
+        
         checkAchievementUnlocks({
           event: 'damage',
           target: 'you',
@@ -794,6 +817,8 @@ export const Game = {
       
       // Record battle results and emit achievement events
       recordBattleResult(youWin ? 'win' : 'loss');
+      recordBattle(youWin ? 'win' : 'loss', this.streak, this.you.hp, this.you.maxHP, 0); // TODO: track turn count
+      recordOpponent(this.persona, youWin, this.oppFeatures?.isEasterEgg || false);
       checkAchievementUnlocks({
         event: 'battleEnd',
         result: youWin ? 'win' : 'loss',
