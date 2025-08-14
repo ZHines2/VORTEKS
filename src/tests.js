@@ -314,5 +314,53 @@ export function runSelfTests(Game, log, showStart) {
     assertEqual('Echo flag properly managed', testGame.isEchoing, false, log);
   }
 
+  // Test streak mechanism - ensure it only increments once per win
+  {
+    log('Testing streak mechanism...');
+    const testGame = Object.create(Game);
+    testGame.streak = 0;
+    testGame.over = false;
+    testGame.you = createPlayer(false);
+    testGame.opp = createPlayer(true);
+    testGame.stats = { firstPerfectWin: false };
+    
+    // Mock global functions
+    const originalLog = window.log;
+    window.log = () => {};
+    window.recordBattleResult = () => {};
+    window.checkAchievementUnlocks = () => {};
+    window.checkPersonaDefeatUnlocks = () => {};
+    testGame.showVictoryModal = () => {};
+    
+    // Setup winning scenario
+    testGame.you.hp = 10;
+    testGame.you.maxHP = 20;
+    testGame.opp.hp = 0; // AI is dead
+    
+    const initialStreak = testGame.streak;
+    
+    // First checkWin call should increment streak
+    testGame.checkWin();
+    assertEqual('First checkWin increments streak', testGame.streak, initialStreak + 1, log);
+    assertEqual('Game is marked as over', testGame.over, true, log);
+    
+    // Second checkWin call should NOT increment streak again
+    const streakAfterFirst = testGame.streak;
+    testGame.checkWin();
+    assertEqual('Multiple checkWin calls do not increment streak again', testGame.streak, streakAfterFirst, log);
+    
+    // Test loss scenario
+    testGame.over = false;
+    testGame.streak = 5; // Set to some value
+    testGame.you.hp = 0; // Player is dead
+    testGame.opp.hp = 10; // AI is alive
+    
+    testGame.checkWin();
+    assertEqual('Loss resets streak to 0', testGame.streak, 0, log);
+    
+    // Restore window log
+    window.log = originalLog;
+  }
+
   log('Self-tests complete.');
 }
