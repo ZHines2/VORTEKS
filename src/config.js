@@ -38,7 +38,7 @@ export const DEBUG = {
 
 // Campaign Configuration
 export const CAMPAIGN = {
-  STARTER_DECK: ['swords', 'shield', 'heart', 'fire', 'bolt', 'star', 'echo', 'focus', 'surge', 'reconsider'],
+  STARTER_DECK: ['swords', 'swords', 'shield', 'shield', 'heart', 'heart', 'fire', 'bolt', 'bolt', 'star'],
   BOOSTER: {
     K: 4, // Saturation constant for booster level scaling
     P1_CAP: 0.7, // Maximum probability for first extra card
