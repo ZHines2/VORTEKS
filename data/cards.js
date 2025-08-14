@@ -189,7 +189,7 @@ export const CARDS = [
     name: 'Presto', 
     cost: 1, 
     type: 'skill', 
-    tags: ['trickster', 'life-cost', 'steal'],
+    tags: ['trickster', 'lifecost', 'steal'],
     effects: { damage: 0, pierce: false, heal: 0, shield: 0, draw: 0, lifeCost: 1, presto: true }, 
     status: { target: { burn: null, freezeEnergy: 0 }, self: { nextPlus: 0, maxEnergyDelta: 0, energyNowDelta: 0, cleanse: false } }, 
     scaling: {}, 
