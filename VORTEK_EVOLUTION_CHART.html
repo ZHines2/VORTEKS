@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VORTEK Evolution Tree</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #1a1a2e;
+            color: #00ff88;
+            margin: 0;
+            padding: 20px;
+            overflow-x: auto;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #ff6b9d;
+            text-shadow: 0 0 10px #ff6b9d;
+            margin-bottom: 30px;
+        }
+        
+        .evolution-tree {
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+            margin: 40px 0;
+        }
+        
+        .stage {
+            display: flex;
+            align-items: center;
+            background: linear-gradient(135deg, #16213e, #0f3460);
+            border: 2px solid #00ff88;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+            position: relative;
+        }
+        
+        .stage-info {
+            flex: 1;
+            padding-right: 20px;
+        }
+        
+        .stage-name {
+            font-size: 24px;
+            font-weight: bold;
+            color: #ff6b9d;
+            margin-bottom: 10px;
+        }
+        
+        .stage-emoji {
+            font-size: 48px;
+            margin-right: 20px;
+        }
+        
+        .stage-details {
+            display: grid;
+            grid-template-columns: auto auto;
+            gap: 10px;
+            font-size: 14px;
+        }
+        
+        .level-req {
+            color: #ffd93d;
+            font-weight: bold;
+        }
+        
+        .bonuses {
+            color: #00ff88;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px;
+            margin: 40px 0;
+        }
+        
+        .stat-category {
+            background: linear-gradient(135deg, #2d1b69, #1a1a2e);
+            border: 2px solid #ff6b9d;
+            border-radius: 15px;
+            padding: 20px;
+        }
+        
+        .stat-category h3 {
+            color: #ff6b9d;
+            text-align: center;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px #ff6b9d;
+        }
+        
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(0, 255, 136, 0.3);
+        }
+        
+        .stat-name {
+            color: #00ff88;
+        }
+        
+        .stat-effect {
+            color: #ffd93d;
+            font-size: 12px;
+        }
+        
+        .room-elements {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 40px 0;
+        }
+        
+        .room-element {
+            background: linear-gradient(135deg, #0f3460, #16213e);
+            border: 2px solid #00ff88;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .room-element h4 {
+            color: #ff6b9d;
+            margin-bottom: 10px;
+        }
+        
+        .unlock-condition {
+            color: #ffd93d;
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+        
+        .room-effects {
+            color: #00ff88;
+            font-size: 12px;
+        }
+        
+        .formulas {
+            background: linear-gradient(135deg, #1a1a2e, #2d1b69);
+            border: 2px solid #ffd93d;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 40px 0;
+        }
+        
+        .formulas h3 {
+            color: #ffd93d;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .formula {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            margin: 10px 0;
+            border-left: 4px solid #00ff88;
+            font-family: 'Courier New', monospace;
+            color: #00ff88;
+        }
+        
+        .arrow {
+            text-align: center;
+            font-size: 24px;
+            color: #ffd93d;
+            margin: 10px 0;
+        }
+        
+        .testing-commands {
+            background: linear-gradient(135deg, #2d1b69, #1a1a2e);
+            border: 2px solid #ff6b9d;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 40px 0;
+        }
+        
+        .testing-commands h3 {
+            color: #ff6b9d;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .command {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            color: #00ff88;
+            border-left: 4px solid #ff6b9d;
+        }
+        
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .color-box {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌌 VORTEK COMPANION EVOLUTION SYSTEM 🌌</h1>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="color-box" style="background: #ff6b9d;"></div>
+                <span>Stages & Names</span>
+            </div>
+            <div class="legend-item">
+                <div class="color-box" style="background: #00ff88;"></div>
+                <span>Stats & Effects</span>
+            </div>
+            <div class="legend-item">
+                <div class="color-box" style="background: #ffd93d;"></div>
+                <span>Requirements & Formulas</span>
+            </div>
+        </div>
+
+        <div class="evolution-tree">
+            <div class="stage">
+                <div class="stage-emoji">🥚</div>
+                <div class="stage-info">
+                    <div class="stage-name">EGG</div>
+                    <div class="stage-details">
+                        <span class="level-req">Level Required: 0</span>
+                        <span class="bonuses">Starting Stage</span>
+                        <span>Size: Tiny</span>
+                        <span>All basic stats: 40-60</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="arrow">⬇️ Level 5 ⬇️</div>
+            
+            <div class="stage">
+                <div class="stage-emoji">🌟</div>
+                <div class="stage-info">
+                    <div class="stage-name">VORTEK Sprite</div>
+                    <div class="stage-details">
+                        <span class="level-req">Level Required: 5</span>
+                        <span class="bonuses">+10 Wisdom, +15 Curiosity, +10 Playfulness</span>
+                        <span>Size: Small</span>
+                        <span>Mirror unlocks available</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="arrow">⬇️ Level 15 ⬇️</div>
+            
+            <div class="stage">
+                <div class="stage-emoji">⚡</div>
+                <div class="stage-info">
+                    <div class="stage-name">Echo Beast</div>
+                    <div class="stage-details">
+                        <span class="level-req">Level Required: 15</span>
+                        <span class="bonuses">+15 Power, +20 Courage, +10 Focus</span>
+                        <span>Size: Medium</span>
+                        <span>Combat-focused growth</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="arrow">⬇️ Level 30 ⬇️</div>
+            
+            <div class="stage">
+                <div class="stage-emoji">🔮</div>
+                <div class="stage-info">
+                    <div class="stage-name">Card Master</div>
+                    <div class="stage-details">
+                        <span class="level-req">Level Required: 30</span>
+                        <span class="bonuses">+15 Wisdom, +10 Power, +20 Creativity, +15 Loyalty</span>
+                        <span>Size: Large</span>
+                        <span>Strategic mastery phase</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="arrow">⬇️ Level 50 ⬇️</div>
+            
+            <div class="stage">
+                <div class="stage-emoji">🌌</div>
+                <div class="stage-info">
+                    <div class="stage-name">VORTEKS Avatar</div>
+                    <div class="stage-details">
+                        <span class="level-req">Level Required: 50</span>
+                        <span class="bonuses">+20 Wisdom, +20 Power, +25 Courage, +20 Focus, +15 Creativity, Loyalty=100</span>
+                        <span>Size: Massive</span>
+                        <span>Ultimate form achieved</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-category">
+                <h3>🎯 Core Stats</h3>
+                <div class="stat-item">
+                    <span class="stat-name">❤️ Happiness</span>
+                    <span class="stat-effect">Mood & overall well-being</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-name">⚡ Energy</span>
+                    <span class="stat-effect">Required for activities</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-name">🧠 Wisdom</span>
+                    <span class="stat-effect">Battle understanding</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-name">💪 Power</span>
+                    <span class="stat-effect">Combat effectiveness</span>
+                </div>
+            </div>
+            
+            <div class="stat-category">
+                <h3>🌟 Personality Stats</h3>
+                <div class="stat-item">
+                    <span class="stat-name">🔍 Curiosity</span>
+                    <span class="stat-effect">Exploration drive</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-name">🎨 Creativity</span>
+                    <span class="stat-effect">Artistic expression</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-name">💝 Loyalty</span>
+                    <span class="stat-effect">Bond with player</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-name">🎮 Playfulness</span>
+                    <span class="stat-effect">Fun activities</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-name">🎯 Focus</span>
+                    <span class="stat-effect">Learning efficiency</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-name">⚔️ Courage</span>
+                    <span class="stat-effect">Battle confidence</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="room-elements">
+            <div class="room-element">
+                <h4>🛏️ Bed</h4>
+                <div class="unlock-condition">Always Available</div>
+                <div class="room-effects">+15 Energy, +3 Happiness</div>
+            </div>
+            
+            <div class="room-element">
+                <h4>🪞 Mirror</h4>
+                <div class="unlock-condition">Level 5 + 30 Curiosity</div>
+                <div class="room-effects">+2 Curiosity, +2 Happiness</div>
+            </div>
+            
+            <div class="room-element">
+                <h4>📚 Bookshelf</h4>
+                <div class="unlock-condition">Level 10 + 40 Wisdom</div>
+                <div class="room-effects">+4 Wisdom, +2 Focus, -5 Energy</div>
+            </div>
+            
+            <div class="room-element">
+                <h4>🧸 Toybox</h4>
+                <div class="unlock-condition">Level 8 + 50 Playfulness</div>
+                <div class="room-effects">+5 Playfulness, +5 Happiness, -3 Energy</div>
+            </div>
+            
+            <div class="room-element">
+                <h4>🪴 Plant</h4>
+                <div class="unlock-condition">Level 15 + 45 Focus</div>
+                <div class="room-effects">+3 Focus, +2 Wisdom, -2 Energy</div>
+            </div>
+            
+            <div class="room-element">
+                <h4>🎨 Art Easel</h4>
+                <div class="unlock-condition">Level 20 + 50 Creativity</div>
+                <div class="room-effects">+6 Creativity, +4 Happiness, -8 Energy</div>
+            </div>
+        </div>
+
+        <div class="formulas">
+            <h3>📊 Core Formulas</h3>
+            
+            <div class="formula">
+                <strong>Experience Required:</strong><br>
+                expNeeded = level × 10
+            </div>
+            
+            <div class="formula">
+                <strong>Power Calculation:</strong><br>
+                power = min(100, floor(<br>
+                &nbsp;&nbsp;(battleInfluence × 0.4) +<br>
+                &nbsp;&nbsp;(cardMastery × 0.3) +<br>
+                &nbsp;&nbsp;(level × 0.3)<br>
+                ))
+            </div>
+            
+            <div class="formula">
+                <strong>Battle Influence:</strong><br>
+                battleInfluence = (wins ÷ total) × 100
+            </div>
+            
+            <div class="formula">
+                <strong>Card Mastery:</strong><br>
+                cardMastery = min(100, uniqueCardsPlayed × 3)
+            </div>
+            
+            <div class="formula">
+                <strong>Strategic Depth:</strong><br>
+                strategicDepth = min(100, avgEnergyPerTurn × 20)
+            </div>
+            
+            <div class="formula">
+                <strong>Idle Energy Loss:</strong><br>
+                energyLoss = min(10, hoursIdle × 2)
+            </div>
+        </div>
+
+        <div class="testing-commands">
+            <h3>🧪 Testing Commands (Console)</h3>
+            
+            <div class="command">
+                // Quick evolution to final stage<br>
+                const creature = getCreature();<br>
+                creature.level = 50;<br>
+                creature.experience = 0;<br>
+                saveIdleGame();
+            </div>
+            
+            <div class="command">
+                // Max all stats<br>
+                const creature = getCreature();<br>
+                Object.keys(creature).forEach(key => {<br>
+                &nbsp;&nbsp;if (typeof creature[key] === 'number' && key !== 'level') {<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;creature[key] = 100;<br>
+                &nbsp;&nbsp;}<br>
+                });<br>
+                saveIdleGame();
+            </div>
+            
+            <div class="command">
+                // Simulate 100% win rate<br>
+                const telemetry = getTelemetry();<br>
+                telemetry.battles.wins = 100;<br>
+                telemetry.battles.total = 100;<br>
+                saveTelemetry();<br>
+                updateCreatureFromTelemetry();
+            </div>
+            
+            <div class="command">
+                // Reset companion<br>
+                resetCreature();
+            </div>
+            
+            <div class="command">
+                // Force room unlock<br>
+                const creature = getCreature();<br>
+                Object.keys(creature.roomElements).forEach(key => {<br>
+                &nbsp;&nbsp;creature.roomElements[key].unlocked = true;<br>
+                });<br>
+                saveIdleGame();
+            </div>
+        </div>
+
+        <div style="text-align: center; margin: 40px 0; color: #ff6b9d;">
+            <p>💫 All stats are capped at 100 • Evolution is automatic at level thresholds 💫</p>
+            <p>🎮 The system is designed to reward consistent play and strategic combat 🎮</p>
+        </div>
+    </div>
+</body>
+</html>
