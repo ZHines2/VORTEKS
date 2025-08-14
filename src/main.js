@@ -579,6 +579,15 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('restart').onclick = () => { 
     Game.clearLog();
     clearSelectedQuirk(); // Clear selected quirk on restart
+    
+    // Abandon campaign if active when restarting
+    if (Campaign && Campaign.active) {
+      Campaign.abandon();
+    }
+    
+    // Ensure UI shows streak (not booster) when returning to start
+    updateCampaignUI();
+    
     document.getElementById('startModal').hidden = false; 
   };
   document.getElementById('selfTest').onclick = () => runSelfTests(Game, logFunction, showStart);
@@ -1010,6 +1019,9 @@ document.addEventListener('DOMContentLoaded', () => {
       boosterPill.hidden = true;
     }
   }
+
+  // Expose updateCampaignUI globally for game modes to call
+  window.updateCampaignUI = updateCampaignUI;
 
   // Setup Campaign modal event handlers
   setupCampaignModals();

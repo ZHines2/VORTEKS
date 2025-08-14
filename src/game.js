@@ -120,6 +120,8 @@ export const Game = {
           if (typeof logFn === 'function') logFn('New game. You start.');
         }
         this.pickQuirk(() => { 
+          // Ensure UI shows streak (not booster) for regular play mode
+          if (window.updateCampaignUI) window.updateCampaignUI();
           this.startTurn(this.you); 
           if (window.render) window.render(); 
         });
@@ -158,6 +160,8 @@ export const Game = {
       if (typeof logFn === 'function') logFn('Quick Start. You start.');
     }
     this.pickQuirk(() => { 
+      // Ensure UI shows streak (not booster) for regular play mode
+      if (window.updateCampaignUI) window.updateCampaignUI();
       this.startTurn(this.you); 
       if (window.render) window.render(); 
     });
@@ -995,6 +999,14 @@ export const Game = {
     this.clearLog();
     this.streak = 0;
     this.over = false;
+    
+    // Abandon campaign if active when restarting
+    if (window.Campaign && window.Campaign.active) {
+      window.Campaign.abandon();
+    }
+    
+    // Ensure UI shows streak (not booster) when returning to start
+    if (window.updateCampaignUI) window.updateCampaignUI();
     
     // Hide victory modal and show start modal
     $('#victoryModal').hidden = true;
