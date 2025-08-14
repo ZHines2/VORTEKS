@@ -51,7 +51,7 @@ html,body {
 #telemetryBtn {
   position: absolute;
   top: 18px;
-  right: 238px; /* Position left of Unlocks button with gap */
+  right: 282px; /* Position left of Unlocks button with gap */
   z-index: 50;
   background: var(--panel);
   color: var(--accent);
@@ -76,7 +76,7 @@ html,body {
 #unlocksBtn {
   position: absolute;
   top: 18px;
-  right: 194px; /* Position left of Glossary button with gap */
+  right: 238px; /* Position left of Glossary button with gap */
   z-index: 50;
   background: var(--panel);
   color: var(--accent);
@@ -101,7 +101,7 @@ html,body {
 #glossaryBtn {
   position: absolute;
   top: 18px;
-  right: 150px; /* Position left of Defeated button with gap */
+  right: 194px; /* Position left of Defeated button with gap */
   z-index: 50;
   background: var(--panel);
   color: var(--accent);
@@ -126,7 +126,7 @@ html,body {
 #defeatedBtn {
   position: absolute;
   top: 18px;
-  right: 106px; /* Position left of Help button with gap */
+  right: 150px; /* Position left of Companion button with gap */
   z-index: 50;
   background: var(--panel);
   color: var(--accent);
@@ -151,7 +151,7 @@ html,body {
 #companionBtn {
   position: absolute;
   top: 18px;
-  right: 84px; /* Position left of Help button with gap */
+  right: 106px; /* Position left of Help button with consistent gap */
   z-index: 50;
   background: var(--panel);
   color: var(--accent);
