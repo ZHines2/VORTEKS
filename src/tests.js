@@ -362,5 +362,78 @@ export function runSelfTests(Game, log, showStart) {
     window.log = originalLog;
   }
 
+  // Test Presto card stealing mechanism
+  {
+    log('Testing Presto card mechanics...');
+    const me = createPlayer(false);
+    const foe = createPlayer(true);
+    const testGame = Object.create(Game);
+    testGame.you = me;
+    testGame.opp = foe;
+    testGame.turn = 'you';
+    testGame.over = false;
+    
+    // Setup: Player has Presto, opponent has cards in discard
+    const prestoCard = CARDS.find(c => c.id === 'presto');
+    me.hand = [prestoCard];
+    me.energy = 3;
+    me.hp = 20; // Ensure we have enough HP for life cost
+    
+    // Put some cards in opponent's discard pile
+    const daggerCard = CARDS.find(c => c.id === 'dagger');
+    const heartCard = CARDS.find(c => c.id === 'heart');
+    foe.discard = [daggerCard, heartCard];
+    
+    const initialHandSize = me.hand.length;
+    const initialFoeDiscardSize = foe.discard.length;
+    const initialHP = me.hp;
+    
+    log('Before Presto: player hand size=' + initialHandSize + ', opponent discard size=' + initialFoeDiscardSize);
+    
+    // Play Presto card
+    testGame.playCard(me, 0);
+    
+    const finalHandSize = me.hand.length;
+    const finalFoeDiscardSize = foe.discard.length;
+    const finalHP = me.hp;
+    
+    log('After Presto: player hand size=' + finalHandSize + ', opponent discard size=' + finalFoeDiscardSize);
+    
+    // Verify Presto effects:
+    assertEqual('Presto consumes life cost', finalHP, initialHP - 1, log);
+    assertEqual('Presto reduces opponent discard by 1', finalFoeDiscardSize, initialFoeDiscardSize - 1, log);
+    assertEqual('Presto maintains hand size (steal replaces played card)', finalHandSize, initialHandSize, log);
+    
+    // Check if stolen card has proper markers
+    if (me.hand.length > 0) {
+      const stolenCard = me.hand.find(card => card.stolenFrom);
+      assertEqual('Stolen card has stolenFrom marker', !!stolenCard, true, log);
+      if (stolenCard) {
+        assertEqual('Stolen card has originalOwner', !!stolenCard.originalOwner, true, log);
+        assertEqual('Original owner is opponent', stolenCard.originalOwner === foe, true, log);
+      }
+      
+      // Test playing the stolen card
+      if (stolenCard && me.hand.indexOf(stolenCard) >= 0) {
+        const stolenCardIndex = me.hand.indexOf(stolenCard);
+        const beforePlayDiscardSizes = { me: me.discard.length, foe: foe.discard.length };
+        
+        // Ensure player has energy to play stolen card
+        me.energy = Math.max(me.energy, stolenCard.cost);
+        
+        testGame.playCard(me, stolenCardIndex);
+        
+        // Verify stolen card returns to original owner's discard
+        const expectedFoeDiscard = beforePlayDiscardSizes.foe + 1;
+        assertEqual('Stolen card returns to original owner discard', foe.discard.length, expectedFoeDiscard, log);
+        
+        // Check that stolen markers are cleaned up
+        const returnedCard = foe.discard[foe.discard.length - 1];
+        assertEqual('Returned card has no stolenFrom marker', !returnedCard.stolenFrom, true, log);
+        assertEqual('Returned card has no originalOwner marker', !returnedCard.originalOwner, true, log);
+      }
+    }
+  }
+
   log('Self-tests complete.');
 }
