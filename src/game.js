@@ -581,6 +581,10 @@ export const Game = {
       const isPlayer = (state.me === this.you);
       if (isPlayer) {
         logYou(`heals ${effects.heal}`);
+        // Record healing for telemetry
+        recordCombat({
+          healingReceived: effects.heal
+        });
       } else {
         logOpp(`heals ${effects.heal}`);
       }
@@ -590,6 +594,10 @@ export const Game = {
       const isPlayer = (state.me === this.you);
       if (isPlayer) {
         logYou(`gains ${effects.shield} shield`);
+        // Record shield gain for telemetry
+        recordCombat({
+          shieldGained: effects.shield
+        });
       } else {
         logOpp(`gains ${effects.shield} shield`);
       }

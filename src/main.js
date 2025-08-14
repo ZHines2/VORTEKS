@@ -192,6 +192,7 @@ function setupDefeatedOpponents() {
     patternsEl.innerHTML = `
       <div><strong>Combat Efficiency:</strong> ${analytics.combat.efficiency} damage per energy</div>
       <div><strong>Total Damage:</strong> ${analytics.combat.totalDamage} dealt | ${analytics.combat.damageTaken} taken</div>
+      <div><strong>Healing/Shield:</strong> ${analytics.combat.healingReceived || 0} healed | ${analytics.combat.shieldGained || 0} shield</div>
       <div><strong>Max Single Hit:</strong> ${analytics.combat.maxSingleHit} | <strong>Max Energy:</strong> ${analytics.combat.maxEnergyReached}</div>
       <div><strong>Turn Efficiency:</strong> ${analytics.turns.avgCardsPerTurn} cards, ${analytics.turns.avgEnergyPerTurn} energy per turn</div>
       <div><strong>Echo Uses:</strong> ${analytics.turns.echoUses} | <strong>All-Energy Turns:</strong> ${analytics.turns.efficiencyTurns}</div>

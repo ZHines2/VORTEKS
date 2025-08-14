@@ -332,7 +332,9 @@ export function getAnalytics() {
       totalEnergySpent: telemetry.combat.totalEnergySpent,
       maxEnergyReached: telemetry.combat.maxEnergyReached,
       pierceDamage: telemetry.combat.pierceDamageDealt,
-      burnDamage: telemetry.combat.burnDamageDealt
+      burnDamage: telemetry.combat.burnDamageDealt,
+      healingReceived: telemetry.combat.totalHealingReceived,
+      shieldGained: telemetry.combat.totalShieldGained
     },
     turns: {
       totalTurns: telemetry.turns.total,
