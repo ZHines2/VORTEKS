@@ -10,6 +10,7 @@ const CAMPAIGN_STORAGE_KEY = 'vorteks-campaign';
 let campaignState = {
   active: false,
   deck: [],
+  collection: [], // All cards the player owns/has collected
   victories: 0,
   boosterLevel: 0,
   selectedQuirk: null,
@@ -24,6 +25,10 @@ export const Campaign = {
 
   get deck() {
     return [...campaignState.deck];
+  },
+
+  get collection() {
+    return [...campaignState.collection];
   },
 
   get victories() {
@@ -47,6 +52,7 @@ export const Campaign = {
     campaignState = {
       active: true,
       deck: [...CAMPAIGN.STARTER_DECK],
+      collection: [...CAMPAIGN.STARTER_DECK], // Start with same cards as deck
       victories: 0,
       boosterLevel: 0,
       selectedQuirk: selectedQuirk,
@@ -54,6 +60,7 @@ export const Campaign = {
     };
     this.save();
     console.log('Campaign started with deck:', campaignState.deck);
+    console.log('Campaign started with collection:', campaignState.collection);
   },
 
   // Continue existing campaign
@@ -126,10 +133,12 @@ export const Campaign = {
   acceptRewards(rewardSelections) {
     if (!campaignState.currentRewards) return false;
 
-    // Add accepted cards to deck
+    // Add accepted cards to both deck and collection
     rewardSelections.forEach((accepted, index) => {
       if (accepted && campaignState.currentRewards[index]) {
-        campaignState.deck.push(campaignState.currentRewards[index].cardId);
+        const cardId = campaignState.currentRewards[index].cardId;
+        campaignState.deck.push(cardId);
+        campaignState.collection.push(cardId);
       }
     });
 
@@ -146,6 +155,79 @@ export const Campaign = {
 
     campaignState.deck.splice(index, 1);
     this.save();
+    return true;
+  },
+
+  // Get unique cards in collection with counts
+  getCollectionCounts() {
+    const counts = {};
+    campaignState.collection.forEach(cardId => {
+      counts[cardId] = (counts[cardId] || 0) + 1;
+    });
+    return counts;
+  },
+
+  // Get current deck counts by card ID
+  getDeckCounts() {
+    const counts = {};
+    campaignState.deck.forEach(cardId => {
+      counts[cardId] = (counts[cardId] || 0) + 1;
+    });
+    return counts;
+  },
+
+  // Update deck from card counts (deck builder style)
+  updateDeckFromCounts(newCounts) {
+    if (!campaignState.active) return false;
+    
+    // Calculate total cards
+    const totalCards = Object.values(newCounts).reduce((sum, count) => sum + count, 0);
+    
+    // Enforce minimum deck size
+    if (totalCards < CAMPAIGN.MIN_DECK_SIZE) {
+      return false;
+    }
+    
+    // Validate we don't exceed collection limits
+    const collectionCounts = this.getCollectionCounts();
+    for (const [cardId, requestedCount] of Object.entries(newCounts)) {
+      if (requestedCount > (collectionCounts[cardId] || 0)) {
+        console.warn(`Cannot add ${requestedCount} of ${cardId}, only have ${collectionCounts[cardId] || 0}`);
+        return false;
+      }
+    }
+    
+    // Build new deck from counts
+    const newDeck = [];
+    for (const [cardId, count] of Object.entries(newCounts)) {
+      for (let i = 0; i < count; i++) {
+        newDeck.push(cardId);
+      }
+    }
+    
+    campaignState.deck = newDeck;
+    this.save();
+    return true;
+  },
+
+  // Rebuild collection from current deck (for fixing broken states)
+  rebuildCollection() {
+    if (!campaignState.active) return false;
+    
+    // Start with starter deck cards as base collection
+    const newCollection = [...CAMPAIGN.STARTER_DECK];
+    
+    // Add any additional cards from deck that aren't in starter
+    campaignState.deck.forEach(cardId => {
+      // Only add if it's a reward card (not in starter deck)
+      if (!CAMPAIGN.STARTER_DECK.includes(cardId)) {
+        newCollection.push(cardId);
+      }
+    });
+    
+    campaignState.collection = newCollection;
+    this.save();
+    console.log('Collection rebuilt:', campaignState.collection);
     return true;
   },
 
@@ -167,6 +249,14 @@ export const Campaign = {
       const parsed = JSON.parse(stored);
       if (parsed.active) {
         campaignState = { ...campaignState, ...parsed };
+        
+        // Backward compatibility: if no collection exists, initialize it from deck
+        if (!campaignState.collection) {
+          campaignState.collection = [...campaignState.deck];
+          console.log('Initialized collection from existing deck for backward compatibility');
+          this.save(); // Save the updated state with collection
+        }
+        
         console.log('Campaign loaded:', campaignState);
         return true;
       }
@@ -181,6 +271,7 @@ export const Campaign = {
     campaignState = {
       active: false,
       deck: [],
+      collection: [],
       victories: 0,
       boosterLevel: 0,
       selectedQuirk: null,
