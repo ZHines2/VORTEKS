@@ -101,6 +101,12 @@ export function cardText(c) {
   if (c.id === 'presto') {
     parts.push('Steal a random card from opponent\'s discard pile. Return when used.');
   }
+  
+  // Add stolen card indicator text
+  if (c.stolenFrom) {
+    parts.push('STOLEN - Returns to opponent when played.');
+  }
+  
   return parts.join(' ');
 }
 
@@ -195,10 +201,21 @@ export function createRenderFunction(Game) {
         // Add card type indicator for achievement clarity
         const typeIcon = getCardTypeIcon(card.type);
         const typeIndicator = `<div class="card-type" title="${card.type} card">${typeIcon}</div>`;
-        b.innerHTML = `${cost}${typeIndicator}<div class="sym">${card.sym}</div><div class="nm">${card.name}</div><div class="ct">${cardText(card)}</div><div class="pv">${pv}</div>`;
+        
+        // Add stolen card indicator
+        const stolenIndicator = card.stolenFrom ? 
+          `<div class="stolen-indicator" title="Stolen card - returns to opponent when played">🎭</div>` : '';
+        
+        b.innerHTML = `${cost}${typeIndicator}${stolenIndicator}<div class="sym">${card.sym}</div><div class="nm">${card.name}</div><div class="ct">${cardText(card)}</div><div class="pv">${pv}</div>`;
         const affordable = Game.you.canAfford(card);
         b.disabled = Game.turn !== 'you' || !affordable || Game.over;
         if (!affordable) b.classList.add('insufficient');
+        
+        // Add styling for stolen cards
+        if (card.stolenFrom) {
+          b.classList.add('stolen');
+        }
+        
         if (!b.disabled) b.onclick = () => { Game.playCard(Game.you, idx); };
         handEl.appendChild(b);
       });
