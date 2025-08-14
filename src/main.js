@@ -1,5 +1,5 @@
 import { Game, setLogFunction } from './game.js';
-import { createRenderFunction, bump, bumpHP, bumpShield, fxBurn, fxFreeze, fxZap, fxFocus, fxSlash, fxSurge, fxEcho, fxReconsider } from './ui.js';
+import { createRenderFunction, bump, bumpHP, bumpShield, fxBurn, fxFreeze, fxZap, fxFocus, fxSlash, fxSurge, fxEcho, fxReconsider, cardText, renderCost } from './ui.js';
 import { openDeckBuilder, buildRandomDeck } from './deck-builder.js';
 import { runSelfTests } from './tests.js';
 import { initFaceGenerator, drawOppFace, setOpponentName } from './face-generator.js';
@@ -982,9 +982,9 @@ document.addEventListener('DOMContentLoaded', () => {
       
       // Log the enhanced opponent
       if (campaignBooster >= 5) {
-        logMessage(`⚠️ ELITE OPPONENT: Enhanced ${Game.persona} (+${hpBonus} HP, +${energyBonus} Energy)!`);
+        if (window.log) window.log(`⚠️ ELITE OPPONENT: Enhanced ${Game.persona} (+${hpBonus} HP, +${energyBonus} Energy)!`);
       } else if (campaignBooster >= 2) {
-        logMessage(`💪 Stronger ${Game.persona} appears (+${hpBonus} HP, +${energyBonus} Energy)!`);
+        if (window.log) window.log(`💪 Stronger ${Game.persona} appears (+${hpBonus} HP, +${energyBonus} Energy)!`);
       }
     }
     
@@ -1047,8 +1047,21 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Campaign Deck Edit Modal handlers
     document.getElementById('campaignDeckContinueBtn').onclick = () => {
-      document.getElementById('campaignDeckModal').hidden = true;
-      initCampaignBattle(); // Start next battle
+      const modal = document.getElementById('campaignDeckModal');
+      
+      // Apply working counts to campaign deck
+      if (modal._workingCounts) {
+        if (Campaign.updateDeckFromCounts(modal._workingCounts)) {
+          modal.hidden = true;
+          initCampaignBattle(); // Start next battle
+        } else {
+          alert('Invalid deck configuration. Please ensure you have at least 10 cards.');
+        }
+      } else {
+        // Fallback for old behavior
+        modal.hidden = true;
+        initCampaignBattle();
+      }
     };
     
     document.getElementById('campaignDeckAbandonBtn').onclick = () => {
@@ -1074,23 +1087,96 @@ document.addEventListener('DOMContentLoaded', () => {
     const deckList = document.getElementById('campaignDeckList');
     const deckCount = document.getElementById('campaignDeckCount');
     
-    deckCount.textContent = Campaign.deck.length;
+    // Get collection and deck counts
+    const collectionCounts = Campaign.getCollectionCounts();
+    const deckCounts = Campaign.getDeckCounts();
+    const totalDeckSize = Campaign.deck.length;
     
-    // Render deck cards
-    deckList.innerHTML = '';
-    Campaign.deck.forEach((cardId, index) => {
-      const card = CARDS.find(c => c.id === cardId);
-      if (card) {
+    // Get unique cards from collection
+    const uniqueCardIds = Object.keys(collectionCounts);
+    const availableCards = uniqueCardIds.map(cardId => CARDS.find(c => c.id === cardId)).filter(Boolean);
+    
+    deckCount.textContent = totalDeckSize;
+    
+    // Create working copy of deck counts for editing
+    let workingCounts = { ...deckCounts };
+    
+    function rebuild() {
+      deckList.innerHTML = '';
+      
+      availableCards.forEach(card => {
+        const cardId = card.id;
+        const inDeck = workingCounts[cardId] || 0;
+        const owned = collectionCounts[cardId] || 0;
+        
         const cardEl = document.createElement('div');
+        cardEl.className = 'campaign-deck-card';
         cardEl.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:8px; margin:4px 0; background:rgba(255,255,255,0.1); border-radius:4px;';
+        
         cardEl.innerHTML = `
-          <span>${card.sym} ${card.name}</span>
-          <button class="btn" ${Campaign.deck.length <= 10 ? 'disabled style="opacity:0.5"' : ''} onclick="removeCampaignCard(${index})">✖</button>
+          <div style="flex-grow:1;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div><span style="margin-right:6px">${card.sym}</span>${card.name}</div>
+              <div class="cost">${renderCost(card)}</div>
+            </div>
+            <div style="margin-top:6px; font-size:10px;">${cardText(card)}</div>
+          </div>
+          <div style="display:flex; gap:6px; margin-left:12px; align-items:center;">
+            <button class="btn campaign-card-btn" data-act="sub" data-id="${cardId}" ${inDeck <= 0 ? 'disabled' : ''}>-</button>
+            <div style="min-width:40px; text-align:center;">
+              <span style="font-weight:bold;">${inDeck}</span>/<span style="opacity:0.7;">${owned}</span>
+            </div>
+            <button class="btn campaign-card-btn" data-act="add" data-id="${cardId}" ${inDeck >= owned ? 'disabled' : ''}>+</button>
+          </div>
         `;
+        
         deckList.appendChild(cardEl);
+      });
+      
+      // Update deck count
+      const newTotal = Object.values(workingCounts).reduce((sum, count) => sum + count, 0);
+      deckCount.textContent = newTotal;
+      
+      // Update continue button state
+      const continueBtn = document.getElementById('campaignDeckContinueBtn');
+      if (continueBtn) {
+        continueBtn.disabled = newTotal < 10;
+        if (newTotal < 10) {
+          continueBtn.style.opacity = '0.5';
+          continueBtn.style.cursor = 'not-allowed';
+        } else {
+          continueBtn.style.opacity = '1';
+          continueBtn.style.cursor = 'pointer';
+        }
       }
-    });
+    }
     
+    // Add click handler for +/- buttons
+    deckList.onclick = (e) => {
+      const button = e.target.closest('button.campaign-card-btn');
+      if (!button) return;
+      
+      const cardId = button.getAttribute('data-id');
+      const action = button.getAttribute('data-act');
+      const owned = collectionCounts[cardId] || 0;
+      const current = workingCounts[cardId] || 0;
+      
+      if (action === 'add' && current < owned) {
+        workingCounts[cardId] = current + 1;
+      } else if (action === 'sub' && current > 0) {
+        workingCounts[cardId] = current - 1;
+        if (workingCounts[cardId] === 0) {
+          delete workingCounts[cardId];
+        }
+      }
+      
+      rebuild();
+    };
+    
+    // Store working counts for the continue button
+    modal._workingCounts = workingCounts;
+    
+    rebuild();
     modal.hidden = false;
   }
 
