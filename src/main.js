@@ -948,6 +948,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Apply quirk effects
     Game.applyQuirkBattleStart(Game.you);
     
+    // Start the player's first turn to give them energy
+    Game.startTurn(Game.you);
+    
     // Generate opponent with campaign scaling
     const faceInfo = drawOppFace();
     Game.persona = faceInfo.persona;
