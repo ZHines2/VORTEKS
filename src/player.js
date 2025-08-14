@@ -57,7 +57,10 @@ export function createPlayer(isAI = false) {
       if (card.id === 'reconsider') {
         return true;
       }
-      return this.energy >= card.cost;
+      // Check both energy cost and life cost
+      const hasEnergyForCard = this.energy >= card.cost;
+      const hasLifeForCard = !card.effects?.lifeCost || this.hp > card.effects.lifeCost; // Must have more life than cost (can't suicide)
+      return hasEnergyForCard && hasLifeForCard;
     },
     
     spend(cost, card) { 

@@ -126,8 +126,8 @@ const UNLOCK_META = [
   {
     id: 'droid',
     kind: 'persona',
-    description: 'Defeat a Robot opponent.',
-    progressHint: () => 'Find and defeat a rare Robot opponent.',
+    description: 'Defeat any Robot opponent.',
+    progressHint: () => 'Find and defeat any Robot opponent.',
     check: () => false // Handled by persona defeat system
   },
   {
@@ -135,6 +135,13 @@ const UNLOCK_META = [
     kind: 'persona',
     description: 'Defeat a Doctor opponent.',
     progressHint: () => 'Find and defeat a Doctor opponent.',
+    check: () => false // Handled by persona defeat system
+  },
+  {
+    id: 'wallop',
+    kind: 'persona',
+    description: 'Defeat any Bruiser opponent.',
+    progressHint: () => 'Find and defeat any Bruiser opponent.',
     check: () => false // Handled by persona defeat system
   }
 ];
@@ -273,7 +280,9 @@ const PERSONA_UNLOCKS = {
   'robot': 'droid',
   'automaton': 'droid',
   // Doctor persona unlocks Purge card
-  'doctor': 'purge'
+  'doctor': 'purge',
+  // Bruiser persona unlocks Wallop card
+  'bruiser': 'wallop'
   // Example future entries:
   // 'Glacier': 'snow',  // would unlock Freeze card
   // 'Assassin': 'dagger'  // would unlock Pierce card

@@ -5,7 +5,7 @@ A modular, browser-based tactical card game built with vanilla JavaScript ES6 mo
 
 ## 🎮 Current Game State Summary
 
-**VORTEKS v2.0** features a complete card battler experience with 13 unique cards, 5 AI personas, 7 unlockable quirks, sophisticated mechanics, and extensive polish. All 34 automated tests pass, ensuring rock-solid gameplay reliability.
+**VORTEKS v2.0** features a complete card battler experience with 15 unique cards, 5 AI personas, 7 unlockable quirks, sophisticated mechanics, and extensive polish. All 34 automated tests pass, ensuring rock-solid gameplay reliability.
 
 ## 🏗️ Project Structure
 
@@ -38,10 +38,10 @@ A modular, browser-based tactical card game built with vanilla JavaScript ES6 mo
 ## ✨ Core Features
 
 ### Card Battle System
-- **13 Unique Cards**: From basic Strike/Guard to advanced Reconsider/Droid Protocol
+- **15 Unique Cards**: From basic Strike/Guard to advanced Reconsider/Droid Protocol, plus special Wallop
 - **3 Card Types**: Attack, Skill, and Power cards with distinct mechanics
 - **Energy Management**: Strategic resource allocation each turn
-- **Advanced Mechanics**: Pierce damage, burn stacks, echo effects, energy uncapping
+- **Advanced Mechanics**: Pierce damage, burn stacks, echo effects, energy uncapping, life costs
 - **Status Effects**: Shields, healing, freeze, and next-turn modifiers
 
 ### AI Opponents & Personas
@@ -52,7 +52,7 @@ A modular, browser-based tactical card game built with vanilla JavaScript ES6 mo
 
 ### Progressive Unlock System
 - **Achievement-Based Cards**: 7 cards unlocked via specific gameplay achievements
-- **Persona Defeats**: Special cards unlocked by defeating Cat and Robot opponents
+- **Persona Defeats**: Special cards unlocked by defeating Cat, Robot, Doctor, and Bruiser opponents
 - **Quirk Unlocks**: 7 gameplay-modifying quirks earned through skilled play
 - **Progress Tracking**: Detailed progress hints and achievement monitoring
 
@@ -155,6 +155,13 @@ The game includes a comprehensive self-test suite accessible via the **DEBUG** b
 3. Add new unlock requirements in `src/card-unlock.js`
 
 ## 📝 Recent Major Updates
+
+### v2.1 - Bug Fixes & New Content
+- **Zap Infinite Loop Fix**: Resolved critical issue where Zap could create infinite loops when last card in deck
+- **New Wallop Card**: Added bruiser-themed attack card (2⚡, 4 damage, costs 2 life)
+- **Life Cost Mechanic**: Introduced cards that cost health in addition to energy
+- **Unlock System Expansion**: Added Wallop unlock for defeating any Bruiser opponent
+- **Improved Unlock Descriptions**: Clarified Droid Protocol unlock requirements
 
 ### v2.0 - UX & Stability Overhaul
 - **Start Screen Polish**: Enhanced visual design with improved contrast and effects
