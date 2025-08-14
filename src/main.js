@@ -22,12 +22,29 @@ import {
   checkAchievementUnlocks,
   recordBattleResult
 } from './card-unlock.js';
+import {
+  loadTelemetry,
+  saveTelemetry,
+  resetTelemetry,
+  getTelemetry,
+  recordBattle,
+  recordCardPlayed,
+  recordCombat,
+  recordTurn,
+  recordQuirk,
+  recordOpponent,
+  recordAchievement,
+  getAnalytics
+} from './telemetry.js';
 
 const MUSIC_FILE = 'VORTEKS.mp3';
 const LS_KEY = 'vorteks-muted';
 const HELP_SHOWN_KEY = 'vorteks-help-shown';
 const DEFEATED_KEY = 'vorteks-defeated';
 const QUIRK_KEY = 'vorteks-selected-quirk';
+
+// Initialize telemetry system
+loadTelemetry();
 
 let music;
 window.music = null; // Make music accessible globally for sound functions
@@ -36,6 +53,7 @@ const helpBtn = document.getElementById('helpBtn');
 const unlocksBtn = document.getElementById('unlocksBtn');
 const glossaryBtn = document.getElementById('glossaryBtn');
 const defeatedBtn = document.getElementById('defeatedBtn');
+const telemetryBtn = document.getElementById('telemetryBtn');
 
 // Defeated opponents helper functions
 function loadDefeatedOpponents() {
@@ -120,6 +138,79 @@ function setupDefeatedOpponents() {
       renderDefeatedOpponents();
     }
   });
+
+  // Telemetry modal setup
+  const telemetryModal = document.getElementById('telemetryModal');
+  const telemetryCloseBtn = document.getElementById('telemetryCloseBtn');
+  const telemetryResetBtn = document.getElementById('telemetryResetBtn');
+
+  // Telemetry button click handler
+  telemetryBtn.addEventListener('click', () => {
+    renderTelemetryData();
+    telemetryModal.hidden = false;
+  });
+
+  // Telemetry close button handler
+  telemetryCloseBtn.addEventListener('click', () => {
+    telemetryModal.hidden = true;
+  });
+
+  // Telemetry reset button handler
+  telemetryResetBtn.addEventListener('click', () => {
+    const confirmed = confirm('Reset all analytics data? This cannot be undone.');
+    if (confirmed) {
+      resetTelemetry();
+      renderTelemetryData();
+    }
+  });
+
+  function renderTelemetryData() {
+    const analytics = getAnalytics();
+    
+    // Battle Statistics
+    const battleStatsEl = document.getElementById('telemetryBattleStats');
+    battleStatsEl.innerHTML = `
+      <div><strong>Total Games:</strong> ${analytics.battles.totalGames}</div>
+      <div><strong>Record:</strong> ${analytics.battles.wins}W - ${analytics.battles.losses}L (${analytics.battles.winRate})</div>
+      <div><strong>Current Streak:</strong> ${analytics.battles.currentStreak} | <strong>Best Streak:</strong> ${analytics.battles.bestStreak}</div>
+      <div><strong>Perfect Wins:</strong> ${analytics.battles.perfectWins} | <strong>Quick Wins:</strong> ${analytics.battles.quickWins}</div>
+    `;
+    
+    // Card Usage Analysis
+    const cardStatsEl = document.getElementById('telemetryCardStats');
+    const favoriteCardName = analytics.cards.favoriteCard ? 
+      CARDS.find(c => c.id === analytics.cards.favoriteCard)?.name || analytics.cards.favoriteCard : 'None';
+    
+    cardStatsEl.innerHTML = `
+      <div><strong>Cards Played:</strong> ${analytics.cards.totalPlayed} (${analytics.cards.uniqueCards} unique)</div>
+      <div><strong>Favorite Card:</strong> ${favoriteCardName} (${analytics.cards.favoriteCount} times)</div>
+      <div><strong>Type Distribution:</strong> ⚔${analytics.cards.typeDistribution.attack} 🛠${analytics.cards.typeDistribution.skill} 💎${analytics.cards.typeDistribution.power}</div>
+    `;
+    
+    // Gameplay Patterns
+    const patternsEl = document.getElementById('telemetryPatterns');
+    patternsEl.innerHTML = `
+      <div><strong>Combat Efficiency:</strong> ${analytics.combat.efficiency} damage per energy</div>
+      <div><strong>Total Damage:</strong> ${analytics.combat.totalDamage} dealt | ${analytics.combat.damageTaken} taken</div>
+      <div><strong>Healing/Shield:</strong> ${analytics.combat.healingReceived || 0} healed | ${analytics.combat.shieldGained || 0} shield</div>
+      <div><strong>Max Single Hit:</strong> ${analytics.combat.maxSingleHit} | <strong>Max Energy:</strong> ${analytics.combat.maxEnergyReached}</div>
+      <div><strong>Turn Efficiency:</strong> ${analytics.turns.avgCardsPerTurn} cards, ${analytics.turns.avgEnergyPerTurn} energy per turn</div>
+      <div><strong>Echo Uses:</strong> ${analytics.turns.echoUses} | <strong>All-Energy Turns:</strong> ${analytics.turns.efficiencyTurns}</div>
+    `;
+    
+    // Achievement Progress  
+    const achievementsEl = document.getElementById('telemetryAchievements');
+    const quirkName = analytics.quirks.favorite || 'None';
+    const targetName = analytics.opponents.favoriteTarget || 'None';
+    
+    achievementsEl.innerHTML = `
+      <div><strong>Achievements Unlocked:</strong> ${analytics.achievements.unlockedCount}</div>
+      <div><strong>Favorite Quirk:</strong> ${quirkName} (${analytics.quirks.favoriteCount} times)</div>
+      <div><strong>Opponents Defeated:</strong> ${analytics.opponents.uniqueDefeated} types | <strong>Favorite Target:</strong> ${targetName}</div>
+      <div><strong>Easter Eggs Seen:</strong> ${analytics.opponents.easterEggsSeen} | <strong>Play Time:</strong> ${analytics.session.playTime}</div>
+      <div><strong>First Played:</strong> ${analytics.session.firstPlayed}</div>
+    `;
+  }
 
   function renderDefeatedOpponents() {
     const defeatedList = document.getElementById('defeatedList');
