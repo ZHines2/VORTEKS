@@ -143,6 +143,13 @@ const UNLOCK_META = [
     description: 'Defeat any Bruiser opponent.',
     progressHint: () => 'Find and defeat any Bruiser opponent.',
     check: () => false // Handled by persona defeat system
+  },
+  {
+    id: 'presto',
+    kind: 'persona',
+    description: 'Defeat any Trickster opponent.',
+    progressHint: () => 'Find and defeat any Trickster opponent.',
+    check: () => false // Handled by persona defeat system
   }
 ];
 
@@ -282,7 +289,9 @@ const PERSONA_UNLOCKS = {
   // Doctor persona unlocks Purge card
   'doctor': 'purge',
   // Bruiser persona unlocks Wallop card
-  'bruiser': 'wallop'
+  'bruiser': 'wallop',
+  // Trickster persona unlocks Presto card
+  'trickster': 'presto'
   // Example future entries:
   // 'Glacier': 'snow',  // would unlock Freeze card
   // 'Assassin': 'dagger'  // would unlock Pierce card

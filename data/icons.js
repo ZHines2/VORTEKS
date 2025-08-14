@@ -12,5 +12,6 @@ export const icons = {
   loop: '⟳',
   reconsider: '🔀',
   purge: '💨',
-  wallop: '👊'
+  wallop: '👊',
+  presto: '🎩'
 };
