@@ -53,6 +53,7 @@ import {
   updateCompanionFromGameplay,
   updateCreatureFromTelemetry
 } from './idle-game.js';
+import { initVortekGenerator, generateVortekAppearance, playVortekSound } from './vortek-generator.js';
 
 const MUSIC_FILE = 'VORTEKS.mp3';
 const LS_KEY = 'vorteks-muted';
@@ -353,9 +354,20 @@ function setupDefeatedOpponents() {
 
   function renderCompanionData() {
     const creatureInfo = getCreatureInfo();
+    const creature = getCreature();
     
-    // Update VORTEK display elements with dynamic appearance
-    document.getElementById('companionEmoji').textContent = creatureInfo.stageEmoji;
+    // Generate and display pixel art appearance
+    const vortekAppearance = generateVortekAppearance(creature);
+    
+    // Replace the emoji display with canvas
+    const pixelArtContainer = document.getElementById('companionPixelArt');
+    const existingCanvas = document.getElementById('vortekCanvas');
+    if (existingCanvas && pixelArtContainer) {
+      // Canvas is already in the DOM from HTML, just update its content
+      // The generateVortekAppearance function already draws to the canvas
+    }
+    
+    // Update VORTEK name and allow editing
     document.getElementById('companionName').textContent = creatureInfo.name;
     
     // Update stage display with personality info
@@ -365,14 +377,22 @@ function setupDefeatedOpponents() {
     document.getElementById('companionStage').textContent = stageText;
     document.getElementById('companionLevel').textContent = creatureInfo.level;
     
-    // Add visual effects display
-    const emojiElement = document.getElementById('companionEmoji');
-    if (creatureInfo.visualEffects && creatureInfo.visualEffects.length > 0) {
-      emojiElement.title = creatureInfo.visualEffects.join(' • ');
-      emojiElement.style.filter = 'drop-shadow(0 0 8px rgba(119, 255, 221, 0.6))';
-    } else {
-      emojiElement.title = '';
-      emojiElement.style.filter = 'drop-shadow(0 0 4px rgba(119, 255, 221, 0.3))';
+    // Update sound display and add click handler
+    const soundElement = document.getElementById('companionSound');
+    if (soundElement && vortekAppearance.sound) {
+      soundElement.textContent = `🔊 ${vortekAppearance.sound}`;
+      soundElement.onclick = () => playVortekSound(vortekAppearance.sound);
+      soundElement.title = `Click to hear ${creature.name}'s unique sound: "${vortekAppearance.sound}"`;
+    }
+    
+    // Add visual effects to canvas container based on stats
+    const canvasElement = document.getElementById('vortekCanvas');
+    if (canvasElement && creatureInfo.visualEffects && creatureInfo.visualEffects.length > 0) {
+      canvasElement.title = creatureInfo.visualEffects.join(' • ');
+      canvasElement.style.filter = 'drop-shadow(0 0 8px rgba(119, 255, 221, 0.6))';
+    } else if (canvasElement) {
+      canvasElement.title = '';
+      canvasElement.style.filter = 'drop-shadow(0 0 4px rgba(119, 255, 221, 0.3))';
     }
     
     // Update room size class based on evolution stage
@@ -848,6 +868,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initialize face generator
   initFaceGenerator();
+  
+  // Initialize VORTEK generator
+  initVortekGenerator();
 
   // Setup title image fallback logic
   setupTitleImage();

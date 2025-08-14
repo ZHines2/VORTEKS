@@ -457,9 +457,12 @@
         
         <!-- VORTEK Display (center of room) -->
         <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center;">
-          <div id="companionEmoji" style="font-size:32px; margin-bottom:8px; text-shadow: 0 0 10px rgba(119, 255, 221, 0.3);">🥚</div>
+          <div id="companionPixelArt" style="margin-bottom:8px; display: flex; justify-content: center; align-items: center;">
+            <canvas id="vortekCanvas" width="96" height="96" style="width: 64px; height: 64px; image-rendering: pixelated; filter: drop-shadow(0 0 8px rgba(119, 255, 221, 0.3));"></canvas>
+          </div>
           <div id="companionName" style="font-size:16px; color:var(--accent); font-weight:bold;">VORTEK</div>
           <div id="companionStage" style="font-size:12px; color:var(--ink); opacity:0.8;">Egg</div>
+          <div id="companionSound" style="font-size:10px; color:var(--accent); opacity:0.6; margin-top:4px; cursor:pointer;" title="Click to hear VORTEK's unique sound">🔊 Click to hear</div>
         </div>
         
         <!-- Room Activity Display -->

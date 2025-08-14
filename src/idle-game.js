@@ -23,6 +23,7 @@ const DEFAULT_CREATURE = {
   level: 1,
   experience: 0,
   stage: 'EGG',
+  uniqueSound: null, // Will be generated when first displayed
   
   // Core stats (0-100)
   happiness: 50,
