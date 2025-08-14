@@ -389,11 +389,12 @@ export const Game = {
     // spend cost first (returns actual amount spent for reconsider)
     const actualCost = p.spend(card.cost, card);
     p.lastPlayed = card;
-    // remove from hand and send to discard BEFORE resolving effect
-    p.removeFromHand(idx);
-    p.discard.push(card);
+    // remove from hand but don't discard yet - wait until after effects resolve
+    const playedCard = p.removeFromHand(idx);
     // apply via interpreter
     this.applyCard(card, p, (p === this.you ? this.opp : this.you), false);
+    // now discard the card AFTER all effects are resolved (prevents infinite loops)
+    p.discard.push(playedCard);
     this.checkWin();
     if (window.render) window.render();
   },
@@ -526,6 +527,16 @@ export const Game = {
     }
     
     // 2) primary numeric effects
+    // Handle life cost first (before other effects)
+    if (effects.lifeCost && !simulate) {
+      const isPlayer = (state.me === this.you);
+      if (isPlayer) {
+        logYou(`pays ${effects.lifeCost} life`);
+      } else {
+        logOpp(`pays ${effects.lifeCost} life`);
+      }
+      state.me.hp = Math.max(0, state.me.hp - effects.lifeCost);
+    }
     if (effects.heal && !simulate) { 
       const isPlayer = (state.me === this.you);
       if (isPlayer) {

@@ -171,4 +171,16 @@ export const CARDS = [
     scaling: {}, 
     ai: { role: 'utility', pri: 60 } 
   },
+  { 
+    id: 'wallop', 
+    sym: icons.wallop, 
+    name: 'Wallop', 
+    cost: 2, 
+    type: 'attack', 
+    tags: ['bruiser', 'life-cost'],
+    effects: { damage: 4, pierce: false, heal: 0, shield: 0, draw: 0, lifeCost: 2 }, 
+    status: { target: { burn: null, freezeEnergy: 0 }, self: { nextPlus: 0, maxEnergyDelta: 0, energyNowDelta: 0, cleanse: false } }, 
+    scaling: { addToDamageFromSelf: { nextPlus: true } }, 
+    ai: { role: 'finisher', pri: 75 } 
+  }
 ];
