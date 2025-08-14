@@ -147,11 +147,36 @@ html,body {
   outline: 2px solid var(--accent);
 }
 
+/* --- Companion button --- */
+#companionBtn {
+  position: absolute;
+  top: 18px;
+  right: 84px; /* Position left of Help button with gap */
+  z-index: 50;
+  background: var(--panel);
+  color: var(--accent);
+  border: 2px solid var(--border);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  opacity: 0.85;
+  transition: opacity 0.2s;
+  font-family: 'Press Start 2P', monospace;
+}
+#companionBtn:hover,
+#companionBtn:focus {
+  opacity: 1;
+  outline: 2px solid var(--accent);
+}
+
 /* --- Help button --- */
 #helpBtn {
   position: absolute;
   top: 18px;
-  right: 62px; /* Position left of mute button with gap */
+  right: 62px; /* Position left of companion button with gap */
   z-index: 50;
   background: var(--panel);
   color: var(--accent);
