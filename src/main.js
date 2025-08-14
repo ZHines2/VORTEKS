@@ -38,6 +38,16 @@ import {
   recordAchievement,
   getAnalytics
 } from './telemetry.js';
+import {
+  loadIdleGame,
+  saveIdleGame,
+  getCreature,
+  getCreatureInfo,
+  feedCreature,
+  playWithCreature,
+  meditateWithCreature,
+  resetCreature
+} from './idle-game.js';
 
 const MUSIC_FILE = 'VORTEKS.mp3';
 const LS_KEY = 'vorteks-muted';
@@ -56,6 +66,10 @@ const unlocksBtn = document.getElementById('unlocksBtn');
 const glossaryBtn = document.getElementById('glossaryBtn');
 const defeatedBtn = document.getElementById('defeatedBtn');
 const telemetryBtn = document.getElementById('telemetryBtn');
+const companionBtn = document.getElementById('companionBtn');
+
+// Initialize idle game system
+loadIdleGame();
 
 // Defeated opponents helper functions
 function loadDefeatedOpponents() {
@@ -165,6 +179,122 @@ function setupDefeatedOpponents() {
       renderTelemetryData();
     }
   });
+
+  // Companion modal setup
+  const companionModal = document.getElementById('companionModal');
+  const companionCloseBtn = document.getElementById('companionCloseBtn');
+  const feedCompanionBtn = document.getElementById('feedCompanionBtn');
+  const playCompanionBtn = document.getElementById('playCompanionBtn');
+  const meditateCompanionBtn = document.getElementById('meditateCompanionBtn');
+
+  // Companion button click handler
+  companionBtn.addEventListener('click', () => {
+    renderCompanionData();
+    companionModal.hidden = false;
+  });
+
+  // Companion close button handler
+  companionCloseBtn.addEventListener('click', () => {
+    companionModal.hidden = true;
+  });
+
+  // Companion interaction handlers
+  feedCompanionBtn.addEventListener('click', () => {
+    if (feedCreature()) {
+      renderCompanionData();
+      showCompanionMessage('Fed your companion! Energy restored.');
+    } else {
+      showCompanionMessage('Your companion is not hungry right now.');
+    }
+  });
+
+  playCompanionBtn.addEventListener('click', () => {
+    if (playWithCreature()) {
+      renderCompanionData();
+      showCompanionMessage('Played with your companion! Happiness increased.');
+    } else {
+      showCompanionMessage('Your companion is too tired to play right now.');
+    }
+  });
+
+  meditateCompanionBtn.addEventListener('click', () => {
+    if (meditateWithCreature()) {
+      renderCompanionData();
+      showCompanionMessage('Meditated together! Wisdom increased.');
+    } else {
+      showCompanionMessage('Your companion needs more energy to meditate.');
+    }
+  });
+
+  function renderCompanionData() {
+    const creatureInfo = getCreatureInfo();
+    
+    // Update display elements
+    document.getElementById('companionEmoji').textContent = creatureInfo.stageEmoji;
+    document.getElementById('companionName').textContent = creatureInfo.name;
+    document.getElementById('companionStage').textContent = creatureInfo.stageName;
+    document.getElementById('companionLevel').textContent = creatureInfo.level;
+    
+    // Update stats
+    document.getElementById('companionHappiness').textContent = Math.floor(creatureInfo.happiness);
+    document.getElementById('companionEnergy').textContent = Math.floor(creatureInfo.energy);
+    document.getElementById('companionWisdom').textContent = Math.floor(creatureInfo.wisdom);
+    document.getElementById('companionPower').textContent = Math.floor(creatureInfo.power);
+    
+    // Update progress bars
+    document.getElementById('happinessBar').style.width = `${creatureInfo.happiness}%`;
+    document.getElementById('energyBar').style.width = `${creatureInfo.energy}%`;
+    document.getElementById('wisdomBar').style.width = `${creatureInfo.wisdom}%`;
+    document.getElementById('powerBar').style.width = `${creatureInfo.power}%`;
+    
+    // Update experience
+    document.getElementById('companionExp').textContent = Math.floor(creatureInfo.experience);
+    document.getElementById('companionExpNeeded').textContent = creatureInfo.expNeeded;
+    document.getElementById('expBar').style.width = `${creatureInfo.expProgress}%`;
+    
+    // Update influences
+    document.getElementById('battleInfluence').textContent = creatureInfo.battleInfluence;
+    document.getElementById('cardMastery').textContent = creatureInfo.cardMastery;
+    document.getElementById('strategicDepth').textContent = creatureInfo.strategicDepth;
+    
+    // Update status messages
+    document.getElementById('companionStatus').textContent = creatureInfo.statusMessage;
+    document.getElementById('companionMood').textContent = creatureInfo.moodMessage;
+    
+    // Update companion button notification
+    updateCompanionNotification();
+  }
+
+  function showCompanionMessage(message) {
+    // Simple message display - could be enhanced with animations
+    const statusEl = document.getElementById('companionStatus');
+    const originalMessage = statusEl.textContent;
+    statusEl.textContent = message;
+    statusEl.style.color = 'var(--good)';
+    
+    setTimeout(() => {
+      statusEl.textContent = originalMessage;
+      statusEl.style.color = 'var(--accent)';
+    }, 2000);
+  }
+
+  function updateCompanionNotification() {
+    const creatureInfo = getCreatureInfo();
+    if (creatureInfo.needsAttention) {
+      companionBtn.classList.add('needs-attention');
+    } else {
+      companionBtn.classList.remove('needs-attention');
+    }
+  }
+
+  // Update companion notification periodically
+  setInterval(() => {
+    if (!companionModal.hidden) {
+      renderCompanionData();
+    } else {
+      updateCompanionNotification();
+    }
+  }, 30000); // Update every 30 seconds
 
   function renderTelemetryData() {
     const analytics = getAnalytics();
@@ -358,7 +488,8 @@ function setupHelp() {
         'unlocksModal',
         'glossaryModal',
         'victoryModal',
-        'defeatedModal'
+        'defeatedModal',
+        'companionModal'
       ];
       
       modals.forEach(modalId => {
