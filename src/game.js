@@ -368,7 +368,7 @@ export const Game = {
     // Log card play
     const isPlayer = (p === this.you);
     const cardName = card.name || card.id;
-    const costStr = card.cost > 0 ? ` (${card.cost}⚡)` : '';
+    const costStr = card.cost > 0 ? ` (${card.cost}🔆)` : '';
     if (isPlayer) {
       logYou(`plays ${cardName}${costStr}`);
     } else {
@@ -633,9 +633,9 @@ export const Game = {
       shuffle(state.me.deck);
       
       if (isPlayer) {
-        logYou(`spends ${energySpent}⚡ and reshuffles deck`);
+        logYou(`spends ${energySpent}🔆 and reshuffles deck`);
       } else {
-        logOpp(`spends ${energySpent}⚡ and reshuffles deck`);
+        logOpp(`spends ${energySpent}🔆 and reshuffles deck`);
       }
       
       // FX: Reconsider effect

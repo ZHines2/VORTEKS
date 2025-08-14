@@ -165,9 +165,9 @@ const QUIRKS_META = [
   {
     id: 'minty',
     name: 'MINTY',
-    description: 'Start with +1 max ⚡ (and +1 now).',
+    description: 'Start with +1 max 🔆 (and +1 now).',
     unlockedByDefault: false,
-    hint: `Spend ${ACHIEVEMENTS.MINTY_ENERGY_THRESHOLD}+ ⚡ in a single turn.`,
+    hint: `Spend ${ACHIEVEMENTS.MINTY_ENERGY_THRESHOLD}+ 🔆 in a single turn.`,
     effect: 'start_energy_plus_one',
     check: (ctx, state) => {
       if (ctx.event === 'turnEnd' && ctx.energySpentThisTurn != null) {

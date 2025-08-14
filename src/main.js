@@ -3,7 +3,7 @@ import { createRenderFunction, bump, bumpHP, bumpShield, fxBurn, fxFreeze, fxZap
 import { openDeckBuilder, buildRandomDeck } from './deck-builder.js';
 import { runSelfTests } from './tests.js';
 import { initFaceGenerator, drawOppFace, setOpponentName } from './face-generator.js';
-import { makePersonaDeck, createAIPlayer } from './ai.js';
+import { makePersonaDeck, createAIPlayer, createCampaignOpponent } from './ai.js';
 import { createPlayer } from './player.js';
 import { MOTTOS } from './mottos.js';
 import { CARDS } from '../data/cards.js';
@@ -948,12 +948,33 @@ document.addEventListener('DOMContentLoaded', () => {
     // Apply quirk effects
     Game.applyQuirkBattleStart(Game.you);
     
-    // Generate opponent
+    // Generate opponent with campaign scaling
     const faceInfo = drawOppFace();
     Game.persona = faceInfo.persona;
     Game.oppFeatures = faceInfo.features;
     setOpponentName(Game.persona, Game.oppFeatures);
-    Game.opp.deck = makePersonaDeck(Game.persona, getUnlockedCards());
+    
+    // Create enhanced deck with campaign booster scaling
+    const campaignBooster = Campaign.boosterLevel;
+    Game.opp.deck = makePersonaDeck(Game.persona, getUnlockedCards(), campaignBooster);
+    
+    // Apply campaign stat bonuses to opponent
+    if (campaignBooster > 0) {
+      const hpBonus = Math.floor(campaignBooster * 2); // +2 HP per booster level
+      const energyBonus = Math.min(Math.floor(campaignBooster * 0.5), 3); // +0.5 energy per level, capped at +3
+      
+      Game.opp.maxHP += hpBonus;
+      Game.opp.hp += hpBonus;
+      Game.opp.maxEnergy += energyBonus;
+      Game.opp.energy += energyBonus;
+      
+      // Log the enhanced opponent
+      if (campaignBooster >= 5) {
+        logMessage(`⚠️ ELITE OPPONENT: Enhanced ${Game.persona} (+${hpBonus} HP, +${energyBonus} Energy)!`);
+      } else if (campaignBooster >= 2) {
+        logMessage(`💪 Stronger ${Game.persona} appears (+${hpBonus} HP, +${energyBonus} Energy)!`);
+      }
+    }
     
     // Initialize game state
     Game.over = false;
