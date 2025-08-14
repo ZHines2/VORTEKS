@@ -64,5 +64,65 @@ export const MOTTOS = [
   "Random opponent names: Bob the Doctor sounds legit",
   "Status effects: because vanilla combat is boring",
   "Pierce damage: armor? what armor? 🗡️",
-  "VORTEKS: Unicode Card Battler extraordinaire!"
+  "VORTEKS: Unicode Card Battler extraordinaire!",
+  
+  // Spiritual & Philosophical Wisdom
+  "Be still and know that victory comes from within 🕊️",
+  "The path of a thousand battles begins with a single card 🌸",
+  "What you seek is seeking you... in your deck 🔮",
+  "Every ending is a new beginning, every reshuffle a fresh start 🌱",
+  "In the midst of winter, I found within me an invincible summer ❄️→☀️",
+  "The wise warrior wins before the battle begins 🧘‍♂️",
+  "Flow like water, strike like lightning ⚡🌊",
+  "Your VORTEK reflects your inner strength 💫",
+  
+  // Biblical Wisdom for Gaming
+  "Faith is the substance of things hoped for... like perfect draws 📜",
+  "Be strong and courageous! Do not fear RNG - Deuteronomy 31:6 ⚔️",
+  "In all thy ways acknowledge wisdom, and thy deck shall prosper 🙏",
+  "For where your treasure is, there your heart will be also... in victory 💎",
+  "The light shines in the darkness, and the darkness has not overcome it ✨",
+  "Trust in strategy with all your heart - Proverbs 3:5-6 💚",
+  "Iron sharpens iron, and one player sharpens another - Proverbs 27:17 🗡️",
+  "All things work together for good... even bad draws - Romans 8:28 🎯",
+  
+  // Bhagavad Gita Gaming Wisdom
+  "You have the right to perform action, but not to the fruits thereof 🍃",
+  "One who sees action in inaction, and inaction in action, is wise 🧘",
+  "The mind is everything. What you think you become... even in battle 🌟",
+  "Change is the law of the universe... embrace the meta shift 🔄",
+  "A person can rise through the efforts of their own mind ⛰️",
+  "The soul is neither born, nor does it die... but VORTEKs evolve 🦋",
+  "For the soul there is neither birth nor death ♾️",
+  "Set thy heart upon thy work but never on its reward 💝",
+  
+  // I Ching Strategic Wisdom
+  "The superior player adapts to circumstances ☯️",
+  "Perseverance in small things leads to great accomplishments 🌱→🌳",
+  "When we see the way forward, we find the strength to travel it 🛤️",
+  "The wise find pleasure in water; the virtuous find pleasure in hills 🏔️💧",
+  "Thunder and wind: the image of duration through movement ⚡🌪️",
+  "In times of progress, the superior player remains mindful 📈🧠",
+  "Return to simplicity; from simplicity, true power emerges 🎋",
+  "The creative works sublime success through perseverance 🎨✨",
+  
+  // Zen Gaming Insights
+  "Before enlightenment: shuffle deck. After enlightenment: shuffle deck 🃏",
+  "The best technique is to have no technique 🌿",
+  "Empty your mind, be formless, shapeless — like water 💧",
+  "Do not seek to follow in the footsteps of the wise... seek what they sought 👣",
+  "The present moment is the only moment available to us 🎯",
+  "When you realize there is nothing lacking, the whole world belongs to you 🌍",
+  "If you meet the Buddha on the battlefield... challenge him to cards 🃏😇",
+  "Silence is the true teacher; strategy is the best lesson 🤫📚",
+  
+  // Mystical VORTEKS Wisdom
+  "In the garden of consciousness, VORTEKs bloom eternal 🌺🧠",
+  "Every card drawn writes destiny upon the fabric of reality 📜✨",
+  "The universe shuffles itself through willing hands 🌌🙌",
+  "Seek not the victory, but the victory within victory 🏆💫",
+  "As above in strategy, so below in execution ⭐⬇️",
+  "The VORTEK whispers secrets only the heart can understand 💝🗣️",
+  "In each battle lies the seed of transcendence 🌱⚡",
+  "Time is an illusion. Turns are temporary. Victory is eternal ⏰♾️"
 ];

@@ -38,6 +38,23 @@ import {
   recordAchievement,
   getAnalytics
 } from './telemetry.js';
+import {
+  loadIdleGame,
+  saveIdleGame,
+  getCreature,
+  getCreatureInfo,
+  feedCreature,
+  playWithCreature,
+  meditateWithCreature,
+  exploreRoom,
+  interactWithRoomElement,
+  setVortekName,
+  resetCreature,
+  updateCompanionFromGameplay,
+  updateCreatureFromTelemetry,
+  getRoomInteractionMessage
+} from './idle-game.js';
+import { initVortekGenerator, generateVortekAppearance, playVortekSound } from './vortek-generator.js';
 
 const MUSIC_FILE = 'VORTEKS.mp3';
 const LS_KEY = 'vorteks-muted';
@@ -56,6 +73,10 @@ const unlocksBtn = document.getElementById('unlocksBtn');
 const glossaryBtn = document.getElementById('glossaryBtn');
 const defeatedBtn = document.getElementById('defeatedBtn');
 const telemetryBtn = document.getElementById('telemetryBtn');
+const companionBtn = document.getElementById('companionBtn');
+
+// Initialize idle game system
+loadIdleGame();
 
 // Defeated opponents helper functions
 function loadDefeatedOpponents() {
@@ -165,6 +186,381 @@ function setupDefeatedOpponents() {
       renderTelemetryData();
     }
   });
+
+  // VORTEK Companion modal setup
+  const companionModal = document.getElementById('companionModal');
+  const companionCloseBtn = document.getElementById('companionCloseBtn');
+  const feedCompanionBtn = document.getElementById('feedCompanionBtn');
+  const playCompanionBtn = document.getElementById('playCompanionBtn');
+  const meditateCompanionBtn = document.getElementById('meditateCompanionBtn');
+  const exploreRoomBtn = document.getElementById('exploreRoomBtn');
+  const nameEditBtn = document.getElementById('nameEditBtn');
+
+  // VORTEK button click handler
+  companionBtn.addEventListener('click', () => {
+    // Update VORTEK from current telemetry before showing
+    const creature = getCreature();
+    if (creature) {
+      updateCreatureFromTelemetry(); // Refresh from latest telemetry
+    }
+    renderCompanionData();
+    companionModal.hidden = false;
+  });
+
+  // Companion close button handler
+  companionCloseBtn.addEventListener('click', () => {
+    companionModal.hidden = true;
+  });
+
+  // Name editing functionality
+  nameEditBtn.addEventListener('click', () => {
+    const currentName = document.getElementById('companionName').textContent;
+    const nameElement = document.getElementById('companionName');
+    
+    // Create input field
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.id = 'nameEditInput';
+    input.value = currentName;
+    input.maxLength = 20;
+    
+    // Replace name display with input
+    nameElement.style.display = 'none';
+    nameElement.parentNode.insertBefore(input, nameElement.nextSibling);
+    input.focus();
+    input.select();
+    
+    // Handle input completion
+    function finishEditing() {
+      const newName = input.value.trim();
+      if (newName && newName !== currentName && setVortekName(newName)) {
+        nameElement.textContent = newName;
+        showCompanionMessage(`VORTEK renamed to ${newName}!`);
+      }
+      input.remove();
+      nameElement.style.display = 'block';
+    }
+    
+    input.addEventListener('blur', finishEditing);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') finishEditing();
+      if (e.key === 'Escape') {
+        input.remove();
+        nameElement.style.display = 'block';
+      }
+    });
+  });
+
+  // Room interaction handlers with mystical flavor
+  document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('room-element')) {
+      const elementName = e.target.id.replace('room', '').toLowerCase();
+      const creature = getCreature();
+      if (interactWithRoomElement(elementName)) {
+        renderCompanionData();
+        const mysticalMessage = getRoomInteractionMessage(elementName, creature, true);
+        showCompanionMessage(mysticalMessage);
+      } else {
+        const failMessage = getRoomInteractionMessage(elementName, creature, false);
+        showCompanionMessage(failMessage);
+      }
+    }
+  });
+
+  // VORTEK interaction handlers with personality-driven responses
+  feedCompanionBtn.addEventListener('click', () => {
+    if (feedCreature()) {
+      renderCompanionData();
+      const creature = getCreature();
+      let message = 'Fed your VORTEK! Energy restored.';
+      
+      // Enhanced spiritual/philosophical feeding messages
+      if (creature.loyalty >= 90) message = `${creature.name} receives your offering with infinite gratitude! Sacred energy flows.`;
+      else if (creature.loyalty >= 70) message = `${creature.name} accepts your gift as communion of souls! Energy restored.`;
+      else if (creature.playfulness >= 90) message = `${creature.name} transforms nourishment into pure joy! Energy dances!`;
+      else if (creature.playfulness >= 70) message = `${creature.name} finds celebration in each morsel! Energy restored.`;
+      else if (creature.wisdom >= 90) message = `${creature.name} contemplates the gift of sustenance! Energy flows like wisdom.`;
+      else if (creature.wisdom >= 70) message = `${creature.name} understands: food is love made manifest! Energy restored.`;
+      else if (creature.happiness >= 80) message = `${creature.name} radiates contentment with each bite! Energy restored.`;
+      else if (creature.creativity >= 70) message = `${creature.name} tastes artistry in simple nourishment! Energy restored.`;
+      else if (creature.focus >= 70) message = `${creature.name} mindfully savors each moment! Energy restored.`;
+      else if (creature.courage >= 70) message = `${creature.name} grows stronger for future challenges! Energy restored.`;
+      
+      showCompanionMessage(message);
+    } else {
+      const creature = getCreature();
+      let message = 'Your VORTEK is not hungry right now.';
+      
+      // Enhanced spiritual rejection messages
+      if (creature.loyalty >= 90) message = `${creature.name} sends waves of gratitude but needs no earthly sustenance right now.`;
+      else if (creature.loyalty >= 70) message = `${creature.name} feels your love but is content for now.`;
+      else if (creature.focus >= 90) message = `${creature.name} dwells in perfect satiation of spirit.`;
+      else if (creature.focus >= 70) message = `${creature.name} is absorbed in higher contemplation.`;
+      else if (creature.wisdom >= 90) message = `${creature.name} has transcended the need for material nourishment.`;
+      else if (creature.wisdom >= 70) message = `${creature.name} is sustained by wisdom alone right now.`;
+      else if (creature.playfulness >= 70) message = `${creature.name} is too excited about other things to eat!`;
+      
+      showCompanionMessage(message);
+    }
+  });
+
+  playCompanionBtn.addEventListener('click', () => {
+    if (playWithCreature()) {
+      renderCompanionData();
+      const creature = getCreature();
+      let message = 'Played with your VORTEK! Happiness increased.';
+      
+      // Enhanced mystical play messages
+      if (creature.playfulness >= 90) message = `${creature.name} transcends into pure play-bliss! Happiness becomes radiance!`;
+      else if (creature.playfulness >= 70) message = `${creature.name} dances with the cosmic joy of existence! Happiness soars!`;
+      else if (creature.loyalty >= 90) message = `${creature.name} weaves sacred bonds through shared laughter! Happiness deepens.`;
+      else if (creature.loyalty >= 70) message = `${creature.name} treasures these moments beyond measure! Happiness increased.`;
+      else if (creature.creativity >= 90) message = `${creature.name} paints reality with pure imagination! Happiness sparkles!`;
+      else if (creature.creativity >= 70) message = `${creature.name} creates art from the moment itself! Happiness increased.`;
+      else if (creature.courage >= 70) message = `${creature.name} finds strength in joyful connection! Happiness increased.`;
+      else if (creature.wisdom >= 70) message = `${creature.name} discovers wisdom hidden in play! Happiness increased.`;
+      else if (creature.focus >= 70) message = `${creature.name} enters the meditative flow of pure fun! Happiness increased.`;
+      else if (creature.curiosity >= 70) message = `${creature.name} explores the mysteries of joy! Happiness increased.`;
+      
+      showCompanionMessage(message);
+    } else {
+      const creature = getCreature();
+      let message = 'Your VORTEK is too tired to play right now.';
+      
+      // Enhanced tired/rejection messages
+      if (creature.loyalty >= 90) message = `${creature.name} yearns to play but spirit needs restoration first.`;
+      else if (creature.loyalty >= 70) message = `${creature.name} loves you too much to play half-heartedly.`;
+      else if (creature.wisdom >= 90) message = `${creature.name} embraces the wisdom of rest before joy.`;
+      else if (creature.wisdom >= 70) message = `${creature.name} knows all things have their season.`;
+      else if (creature.focus >= 70) message = `${creature.name} cannot focus enough energy for proper play.`;
+      else if (creature.playfulness >= 70) message = `${creature.name} will play with renewed spirit once rested!`;
+      
+      showCompanionMessage(message);
+    }
+  });
+
+  meditateCompanionBtn.addEventListener('click', () => {
+    if (meditateWithCreature()) {
+      renderCompanionData();
+      const creature = getCreature();
+      let message = 'Meditated together! Wisdom and focus increased.';
+      
+      // Enhanced mystical meditation messages
+      if (creature.focus >= 90 && creature.wisdom >= 90) message = `${creature.name} touches the infinite mind! Transcendence achieved!`;
+      else if (creature.focus >= 90) message = `${creature.name} achieves diamond-clarity awareness! Focus perfected!`;
+      else if (creature.wisdom >= 90) message = `${creature.name} drinks from the eternal well! Wisdom overflows!`;
+      else if (creature.focus >= 70) message = `${creature.name} enters the stillness beyond thought! Wisdom and focus greatly increased.`;
+      else if (creature.wisdom >= 70) message = `${creature.name} channels ancient understanding! Profound insights flow.`;
+      else if (creature.loyalty >= 90) message = `${creature.name} merges consciousness with yours! Unity achieved!`;
+      else if (creature.loyalty >= 70) message = `${creature.name} finds divine peace in your presence! Wisdom and focus increased.`;
+      else if (creature.creativity >= 70) message = `${creature.name} paints visions in the mind's eye! Wisdom and focus increased.`;
+      else if (creature.courage >= 70) message = `${creature.name} faces inner depths fearlessly! Wisdom and focus increased.`;
+      else if (creature.curiosity >= 70) message = `${creature.name} explores infinite inner worlds! Wisdom and focus increased.`;
+      
+      showCompanionMessage(message);
+    } else {
+      const creature = getCreature();
+      let message = 'Your VORTEK needs more energy to meditate.';
+      
+      // Enhanced meditation rejection messages
+      if (creature.wisdom >= 90) message = `${creature.name} knows true meditation requires complete presence of energy.`;
+      else if (creature.wisdom >= 70) message = `${creature.name} understands: the mind needs fuel for deep contemplation.`;
+      else if (creature.focus >= 90) message = `${creature.name} maintains perfect awareness of energy limitations.`;
+      else if (creature.focus >= 70) message = `${creature.name} cannot achieve focus without sufficient life force.`;
+      else if (creature.loyalty >= 70) message = `${creature.name} honors meditation too much to practice it weakly.`;
+      
+      showCompanionMessage(message);
+    }
+  });
+
+  exploreRoomBtn.addEventListener('click', () => {
+    if (exploreRoom()) {
+      renderCompanionData();
+      const creature = getCreature();
+      let message = 'Explored the room together! Curiosity increased.';
+      
+      // Enhanced mystical exploration messages
+      if (creature.curiosity >= 90) message = `${creature.name} unravels cosmic mysteries hidden in plain sight! Curiosity transcends!`;
+      else if (creature.curiosity >= 70) message = `${creature.name} discovers infinite worlds within finite space! Curiosity greatly increased.`;
+      else if (creature.creativity >= 90) message = `${creature.name} reimagines reality through artistic vision! Curiosity inspired!`;
+      else if (creature.creativity >= 70) message = `${creature.name} finds beauty in every hidden corner! Curiosity increased.`;
+      else if (creature.playfulness >= 90) message = `${creature.name} transforms exploration into cosmic dance! Curiosity celebrates!`;
+      else if (creature.playfulness >= 70) message = `${creature.name} makes adventure from simple discovery! Curiosity increased.`;
+      else if (creature.wisdom >= 70) message = `${creature.name} seeks understanding in all things! Curiosity increased.`;
+      else if (creature.courage >= 70) message = `${creature.name} boldly ventures into unknown territory! Curiosity increased.`;
+      else if (creature.focus >= 70) message = `${creature.name} perceives details invisible to others! Curiosity increased.`;
+      
+      showCompanionMessage(message);
+    } else {
+      const creature = getCreature();
+      let message = 'Need to wait before exploring again.';
+      
+      // Enhanced exploration cooldown messages
+      if (creature.curiosity >= 90) message = `${creature.name} dwells in contemplation of infinite discoveries already made.`;
+      else if (creature.curiosity >= 70) message = `${creature.name} is still absorbing the wisdom of the last revelation.`;
+      else if (creature.wisdom >= 90) message = `${creature.name} knows all knowledge needs time to ripen in the soul.`;
+      else if (creature.wisdom >= 70) message = `${creature.name} believes true understanding cannot be rushed.`;
+      else if (creature.focus >= 70) message = `${creature.name} is processing profound insights from recent exploration.`;
+      else if (creature.loyalty >= 70) message = `${creature.name} wants to share discoveries when the time is right.`;
+      
+      showCompanionMessage(message);
+    }
+  });
+
+  function renderCompanionData() {
+    const creatureInfo = getCreatureInfo();
+    const creature = getCreature();
+    
+    // Generate and display pixel art appearance
+    const vortekAppearance = generateVortekAppearance(creature);
+    
+    // Replace the emoji display with canvas
+    const pixelArtContainer = document.getElementById('companionPixelArt');
+    const existingCanvas = document.getElementById('vortekCanvas');
+    if (existingCanvas && pixelArtContainer) {
+      // Canvas is already in the DOM from HTML, just update its content
+      // The generateVortekAppearance function already draws to the canvas
+    }
+    
+    // Update VORTEK name and allow editing
+    document.getElementById('companionName').textContent = creatureInfo.name;
+    
+    // Update stage display with personality info
+    const stageText = creatureInfo.personalityDisplay ? 
+      `${creatureInfo.stageName} (${creatureInfo.personalityDisplay})` : 
+      creatureInfo.stageName;
+    document.getElementById('companionStage').textContent = stageText;
+    document.getElementById('companionLevel').textContent = creatureInfo.level;
+    
+    // Update sound display and add click handler
+    const soundElement = document.getElementById('companionSound');
+    if (soundElement && vortekAppearance.sound) {
+      soundElement.textContent = `🔊 ${vortekAppearance.sound}`;
+      soundElement.onclick = () => playVortekSound(vortekAppearance.sound);
+      soundElement.title = `Click to hear ${creature.name}'s unique sound: "${vortekAppearance.sound}"`;
+    }
+    
+    // Add visual effects to canvas container based on stats
+    const canvasElement = document.getElementById('vortekCanvas');
+    if (canvasElement && creatureInfo.visualEffects && creatureInfo.visualEffects.length > 0) {
+      canvasElement.title = creatureInfo.visualEffects.join(' • ');
+      canvasElement.style.filter = 'drop-shadow(0 0 8px rgba(119, 255, 221, 0.6))';
+    } else if (canvasElement) {
+      canvasElement.title = '';
+      canvasElement.style.filter = 'drop-shadow(0 0 4px rgba(119, 255, 221, 0.3))';
+    }
+    
+    // Update room size class based on evolution stage
+    const roomElement = document.getElementById('vortekRoom');
+    roomElement.className = `vortek-${creatureInfo.stageSize}`;
+    
+    // Add personality-based visual effects
+    if (creatureInfo.happiness >= 90) roomElement.classList.add('happiness-high');
+    if (creatureInfo.energy >= 95) roomElement.classList.add('energy-high');
+    if (creatureInfo.power >= 85 || creatureInfo.courage >= 85) roomElement.classList.add('power-high');
+    if (creatureInfo.creativity >= 80) roomElement.classList.add('creativity-high');
+    if (creatureInfo.focus >= 80) roomElement.classList.add('focus-high');
+    if (creatureInfo.playfulness >= 80) roomElement.classList.add('playfulness-high');
+    
+    // Update core stats
+    document.getElementById('companionHappiness').textContent = Math.floor(creatureInfo.happiness);
+    document.getElementById('companionEnergy').textContent = Math.floor(creatureInfo.energy);
+    document.getElementById('companionWisdom').textContent = Math.floor(creatureInfo.wisdom);
+    document.getElementById('companionPower').textContent = Math.floor(creatureInfo.power);
+    
+    // Update extended stats
+    document.getElementById('companionCuriosity').textContent = Math.floor(creatureInfo.curiosity);
+    document.getElementById('companionCreativity').textContent = Math.floor(creatureInfo.creativity);
+    document.getElementById('companionLoyalty').textContent = Math.floor(creatureInfo.loyalty);
+    document.getElementById('companionPlayfulness').textContent = Math.floor(creatureInfo.playfulness);
+    document.getElementById('companionFocus').textContent = Math.floor(creatureInfo.focus);
+    document.getElementById('companionCourage').textContent = Math.floor(creatureInfo.courage);
+    
+    // Update progress bars
+    document.getElementById('happinessBar').style.width = `${creatureInfo.happiness}%`;
+    document.getElementById('energyBar').style.width = `${creatureInfo.energy}%`;
+    document.getElementById('wisdomBar').style.width = `${creatureInfo.wisdom}%`;
+    document.getElementById('powerBar').style.width = `${creatureInfo.power}%`;
+    
+    document.getElementById('curiosityBar').style.width = `${creatureInfo.curiosity}%`;
+    document.getElementById('creativityBar').style.width = `${creatureInfo.creativity}%`;
+    document.getElementById('loyaltyBar').style.width = `${creatureInfo.loyalty}%`;
+    document.getElementById('playfulnessBar').style.width = `${creatureInfo.playfulness}%`;
+    document.getElementById('focusBar').style.width = `${creatureInfo.focus}%`;
+    document.getElementById('courageBar').style.width = `${creatureInfo.courage}%`;
+    
+    // Update experience
+    document.getElementById('companionExp').textContent = Math.floor(creatureInfo.experience);
+    document.getElementById('companionExpNeeded').textContent = creatureInfo.expNeeded;
+    document.getElementById('expBar').style.width = `${creatureInfo.expProgress}%`;
+    
+    // Update influences with performance modifiers
+    document.getElementById('battleInfluence').textContent = `${creatureInfo.battleInfluence}% (+${creatureInfo.performanceModifiers.battleBonus}% battle)`;
+    document.getElementById('cardMastery').textContent = `${creatureInfo.cardMastery}% (${creatureInfo.performanceModifiers.experienceMultiplier.toFixed(1)}x exp)`;
+    document.getElementById('strategicDepth').textContent = `${creatureInfo.strategicDepth}% (${(100 - creatureInfo.performanceModifiers.energyEfficiency * 100).toFixed(0)}% efficiency)`;
+    
+    // Update status messages
+    document.getElementById('companionStatus').textContent = creatureInfo.statusMessage;
+    document.getElementById('companionMood').textContent = creatureInfo.moodMessage;
+    document.getElementById('roomActivity').textContent = creatureInfo.roomActivity;
+    
+    // Update room elements visibility
+    updateRoomElements(creatureInfo);
+    
+    // Update VORTEK button notification
+    updateCompanionNotification();
+  }
+
+  function updateRoomElements(creatureInfo) {
+    const elements = ['bed', 'mirror', 'bookshelf', 'toybox', 'plant', 'artEasel'];
+    
+    elements.forEach(elementName => {
+      const element = document.getElementById(`room${elementName.charAt(0).toUpperCase() + elementName.slice(1)}`);
+      if (element) {
+        if (creatureInfo.unlockedRoomElements.includes(elementName)) {
+          element.classList.remove('hidden');
+          element.classList.add('unlocked');
+        } else {
+          element.classList.add('hidden');
+          element.classList.remove('unlocked');
+        }
+      }
+    });
+  }
+
+  function showCompanionMessage(message) {
+    // Enhanced message display with better animations
+    const statusEl = document.getElementById('companionStatus');
+    const originalMessage = statusEl.textContent;
+    statusEl.textContent = message;
+    statusEl.style.color = 'var(--good)';
+    statusEl.style.transform = 'scale(1.05)';
+    statusEl.style.transition = 'all 0.3s ease';
+    
+    setTimeout(() => {
+      statusEl.textContent = originalMessage;
+      statusEl.style.color = 'var(--accent)';
+      statusEl.style.transform = 'scale(1)';
+    }, 2500);
+  }
+
+  function updateCompanionNotification() {
+    const creatureInfo = getCreatureInfo();
+    if (creatureInfo.needsAttention) {
+      companionBtn.classList.add('needs-attention');
+    } else {
+      companionBtn.classList.remove('needs-attention');
+    }
+  }
+
+  // Update VORTEK notification periodically
+  setInterval(() => {
+    if (!companionModal.hidden) {
+      renderCompanionData();
+    } else {
+      updateCompanionNotification();
+    }
+  }, 30000); // Update every 30 seconds
 
   function renderTelemetryData() {
     const analytics = getAnalytics();
@@ -358,7 +754,8 @@ function setupHelp() {
         'unlocksModal',
         'glossaryModal',
         'victoryModal',
-        'defeatedModal'
+        'defeatedModal',
+        'companionModal'
       ];
       
       modals.forEach(modalId => {
@@ -526,6 +923,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initialize face generator
   initFaceGenerator();
+  
+  // Initialize VORTEK generator
+  initVortekGenerator();
 
   // Setup title image fallback logic
   setupTitleImage();
@@ -603,6 +1003,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Victory modal event handlers
   document.getElementById('nextBattleBtn').onclick = () => {
     recordCurrentDefeatedOpponent();
+    
+    // Update companion for victory
+    updateCompanionFromGameplay('battle_won');
     
     // Check if we're in campaign mode
     if (Campaign.active) {

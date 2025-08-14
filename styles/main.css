@@ -147,11 +147,36 @@ html,body {
   outline: 2px solid var(--accent);
 }
 
+/* --- Companion button --- */
+#companionBtn {
+  position: absolute;
+  top: 18px;
+  right: 84px; /* Position left of Help button with gap */
+  z-index: 50;
+  background: var(--panel);
+  color: var(--accent);
+  border: 2px solid var(--border);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  opacity: 0.85;
+  transition: opacity 0.2s;
+  font-family: 'Press Start 2P', monospace;
+}
+#companionBtn:hover,
+#companionBtn:focus {
+  opacity: 1;
+  outline: 2px solid var(--accent);
+}
+
 /* --- Help button --- */
 #helpBtn {
   position: absolute;
   top: 18px;
-  right: 62px; /* Position left of mute button with gap */
+  right: 62px; /* Position left of companion button with gap */
   z-index: 50;
   background: var(--panel);
   color: var(--accent);
@@ -780,4 +805,204 @@ button.card:disabled {
 
 .qcard:hover{
   filter:brightness(1.1);
+}
+
+/* --- Companion Modal Styles --- */
+.companion-stat {
+  margin-bottom: 8px;
+}
+
+.stat-bar {
+  width: 100%;
+  height: 8px;
+  background: rgba(0,0,0,0.4);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 2px;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+.stat-fill {
+  height: 100%;
+  transition: width 0.5s ease;
+  border-radius: 3px;
+}
+
+#companionModal .box {
+  background: var(--panel);
+  border: 3px solid var(--border);
+  color: var(--ink);
+}
+
+#companionEmoji {
+  text-shadow: 0 0 10px rgba(119, 255, 221, 0.3);
+  animation: gentle-pulse 3s ease-in-out infinite;
+}
+
+@keyframes gentle-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+/* Room Environment Styles */
+#vortekRoom {
+  position: relative;
+  background: linear-gradient(45deg, #2a2a3a, #3a3a4a);
+  box-shadow: inset 0 0 20px rgba(0,0,0,0.3);
+}
+
+.room-element {
+  cursor: pointer;
+  opacity: 0.7;
+  transition: all 0.3s ease;
+  user-select: none;
+}
+
+.room-element:hover {
+  opacity: 1;
+  transform: scale(1.1);
+  filter: brightness(1.2);
+}
+
+.room-element.hidden {
+  display: none;
+}
+
+.room-element.unlocked {
+  display: block;
+  animation: element-unlock 0.8s ease-out;
+}
+
+@keyframes element-unlock {
+  0% { 
+    opacity: 0; 
+    transform: scale(0.5) rotate(180deg); 
+  }
+  50% { 
+    opacity: 0.8; 
+    transform: scale(1.2) rotate(90deg); 
+  }
+  100% { 
+    opacity: 0.7; 
+    transform: scale(1) rotate(0deg); 
+  }
+}
+
+/* VORTEK size based on evolution stage */
+.vortek-tiny #companionEmoji { font-size: 24px; }
+.vortek-small #companionEmoji { font-size: 32px; }
+.vortek-medium #companionEmoji { font-size: 40px; }
+.vortek-large #companionEmoji { font-size: 48px; }
+.vortek-massive #companionEmoji { font-size: 56px; }
+
+/* Enhanced visual effects for high-stat VORTEKs */
+#companionEmoji {
+  transition: all 0.3s ease;
+}
+
+/* High happiness glow */
+.happiness-high #companionEmoji {
+  animation: joy-glow 3s ease-in-out infinite;
+}
+
+@keyframes joy-glow {
+  0%, 100% { 
+    filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.6)) !important;
+  }
+  50% { 
+    filter: drop-shadow(0 0 12px rgba(255, 215, 0, 0.9)) !important;
+  }
+}
+
+/* High energy spark */
+.energy-high #companionEmoji {
+  animation: energy-spark 2s ease-in-out infinite;
+}
+
+@keyframes energy-spark {
+  0%, 100% { 
+    filter: drop-shadow(0 0 8px rgba(0, 255, 255, 0.6)) !important;
+  }
+  50% { 
+    filter: drop-shadow(0 0 15px rgba(0, 255, 255, 0.9)) !important;
+  }
+}
+
+/* High courage/power aura */
+.power-high #companionEmoji {
+  animation: power-aura 4s ease-in-out infinite;
+}
+
+@keyframes power-aura {
+  0%, 100% { 
+    filter: drop-shadow(0 0 10px rgba(255, 0, 0, 0.6)) !important;
+    transform: scale(1);
+  }
+  50% { 
+    filter: drop-shadow(0 0 20px rgba(255, 0, 0, 0.8)) !important;
+    transform: scale(1.05);
+  }
+}
+
+/* High creativity rainbow effect */
+.creativity-high #companionEmoji {
+  animation: creativity-rainbow 5s linear infinite;
+}
+
+@keyframes creativity-rainbow {
+  0% { filter: drop-shadow(0 0 8px rgba(255, 0, 0, 0.6)) !important; }
+  16% { filter: drop-shadow(0 0 8px rgba(255, 165, 0, 0.6)) !important; }
+  33% { filter: drop-shadow(0 0 8px rgba(255, 255, 0, 0.6)) !important; }
+  50% { filter: drop-shadow(0 0 8px rgba(0, 255, 0, 0.6)) !important; }
+  66% { filter: drop-shadow(0 0 8px rgba(0, 0, 255, 0.6)) !important; }
+  83% { filter: drop-shadow(0 0 8px rgba(75, 0, 130, 0.6)) !important; }
+  100% { filter: drop-shadow(0 0 8px rgba(238, 130, 238, 0.6)) !important; }
+}
+
+/* Personality-based room ambiance */
+.creativity-high #vortekRoom {
+  background: linear-gradient(45deg, #2a2a3a, #3a3a4a, #4a3a4a) !important;
+}
+
+.courage-high #vortekRoom {
+  background: linear-gradient(45deg, #3a2a2a, #4a3a3a, #4a4a3a) !important;
+}
+
+.focus-high #vortekRoom {
+  background: linear-gradient(45deg, #2a2a4a, #3a3a5a, #3a4a5a) !important;
+}
+
+.playfulness-high #vortekRoom {
+  background: linear-gradient(45deg, #2a3a2a, #3a4a3a, #4a4a4a) !important;
+}
+
+/* Notification indicator for companion button */
+#companionBtn.needs-attention {
+  animation: attention-pulse 2s ease-in-out infinite;
+  box-shadow: 0 0 15px var(--accent);
+}
+
+@keyframes attention-pulse {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 1; }
+}
+
+/* Name editing styles */
+#nameEditInput {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--accent);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: bold;
+  text-align: center;
+  max-width: 150px;
+}
+
+#nameEditInput:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 5px rgba(119, 255, 221, 0.5);
 }
