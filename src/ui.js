@@ -17,11 +17,17 @@ export function renderCost(card) {
     return 'ALL';
   }
   
-  let costStr = card.cost.toString() + '⚡';
+  let costStr = '';
+  
+  // Add energy cost if card has one
+  if (card.cost > 0) {
+    costStr += `${card.cost}⚡`;
+  }
   
   // Add life cost if the card has one
   if (card.effects?.lifeCost) {
-    costStr += ` ${card.effects.lifeCost}❤`;
+    if (costStr) costStr += ' '; // Add space if we already have energy cost
+    costStr += `${card.effects.lifeCost}❤`;
   }
   
   return costStr;
