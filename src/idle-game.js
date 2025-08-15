@@ -188,11 +188,14 @@ export function updateCreatureFromTelemetry() {
   currentCreature.strategicDepth = Math.min(100, avgEnergyPerTurn * 20);
   
   // Update core stats based on influences
-  currentCreature.power = Math.min(100, Math.floor(
-    (currentCreature.battleInfluence * 0.4) + 
-    (currentCreature.cardMastery * 0.3) + 
-    (currentCreature.level * 0.3)
-  ));
+  // Power starts at base value and is enhanced by experience and performance
+  const basePower = Math.max(currentCreature.power || DEFAULT_CREATURE.power, DEFAULT_CREATURE.power);
+  const powerBonus = Math.floor(
+    (currentCreature.battleInfluence * 0.3) + 
+    (currentCreature.cardMastery * 0.2) + 
+    (Math.max(0, currentCreature.level - 1) * 0.5)
+  );
+  currentCreature.power = Math.min(100, basePower + powerBonus);
   
   // Experience gain from battles
   if (telemetry.battles.total > currentCreature.level) {
@@ -305,24 +308,41 @@ export function feedCreature() {
   return true;
 }
 
-export function playWithCreature() {
-  if (!currentCreature) return false;
+// Check if play action is available and why
+export function getPlayAvailability() {
+  if (!currentCreature) return { available: false, reason: 'no_creature' };
   
   const now = Date.now();
   const modifiers = getPerformanceModifiers(currentCreature);
-  
-  // Reduced cooldown based on performance modifiers
   const baseCooldown = 0.5; // 30 minutes
   const adjustedCooldown = baseCooldown * (1 - modifiers.cooldownReduction / 100);
-  const hoursSinceLastPlay = (now - currentCreature.lastPlayed) / (1000 * 60 * 60);
+  const hoursSinceLastPlay = (now - (currentCreature.lastPlayed || 0)) / (1000 * 60 * 60);
+  const energyCost = Math.max(2, Math.floor(5 * modifiers.energyEfficiency));
   
-  if (hoursSinceLastPlay < adjustedCooldown) return false;
+  if (hoursSinceLastPlay < adjustedCooldown) {
+    const minutesRemaining = Math.ceil((adjustedCooldown - hoursSinceLastPlay) * 60);
+    return { available: false, reason: 'cooldown', minutesRemaining };
+  }
+  
+  if (currentCreature.energy < energyCost) {
+    return { available: false, reason: 'energy', energyNeeded: energyCost, energyCurrent: currentCreature.energy };
+  }
+  
+  return { available: true, energyCost };
+}
+
+export function playWithCreature() {
+  const availability = getPlayAvailability();
+  if (!availability.available) return { success: false, ...availability };
+  
+  const now = Date.now();
+  const modifiers = getPerformanceModifiers(currentCreature);
   
   // Enhanced gains based on personality
   const happinessGain = 15 + Math.floor(modifiers.loyaltyBonus / 10);
   const playfulnessGain = 8 + Math.floor(currentCreature.playfulness >= 70 ? 4 : 0);
   const loyaltyGain = 3 + Math.floor(modifiers.loyaltyBonus / 20);
-  const energyCost = Math.max(2, Math.floor(5 * modifiers.energyEfficiency));
+  const energyCost = availability.energyCost;
   
   currentCreature.happiness = Math.min(100, currentCreature.happiness + happinessGain);
   currentCreature.playfulness = Math.min(100, currentCreature.playfulness + playfulnessGain);
@@ -333,12 +353,16 @@ export function playWithCreature() {
   
   // Enhanced experience chance for highly playful VORTEKs
   const expChance = currentCreature.playfulness >= 70 ? 0.5 : 0.3;
-  if (Math.random() < expChance) {
+  const gainedExp = Math.random() < expChance;
+  if (gainedExp) {
     gainExperience(1);
   }
   
   saveIdleGame();
-  return true;
+  return { 
+    success: true, 
+    effects: { happinessGain, playfulnessGain, loyaltyGain, energyCost, gainedExp }
+  };
 }
 
 export function meditateWithCreature() {
