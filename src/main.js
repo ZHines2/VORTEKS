@@ -96,7 +96,10 @@ initializeLeaderboard().then(() => {
   console.warn('Leaderboard initialization error:', error);
 });
 
-// Make leaderboard functions available globally for auto-submission
+// Make leaderboard functions available globally for auto-submission and console testing
+window.loadPlayerProfile = loadPlayerProfile;
+window.getPlayerProfile = getPlayerProfile;
+window.updatePlayerProfile = updatePlayerProfile;
 window.canSubmitToLeaderboard = canSubmitToLeaderboard;
 window.submitToLeaderboard = submitToLeaderboard;
 window.getAnalytics = getAnalytics;
