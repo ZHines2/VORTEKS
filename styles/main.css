@@ -29,7 +29,7 @@ html,body {
   position: absolute;
   top: 18px;
   right: 18px;
-  z-index: 50;
+  z-index: 1001; /* Higher than start modal */
   background: var(--panel);
   color: var(--ink);
   border: 2px solid var(--border);
@@ -52,7 +52,7 @@ html,body {
   position: absolute;
   top: 18px;
   right: 282px; /* Position left of Unlocks button with gap */
-  z-index: 50;
+  z-index: 1001; /* Higher than start modal */
   background: var(--panel);
   color: var(--accent);
   border: 2px solid var(--border);
@@ -77,7 +77,7 @@ html,body {
   position: absolute;
   top: 18px;
   right: 238px; /* Position left of Glossary button with gap */
-  z-index: 50;
+  z-index: 1001; /* Higher than start modal */
   background: var(--panel);
   color: var(--accent);
   border: 2px solid var(--border);
@@ -102,7 +102,7 @@ html,body {
   position: absolute;
   top: 18px;
   right: 194px; /* Position left of Defeated button with gap */
-  z-index: 50;
+  z-index: 1001; /* Higher than start modal */
   background: var(--panel);
   color: var(--accent);
   border: 2px solid var(--border);
@@ -127,7 +127,7 @@ html,body {
   position: absolute;
   top: 18px;
   right: 150px; /* Position left of Companion button with gap */
-  z-index: 50;
+  z-index: 1001; /* Higher than start modal */
   background: var(--panel);
   color: var(--accent);
   border: 2px solid var(--border);
@@ -152,7 +152,7 @@ html,body {
   position: absolute;
   top: 18px;
   right: 106px; /* Position left of Help button with consistent gap */
-  z-index: 50;
+  z-index: 1001; /* Higher than start modal */
   background: var(--panel);
   color: var(--accent);
   border: 2px solid var(--border);
@@ -177,7 +177,7 @@ html,body {
   position: absolute;
   top: 18px;
   right: 62px; /* Position left of companion button with gap */
-  z-index: 50;
+  z-index: 1001; /* Higher than start modal */
   background: var(--panel);
   color: var(--accent);
   border: 2px solid var(--border);
