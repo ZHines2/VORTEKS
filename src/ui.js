@@ -346,3 +346,25 @@ export function fxReconsider() {
   hand.classList.add('swirl');
   setTimeout(() => hand.classList.remove('swirl'), 500);
 }
+
+// New visual effects for cards that didn't have them
+export function fxHeal(player) {
+  const hpSpan = player.isAI ? $('#oppHP') : $('#youHP');
+  if (!hpSpan) return;
+  hpSpan.classList.add('heal-glow');
+  setTimeout(() => hpSpan.classList.remove('heal-glow'), 800);
+}
+
+export function fxGuard(player) {
+  const shieldSpan = player.isAI ? $('#oppSH') : $('#youSH');
+  if (!shieldSpan) return;
+  shieldSpan.classList.add('shield-shimmer');
+  setTimeout(() => shieldSpan.classList.remove('shield-shimmer'), 700);
+}
+
+export function fxStrike(target) {
+  const panel = target.isAI ? $('#oppPanel') : $('#youPanel');
+  if (!panel) return;
+  panel.classList.add('impact-flash');
+  setTimeout(() => panel.classList.remove('impact-flash'), 350);
+}
