@@ -39,6 +39,22 @@ import {
   getAnalytics
 } from './telemetry.js';
 import {
+  loadPlayerProfile,
+  getPlayerProfile,
+  updatePlayerProfile,
+  submitToLeaderboard,
+  getLeaderboard,
+  getLeaderboardCategories,
+  getPlayerRank,
+  canSubmitToLeaderboard,
+  resetLeaderboard,
+  syncLeaderboard,
+  initializeLeaderboard,
+  isBackendOnline,
+  isSyncing,
+  LEADERBOARD_CATEGORIES
+} from './leaderboard.js';
+import {
   loadIdleGame,
   saveIdleGame,
   getCreature,
@@ -66,6 +82,21 @@ const QUIRK_KEY = 'vorteks-selected-quirk';
 // Initialize telemetry system
 loadTelemetry();
 
+// Initialize player profile for leaderboards
+loadPlayerProfile();
+
+// Initialize leaderboard backend
+initializeLeaderboard().then(() => {
+  console.log('Leaderboard system initialized');
+}).catch(error => {
+  console.warn('Leaderboard initialization error:', error);
+});
+
+// Make leaderboard functions available globally for auto-submission
+window.canSubmitToLeaderboard = canSubmitToLeaderboard;
+window.submitToLeaderboard = submitToLeaderboard;
+window.getAnalytics = getAnalytics;
+
 let music;
 window.music = null; // Make music accessible globally for sound functions
 const muteBtn = document.getElementById('muteBtn');
@@ -73,6 +104,7 @@ const helpBtn = document.getElementById('helpBtn');
 const unlocksBtn = document.getElementById('unlocksBtn');
 const glossaryBtn = document.getElementById('glossaryBtn');
 const defeatedBtn = document.getElementById('defeatedBtn');
+const leaderboardBtn = document.getElementById('leaderboardBtn');
 const telemetryBtn = document.getElementById('telemetryBtn');
 const companionBtn = document.getElementById('companionBtn');
 
@@ -166,6 +198,67 @@ function setupDefeatedOpponents() {
   // Telemetry close button handler
   telemetryCloseBtn.addEventListener('click', () => {
     telemetryModal.hidden = true;
+  });
+
+  // Leaderboard modal setup
+  const leaderboardModal = document.getElementById('leaderboardModal');
+  const leaderboardCloseBtn = document.getElementById('leaderboardCloseBtn');
+  const refreshLeaderboardBtn = document.getElementById('refreshLeaderboardBtn');
+  const profileSettingsBtn = document.getElementById('profileSettingsBtn');
+  const profileModal = document.getElementById('profileModal');
+  const profileCancelBtn = document.getElementById('profileCancelBtn');
+  const profileSaveBtn = document.getElementById('profileSaveBtn');
+  const deleteProfileBtn = document.getElementById('deleteProfileBtn');
+  const nicknameInput = document.getElementById('nicknameInput');
+  const shareStatsCheckbox = document.getElementById('shareStatsCheckbox');
+
+  let currentLeaderboardCategory = 'total_wins';
+
+  // Leaderboard button click handler
+  leaderboardBtn.addEventListener('click', async () => {
+    await renderLeaderboardData();
+    leaderboardModal.hidden = false;
+  });
+
+  // Leaderboard close button handler
+  leaderboardCloseBtn.addEventListener('click', () => {
+    leaderboardModal.hidden = true;
+  });
+
+  // Refresh leaderboard button handler
+  refreshLeaderboardBtn.addEventListener('click', async () => {
+    await renderLeaderboardData();
+  });
+
+  // Profile settings button handler
+  profileSettingsBtn.addEventListener('click', () => {
+    showProfileSettings();
+  });
+
+  // Profile modal handlers
+  profileCancelBtn.addEventListener('click', () => {
+    profileModal.hidden = true;
+  });
+
+  profileSaveBtn.addEventListener('click', async () => {
+    await saveProfileSettings();
+  });
+
+  deleteProfileBtn.addEventListener('click', () => {
+    deleteLeaderboardEntry();
+  });
+
+  // Category tab handlers
+  document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('leaderboard-tab')) {
+      // Update active tab
+      document.querySelectorAll('.leaderboard-tab').forEach(tab => tab.classList.remove('active'));
+      e.target.classList.add('active');
+      
+      // Update current category and render
+      currentLeaderboardCategory = e.target.dataset.category;
+      renderLeaderboardCategory(currentLeaderboardCategory);
+    }
   });
 
   // VORTEK Companion modal setup
@@ -716,6 +809,184 @@ function setupDefeatedOpponents() {
       <div><strong>Easter Eggs Seen:</strong> ${analytics.opponents.easterEggsSeen} | <strong>Play Time:</strong> ${analytics.session.playTime}</div>
       <div><strong>First Played:</strong> ${analytics.session.firstPlayed}</div>
     `;
+  }
+
+  // Leaderboard rendering functions
+  async function renderLeaderboardData() {
+    renderProfileStatus();
+    await renderLeaderboardCategory(currentLeaderboardCategory);
+  }
+
+  function renderProfileStatus() {
+    const profile = getPlayerProfile();
+    const profileStatus = document.getElementById('profileStatus');
+    const backendStatus = document.getElementById('backendStatus');
+    
+    // Update backend status indicator
+    if (backendStatus) {
+      if (isBackendOnline()) {
+        backendStatus.textContent = '🌐';
+        backendStatus.title = 'Connected to global server';
+        backendStatus.style.color = 'var(--good)';
+      } else {
+        backendStatus.textContent = '📱';
+        backendStatus.title = 'Using local storage only';
+        backendStatus.style.color = 'var(--ink)';
+      }
+    }
+    
+    if (profile.shareStats && profile.nickname) {
+      profileStatus.innerHTML = `Sharing as <strong>${profile.nickname}</strong> - Last updated: ${profile.lastSubmitted ? new Date(profile.lastSubmitted).toLocaleDateString() : 'Never'}`;
+      profileStatus.style.color = 'var(--good)';
+    } else if (profile.nickname) {
+      profileStatus.innerHTML = `Nickname set: <strong>${profile.nickname}</strong> - Enable sharing to join leaderboards!`;
+      profileStatus.style.color = 'var(--accent)';
+    } else {
+      profileStatus.innerHTML = 'Not sharing stats - Set a nickname to join the leaderboards!';
+      profileStatus.style.color = 'var(--ink)';
+    }
+  }
+
+  async function renderLeaderboardCategory(category) {
+    const categories = getLeaderboardCategories();
+    const categoryInfo = categories.find(cat => cat.id === category);
+    
+    // Update title
+    const titleEl = document.getElementById('leaderboardTitle');
+    titleEl.innerHTML = `<strong>${categoryInfo.icon} ${categoryInfo.name} - ${categoryInfo.description}</strong>`;
+    
+    // Get leaderboard data
+    const leaderboard = await getLeaderboard(category, 50);
+    const listEl = document.getElementById('leaderboardList');
+    
+    if (leaderboard.length === 0) {
+      listEl.innerHTML = `
+        <div style="text-align:center; color:var(--ink); opacity:0.7; padding:40px;">
+          <div style="font-size:24px; margin-bottom:8px;">🏅</div>
+          <div>No players on this leaderboard yet!</div>
+          <div style="font-size:12px; margin-top:8px;">Be the first to submit your stats!</div>
+        </div>
+      `;
+      return;
+    }
+    
+    // Get player's rank if they're on the leaderboard
+    const profile = getPlayerProfile();
+    const playerRank = profile.nickname ? await getPlayerRank(category) : null;
+    
+    // Render leaderboard entries
+    listEl.innerHTML = leaderboard.map((entry, index) => {
+      const rank = index + 1;
+      const isPlayer = profile.nickname === entry.nickname;
+      const value = getLeaderboardValue(entry.stats, category);
+      const date = new Date(entry.timestamp).toLocaleDateString();
+      
+      return `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 12px; margin:4px 0; background:${isPlayer ? 'rgba(119, 255, 221, 0.1)' : 'rgba(0,0,0,0.2)'}; border-radius:4px; border-left: ${isPlayer ? '3px solid var(--accent)' : 'none'};">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div style="font-weight:bold; color:${getRankColor(rank)}; min-width:30px;">#${rank}</div>
+            <div>
+              <div style="font-weight:${isPlayer ? 'bold' : 'normal'}; color:${isPlayer ? 'var(--accent)' : 'var(--ink)'};">${entry.nickname}${isPlayer ? ' (You)' : ''}</div>
+              <div style="font-size:11px; color:var(--ink); opacity:0.6;">${date}</div>
+            </div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-weight:bold; font-size:16px; color:var(--accent);">${value}</div>
+            <div style="font-size:10px; color:var(--ink); opacity:0.6;">${entry.stats.totalGames} games</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+    
+    // Add player rank info if they're not in top 50 but are on leaderboard
+    if (playerRank && playerRank > 50) {
+      listEl.innerHTML += `
+        <div style="margin-top:16px; padding:12px; background:rgba(119, 255, 221, 0.1); border-radius:4px; border-left:3px solid var(--accent);">
+          <div style="font-size:12px; color:var(--accent); margin-bottom:4px;"><strong>Your Rank</strong></div>
+          <div>#${playerRank} - ${profile.nickname}</div>
+        </div>
+      `;
+    }
+  }
+
+  function getLeaderboardValue(stats, category) {
+    switch (category) {
+      case 'total_wins': return stats.totalWins;
+      case 'win_streak': return stats.winStreak;
+      case 'perfect_wins': return stats.perfectWins;
+      case 'quick_wins': return stats.quickWins;
+      case 'win_rate': return stats.winRate.toFixed(1) + '%';
+      case 'total_games': return stats.totalGames;
+      default: return stats.totalWins;
+    }
+  }
+
+  function getRankColor(rank) {
+    if (rank === 1) return '#FFD700'; // Gold
+    if (rank === 2) return '#C0C0C0'; // Silver
+    if (rank === 3) return '#CD7F32'; // Bronze
+    return 'var(--accent)';
+  }
+
+  function showProfileSettings() {
+    const profile = getPlayerProfile();
+    
+    // Populate current values
+    nicknameInput.value = profile.nickname || '';
+    shareStatsCheckbox.checked = profile.shareStats || false;
+    
+    profileModal.hidden = false;
+  }
+
+  async function saveProfileSettings() {
+    const nickname = nicknameInput.value.trim();
+    const shareStats = shareStatsCheckbox.checked;
+    
+    // Validate nickname
+    if (shareStats && (!nickname || nickname.length < 3 || nickname.length > 20)) {
+      alert('Nickname must be between 3-20 characters to share stats!');
+      return;
+    }
+    
+    // Update profile
+    updatePlayerProfile({
+      nickname: nickname || null,
+      shareStats: shareStats
+    });
+    
+    // If sharing is enabled and we have a nickname, submit current stats
+    if (shareStats && nickname) {
+      const analytics = getAnalytics();
+      if (await submitToLeaderboard(analytics)) {
+        console.log('Stats submitted to leaderboard');
+      }
+    }
+    
+    // Close modal and refresh leaderboard display
+    profileModal.hidden = true;
+    await renderLeaderboardData();
+  }
+
+  async function deleteLeaderboardEntry() {
+    if (confirm('Are you sure you want to delete your leaderboard entry? This cannot be undone.')) {
+      // Load current leaderboard and remove player's entry
+      const profile = getPlayerProfile();
+      if (profile.nickname) {
+        const leaderboard = await loadLeaderboard();
+        const filteredBoard = leaderboard.filter(entry => entry.nickname !== profile.nickname);
+        await saveLeaderboard(filteredBoard);
+        
+        // Update profile to disable sharing
+        updatePlayerProfile({
+          shareStats: false,
+          lastSubmitted: null
+        });
+        
+        profileModal.hidden = true;
+        await renderLeaderboardData();
+        alert('Your leaderboard entry has been deleted.');
+      }
+    }
   }
 
   function renderDefeatedOpponents() {

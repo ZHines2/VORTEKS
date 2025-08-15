@@ -9,11 +9,12 @@
 </head>
 <body>
   <div class="wrap">
-    <!-- Top-right buttons: telemetry, unlocks, glossary, defeated, mute, companion, and help -->
+    <!-- Top-right buttons: telemetry, unlocks, glossary, defeated, leaderboard, mute, companion, and help -->
     <button id="telemetryBtn" aria-label="Telemetry" title="View your gameplay stats and analytics">📊</button>
     <button id="unlocksBtn" aria-label="Unlocks" title="View unlocked cards and achievements">🏆</button>
     <button id="glossaryBtn" aria-label="Glossary" title="View card glossary">📖</button>
     <button id="defeatedBtn" aria-label="Defeated Opponents" title="View defeated opponents history">🏴</button>
+    <button id="leaderboardBtn" aria-label="Leaderboards" title="View global player rankings">🏅</button>
     <button id="companionBtn" aria-label="VORTEK Companion" title="Check on your VORTEK companion">🌟</button>
     <button id="muteBtn" aria-label="Mute music" title="Mute/unmute music">🔊</button>
     <button id="helpBtn" aria-label="Help" title="How to play VORTEKS">?</button>
@@ -435,6 +436,96 @@
       <div style="display:flex; justify-content:center; gap:8px;">
         <button id="campaignDeckContinueBtn" class="btn" style="background:var(--good); color:black; font-weight:bold">CONTINUE</button>
         <button id="campaignDeckAbandonBtn" class="btn" style="background:var(--bad); color:white">ABANDON RUN</button>
+      </div>
+    </div>
+  </div>
+  <!-- Leaderboards Modal -->
+  <div class="modal" id="leaderboardModal" hidden>
+    <div class="box" style="width:min(96vw, 800px); max-height:85vh; overflow-y:auto">
+      <div style="font-size:18px; color:var(--accent); margin:8px 0 16px; text-align:center">
+        <strong>🏅 Global Leaderboards</strong>
+      </div>
+      
+      <!-- Player Profile Section -->
+      <div id="leaderboardProfile" style="background:rgba(0,0,0,0.3); padding:12px; border-radius:4px; margin-bottom:16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <div style="font-size:14px; color:var(--accent);"><strong>Your Profile</strong> <span id="backendStatus" style="font-size:10px;">🔍</span></div>
+          <button id="profileSettingsBtn" class="btn" style="font-size:12px; padding:4px 8px;">⚙️ Settings</button>
+        </div>
+        <div id="profileStatus" style="font-size:12px; color:var(--ink); opacity:0.8;">
+          Not sharing stats - Set a nickname to join the leaderboards!
+        </div>
+      </div>
+      
+      <!-- Category Tabs -->
+      <div class="leaderboard-tabs" style="display:flex; flex-wrap:wrap; gap:4px; margin-bottom:16px; justify-content:center;">
+        <button class="leaderboard-tab active" data-category="total_wins">🏆 Wins</button>
+        <button class="leaderboard-tab" data-category="win_streak">🔥 Streak</button>
+        <button class="leaderboard-tab" data-category="perfect_wins">💎 Perfect</button>
+        <button class="leaderboard-tab" data-category="quick_wins">⚡ Quick</button>
+        <button class="leaderboard-tab" data-category="win_rate">📈 Rate</button>
+        <button class="leaderboard-tab" data-category="total_games">🎮 Active</button>
+      </div>
+      
+      <!-- Leaderboard Content -->
+      <div id="leaderboardContent" style="background:rgba(0,0,0,0.3); padding:16px; border-radius:4px; margin-bottom:16px; min-height:300px;">
+        <div id="leaderboardTitle" style="font-size:14px; color:var(--accent); margin-bottom:12px; text-align:center;">
+          <strong>🏆 Total Wins - Most battles won overall</strong>
+          <span id="syncIndicator" style="margin-left:8px; display:none;">🔄</span>
+        </div>
+        <div id="leaderboardList">
+          <!-- Leaderboard entries will be populated here -->
+        </div>
+      </div>
+      
+      <!-- Footer -->
+      <div style="display:flex; justify-content:center; gap:8px;">
+        <button id="leaderboardCloseBtn" class="btn">CLOSE</button>
+        <button id="refreshLeaderboardBtn" class="btn">🔄 REFRESH</button>
+      </div>
+    </div>
+  </div>
+  <!-- Player Profile Settings Modal -->
+  <div class="modal" id="profileModal" hidden>
+    <div class="box" style="width:min(96vw, 500px);">
+      <div style="font-size:18px; color:var(--accent); margin:8px 0 16px; text-align:center">
+        <strong>⚙️ Profile Settings</strong>
+      </div>
+      
+      <div style="margin-bottom:16px;">
+        <div style="font-size:14px; color:var(--accent); margin-bottom:8px;"><strong>Nickname</strong></div>
+        <input type="text" id="nicknameInput" placeholder="Enter your nickname..." 
+               style="width:100%; padding:8px; border:1px solid var(--border); border-radius:4px; background:rgba(0,0,0,0.3); color:var(--ink); font-family:inherit;" 
+               maxlength="20">
+        <div style="font-size:11px; color:var(--ink); opacity:0.7; margin-top:4px;">
+          3-20 characters, will be visible on leaderboards
+        </div>
+      </div>
+      
+      <div style="margin-bottom:16px;">
+        <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+          <input type="checkbox" id="shareStatsCheckbox" style="cursor:pointer;">
+          <span style="font-size:14px;">Share my stats on global leaderboards</span>
+        </label>
+        <div style="font-size:11px; color:var(--ink); opacity:0.7; margin-top:4px; margin-left:24px;">
+          Only your nickname and game statistics will be shared. You can opt out anytime.
+        </div>
+      </div>
+      
+      <div style="background:rgba(0,0,0,0.3); padding:12px; border-radius:4px; margin-bottom:16px;">
+        <div style="font-size:12px; color:var(--accent); margin-bottom:8px;"><strong>Privacy Info</strong></div>
+        <div style="font-size:11px; color:var(--ink); opacity:0.8; line-height:1.4;">
+          • Your stats are stored locally in your browser<br>
+          • Only nickname and game statistics are shared<br>
+          • No personal information is collected<br>
+          • You can delete your leaderboard entry anytime
+        </div>
+      </div>
+      
+      <div style="display:flex; justify-content:center; gap:8px;">
+        <button id="profileCancelBtn" class="btn">CANCEL</button>
+        <button id="profileSaveBtn" class="btn" style="background:var(--good); color:black; font-weight:bold;">SAVE</button>
+        <button id="deleteProfileBtn" class="btn" style="background:var(--bad); color:white;">DELETE ENTRY</button>
       </div>
     </div>
   </div>

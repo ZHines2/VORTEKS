@@ -849,6 +849,19 @@ export const Game = {
       recordBattleResult(youWin ? 'win' : 'loss');
       recordBattle(youWin ? 'win' : 'loss', this.streak, this.you.hp, this.you.maxHP, 0); // TODO: track turn count
       recordOpponent(this.persona, youWin, this.oppFeatures?.isEasterEgg || false);
+      
+      // Auto-submit to leaderboards if player has opted in
+      if (window.canSubmitToLeaderboard && window.canSubmitToLeaderboard()) {
+        try {
+          const analytics = window.getAnalytics();
+          if (window.submitToLeaderboard && window.submitToLeaderboard(analytics)) {
+            console.log('Battle result automatically submitted to leaderboard');
+          }
+        } catch (e) {
+          console.warn('Failed to auto-submit to leaderboard:', e);
+        }
+      }
+      
       checkAchievementUnlocks({
         event: 'battleEnd',
         result: youWin ? 'win' : 'loss',
