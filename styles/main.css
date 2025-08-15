@@ -39,7 +39,7 @@ html,body {
   font-size: 20px;
   cursor: pointer;
   opacity: 0.85;
-  transition: opacity 0.2s;
+  transition: opacity 0.2s, transform 0.3s ease-in-out;
 }
 #muteBtn:hover,
 #muteBtn:focus {
@@ -63,7 +63,7 @@ html,body {
   font-weight: bold;
   cursor: pointer;
   opacity: 0.85;
-  transition: opacity 0.2s;
+  transition: opacity 0.2s, transform 0.3s ease-in-out;
   font-family: 'Press Start 2P', monospace;
 }
 #telemetryBtn:hover,
@@ -88,7 +88,7 @@ html,body {
   font-weight: bold;
   cursor: pointer;
   opacity: 0.85;
-  transition: opacity 0.2s;
+  transition: opacity 0.2s, transform 0.3s ease-in-out;
   font-family: 'Press Start 2P', monospace;
 }
 #unlocksBtn:hover,
@@ -113,7 +113,7 @@ html,body {
   font-weight: bold;
   cursor: pointer;
   opacity: 0.85;
-  transition: opacity 0.2s;
+  transition: opacity 0.2s, transform 0.3s ease-in-out;
   font-family: 'Press Start 2P', monospace;
 }
 #glossaryBtn:hover,
@@ -138,7 +138,7 @@ html,body {
   font-weight: bold;
   cursor: pointer;
   opacity: 0.85;
-  transition: opacity 0.2s;
+  transition: opacity 0.2s, transform 0.3s ease-in-out;
   font-family: 'Press Start 2P', monospace;
 }
 #defeatedBtn:hover,
@@ -163,7 +163,7 @@ html,body {
   font-weight: bold;
   cursor: pointer;
   opacity: 0.85;
-  transition: opacity 0.2s;
+  transition: opacity 0.2s, transform 0.3s ease-in-out;
   font-family: 'Press Start 2P', monospace;
 }
 #companionBtn:hover,
@@ -188,13 +188,37 @@ html,body {
   font-weight: bold;
   cursor: pointer;
   opacity: 0.85;
-  transition: opacity 0.2s;
+  transition: opacity 0.2s, transform 0.3s ease-in-out;
   font-family: 'Press Start 2P', monospace;
 }
 #helpBtn:hover,
 #helpBtn:focus {
   opacity: 1;
   outline: 2px solid var(--accent);
+}
+
+/* --- Top menu button transitions for modal states --- */
+#telemetryBtn,
+#unlocksBtn,
+#glossaryBtn,
+#defeatedBtn,
+#companionBtn,
+#muteBtn,
+#helpBtn {
+  transition: opacity 0.2s, transform 0.3s ease-in-out;
+}
+
+/* Hide top menu when modal is open to prevent overlap */
+.modal-open #telemetryBtn,
+.modal-open #unlocksBtn,
+.modal-open #glossaryBtn,
+.modal-open #defeatedBtn,
+.modal-open #companionBtn,
+.modal-open #muteBtn,
+.modal-open #helpBtn {
+  transform: translateX(100px);
+  opacity: 0.3;
+  pointer-events: none;
 }
 
 /* ... rest of your CSS unchanged ... */
@@ -460,6 +484,7 @@ button.card:disabled {
   align-items:center; 
   justify-content:center; 
   background:#000a;
+  z-index: 100; /* Higher than top menu buttons (z-index: 50) */
 }
 
 .modal[hidden]{ 
