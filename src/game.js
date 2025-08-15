@@ -593,6 +593,8 @@ export const Game = {
         logOpp(`heals ${effects.heal}`);
       }
       state.me.hp = this.applyHeal(state.me, effects.heal); 
+      // FX: Healing effect
+      if (window.fxHeal) window.fxHeal(state.me);
     }
     if (effects.shield && !simulate) { 
       const isPlayer = (state.me === this.you);
@@ -606,6 +608,8 @@ export const Game = {
         logOpp(`gains ${effects.shield} shield`);
       }
       state.me.shield += effects.shield; 
+      // FX: Shield effect
+      if (window.fxGuard) window.fxGuard(state.me);
     }
     if (effects.pierce) { 
       this.hit(state.them, dmg, true, simulate);
@@ -616,6 +620,8 @@ export const Game = {
       }
     } else if (dmg > 0) { 
       this.hit(state.them, dmg, false, simulate); 
+      // FX: Strike effect for regular damage
+      if (!simulate && card.id === 'swords' && window.fxStrike) window.fxStrike(state.them);
     }
     if (effects.draw) { 
       if (!simulate) { 
