@@ -218,6 +218,16 @@ function setupDefeatedOpponents() {
   leaderboardBtn.addEventListener('click', async () => {
     await renderLeaderboardData();
     leaderboardModal.hidden = false;
+    
+    // If user hasn't set up their profile yet, prompt them after a short delay
+    const profile = getPlayerProfile();
+    if (!profile.nickname || !profile.shareStats) {
+      setTimeout(() => {
+        if (!leaderboardModal.hidden) { // Only show if leaderboard is still open
+          showProfileSettings();
+        }
+      }, 1000); // 1 second delay to let them see the leaderboard first
+    }
   });
 
   // Leaderboard close button handler
@@ -838,13 +848,22 @@ function setupDefeatedOpponents() {
     if (profile.shareStats && profile.nickname) {
       profileStatus.innerHTML = `Sharing as <strong>${profile.nickname}</strong> - Last updated: ${profile.lastSubmitted ? new Date(profile.lastSubmitted).toLocaleDateString() : 'Never'}`;
       profileStatus.style.color = 'var(--good)';
+      profileStatus.style.cursor = 'pointer';
+      profileStatus.title = 'Click to edit profile settings';
     } else if (profile.nickname) {
-      profileStatus.innerHTML = `Nickname set: <strong>${profile.nickname}</strong> - Enable sharing to join leaderboards!`;
+      profileStatus.innerHTML = `Nickname set: <strong>${profile.nickname}</strong> - <span style="text-decoration: underline; cursor: pointer;">Enable sharing to join leaderboards!</span>`;
       profileStatus.style.color = 'var(--accent)';
+      profileStatus.style.cursor = 'pointer';
+      profileStatus.title = 'Click to enable sharing and join leaderboards';
     } else {
-      profileStatus.innerHTML = 'Not sharing stats - Set a nickname to join the leaderboards!';
-      profileStatus.style.color = 'var(--ink)';
+      profileStatus.innerHTML = `<span style="text-decoration: underline; cursor: pointer;">Set a nickname to join the leaderboards!</span>`;
+      profileStatus.style.color = 'var(--accent)';
+      profileStatus.style.cursor = 'pointer';
+      profileStatus.title = 'Click to set up your profile and join leaderboards';
     }
+    
+    // Make profile status clickable to open settings
+    profileStatus.onclick = () => showProfileSettings();
   }
 
   async function renderLeaderboardCategory(category) {
