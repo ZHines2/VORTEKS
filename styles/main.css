@@ -176,7 +176,7 @@ html,body {
 #companionBtn {
   position: absolute;
   top: 18px;
-  right: 106px; /* Position left of Leaderboard button with consistent gap */
+  right: 84px; /* Position between Leaderboard and Mute buttons */
   z-index: 1001; /* Higher than start modal */
   background: var(--panel);
   color: var(--accent);
