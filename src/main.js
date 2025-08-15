@@ -1433,6 +1433,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Campaign Reward Modal handlers
     document.getElementById('campaignRewardsConfirmBtn').onclick = () => {
       confirmCampaignRewards();
+      initCampaignBattle(); // Start next battle after accepting rewards
     };
     
     document.getElementById('campaignRewardsEditDeckBtn').onclick = () => {
