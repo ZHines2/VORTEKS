@@ -13,6 +13,7 @@ A modular, browser-based tactical card game built with vanilla JavaScript ES6 mo
 ./
 ├── index.html              # Main game interface (modular architecture)
 ├── index-original.html     # Legacy monolithic version (reference)
+├── favicon.svg             # Minimal SVG favicon (eliminates console 404 noise)
 ├── VORTEKS.mp3             # Background music (4.2MB orchestral theme)
 ├── vortexicon.png          # Game logo/icon (869KB pixel art)
 ├── styles/
