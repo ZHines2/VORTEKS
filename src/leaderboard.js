@@ -256,11 +256,22 @@ export async function submitToLeaderboard(analytics) {
       return false;
     }
     const now = Date.now();
+    
+    // Transform analytics from nested structure to flat structure expected by UI
+    const flattenedStats = {
+      totalWins: analytics.battles?.wins || 0,
+      winStreak: analytics.battles?.currentStreak || 0,
+      perfectWins: analytics.battles?.perfectWins || 0,
+      quickWins: analytics.battles?.quickWins || 0,
+      winRate: parseFloat(analytics.battles?.winRate?.replace('%', '') || '0'),
+      totalGames: analytics.battles?.totalGames || 0
+    };
+    
     const entry = {
       playerId: profile.id || generateUUID(),
       nickname: sanitizeNickname(profile.nickname),
       timestamp: now,
-      stats: analytics || {}
+      stats: flattenedStats
     };
     // Load backend or local list
     const list = await loadLeaderboard();
