@@ -12,5 +12,20 @@ export const shuffle = (array) => {
   return array;
 };
 
+// Generate a UUIDv4
+export function generateUUID() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
+// Sanitize nickname for leaderboard use
+export function sanitizeNickname(nickname) {
+  if (!nickname || typeof nickname !== 'string') return '';
+  return nickname.trim().substring(0, 20); // Max 20 chars, trimmed
+}
+
 // DOM helper
 export const $ = (selector) => document.querySelector(selector);

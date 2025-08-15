@@ -1,93 +1,137 @@
 // leaderboard-backend.js
-// VORTEKS Serverless Leaderboard Backend Integration
+// VORTEKS JSONBin v3 Backend Integration
 
 /*
-  DEMO IMPLEMENTATION NOTICE:
-  This is a demonstration of the serverless backend architecture.
-  For production use, replace the functions below with actual API calls to:
+  JSONBin v3 Backend Implementation
   
-  - Firebase Realtime Database
-  - Supabase
-  - JSONBin.io with API key
-  - Custom REST API
-  - Any other serverless backend
+  This adapter provides JSONBin.io integration for the global leaderboard.
+  For quick prototyping, configure via browser console:
   
-/*
-  PRODUCTION BACKEND EXAMPLES:
+  window.JSONBIN_BIN_ID = 'your-bin-id';
+  window.JSONBIN_MASTER_KEY = 'your-master-key'; // For testing only!
   
-  // Firebase Realtime Database
-  export async function loadLeaderboardFromBackend() {
-    const response = await fetch(`https://your-project.firebaseio.com/leaderboard.json`);
-    const data = await response.json();
-    return Object.values(data || {});
-  }
+  Or use the configureJSONBin helper:
+  configureJSONBin({ binId: 'your-bin-id', masterKey: 'your-master-key' });
   
-  // Supabase
-  export async function loadLeaderboardFromBackend() {
-    const response = await fetch('https://your-project.supabase.co/rest/v1/leaderboard', {
-      headers: { 'apikey': 'your-anon-key' }
-    });
-    return await response.json();
-  }
-  
-  // JSONBin.io with API key
-  export async function loadLeaderboardFromBackend() {
-    const response = await fetch('https://api.jsonbin.io/v3/b/your-bin-id/latest', {
-      headers: { 'X-Master-Key': 'your-api-key' }
-    });
-    const data = await response.json();
-    return data.record.leaderboard;
-  }
+  SECURITY WARNING: Never commit MASTER_KEY to your repository!
+  For production, use a serverless proxy to handle JSONBin authentication.
 */
 
-// Configuration for serverless storage
+import { sanitizeNickname } from './utils.js';
+
+// Configuration for JSONBin backend
 const BACKEND_CONFIG = {
-  FALLBACK_TIMEOUT: 2000, // 2 seconds timeout for demo
-  RETRY_ATTEMPTS: 2
+  FALLBACK_TIMEOUT: 5000, // 5 seconds timeout for JSONBin requests
+  RETRY_ATTEMPTS: 2,
+  API_BASE: 'https://api.jsonbin.io/v3'
 };
 
-// Demo: simulate backend using shared localStorage key
-const SHARED_LEADERBOARD_KEY = 'vorteks-shared-leaderboard';
-
-let isBackendAvailable = true;
+let isBackendAvailable = false;
 let syncInProgress = false;
+let binId = null;
+let masterKey = null;
 
-// Check if backend is available (for this demo, always true)
+// Configure JSONBin credentials (runtime configuration)
+export function configureJSONBin({ binId: newBinId, masterKey: newMasterKey }) {
+  binId = newBinId;
+  masterKey = newMasterKey;
+  console.log('JSONBin configured with BIN_ID:', binId ? 'SET' : 'NOT SET');
+  // Don't log the master key for security
+}
+
+// Get JSONBin configuration from window or runtime
+function getJSONBinConfig() {
+  // Try runtime config first, then window globals
+  const currentBinId = binId || window.JSONBIN_BIN_ID;
+  const currentMasterKey = masterKey || window.JSONBIN_MASTER_KEY;
+  
+  return {
+    binId: currentBinId,
+    masterKey: currentMasterKey,
+    isConfigured: !!(currentBinId && currentMasterKey)
+  };
+}
+
+// Check if backend is available
 export async function checkBackendHealth() {
-  // Simulate network check
+  const config = getJSONBinConfig();
+  
+  if (!config.isConfigured) {
+    console.log('JSONBin not configured, using localStorage fallback');
+    isBackendAvailable = false;
+    return false;
+  }
+
   try {
-    // For demo purposes, we'll simulate a backend check
-    await new Promise(resolve => setTimeout(resolve, 100));
-    isBackendAvailable = true;
-    return true;
+    // Test JSONBin connectivity with a simple read request
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), BACKEND_CONFIG.FALLBACK_TIMEOUT);
+    
+    const response = await fetch(`${BACKEND_CONFIG.API_BASE}/b/${config.binId}/latest`, {
+      headers: {
+        'X-Master-Key': config.masterKey
+      },
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeout);
+    
+    if (response.ok) {
+      isBackendAvailable = true;
+      console.log('JSONBin backend is online');
+      return true;
+    } else {
+      console.warn('JSONBin health check failed:', response.status);
+      isBackendAvailable = false;
+      return false;
+    }
   } catch (error) {
-    console.warn('Backend health check failed:', error);
+    console.warn('JSONBin health check failed:', error.message);
     isBackendAvailable = false;
     return false;
   }
 }
 
-// Load leaderboard data from "backend" (shared localStorage for demo)
+// Load leaderboard data from JSONBin
 export async function loadLeaderboardFromBackend() {
-  if (!isBackendAvailable) {
-    console.log('Backend unavailable, using localStorage fallback');
+  const config = getJSONBinConfig();
+  
+  if (!isBackendAvailable || !config.isConfigured) {
+    console.log('JSONBin unavailable, using localStorage fallback');
     return null;
   }
 
   try {
     setSyncStatus(true);
     
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 300));
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), BACKEND_CONFIG.FALLBACK_TIMEOUT);
     
-    // For demo: use a shared localStorage key to simulate global storage
-    const stored = localStorage.getItem(SHARED_LEADERBOARD_KEY);
-    const data = stored ? JSON.parse(stored) : { leaderboard: [], lastUpdated: new Date().toISOString() };
+    const response = await fetch(`${BACKEND_CONFIG.API_BASE}/b/${config.binId}/latest`, {
+      headers: {
+        'X-Master-Key': config.masterKey
+      },
+      signal: controller.signal
+    });
     
-    console.log('Leaderboard data loaded from "backend"');
-    return data.leaderboard || [];
+    clearTimeout(timeout);
+    
+    if (!response.ok) {
+      if (response.status === 404) {
+        // Bin doesn't exist yet or is empty, return empty leaderboard
+        console.log('JSONBin bin not found or empty, returning empty leaderboard');
+        return [];
+      }
+      throw new Error(`JSONBin request failed: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    const leaderboard = data.record?.leaderboard || [];
+    
+    console.log(`Leaderboard data loaded from JSONBin: ${leaderboard.length} entries`);
+    return leaderboard;
   } catch (error) {
-    console.warn('Failed to load from backend:', error);
+    console.warn('Failed to load from JSONBin:', error.message);
     isBackendAvailable = false;
     return null;
   } finally {
@@ -95,18 +139,17 @@ export async function loadLeaderboardFromBackend() {
   }
 }
 
-// Save leaderboard data to "backend" (shared localStorage for demo)
+// Save leaderboard data to JSONBin
 export async function saveLeaderboardToBackend(leaderboardData) {
-  if (!isBackendAvailable) {
-    console.log('Backend unavailable, skipping save');
+  const config = getJSONBinConfig();
+  
+  if (!isBackendAvailable || !config.isConfigured) {
+    console.log('JSONBin unavailable, skipping save');
     return false;
   }
 
   try {
     setSyncStatus(true);
-    
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 200));
     
     // Prepare the data payload
     const payload = {
@@ -115,13 +158,29 @@ export async function saveLeaderboardToBackend(leaderboardData) {
       version: 1
     };
 
-    // For demo: save to shared localStorage to simulate persistence
-    localStorage.setItem(SHARED_LEADERBOARD_KEY, JSON.stringify(payload));
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), BACKEND_CONFIG.FALLBACK_TIMEOUT);
     
-    console.log('Leaderboard data saved to "backend"');
+    const response = await fetch(`${BACKEND_CONFIG.API_BASE}/b/${config.binId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Master-Key': config.masterKey
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeout);
+    
+    if (!response.ok) {
+      throw new Error(`JSONBin save failed: ${response.status}`);
+    }
+    
+    console.log(`Leaderboard data saved to JSONBin: ${leaderboardData.length} entries`);
     return true;
   } catch (error) {
-    console.warn('Failed to save to backend:', error);
+    console.warn('Failed to save to JSONBin:', error.message);
     isBackendAvailable = false;
     return false;
   } finally {
@@ -129,7 +188,7 @@ export async function saveLeaderboardToBackend(leaderboardData) {
   }
 }
 
-// Sync localStorage data with backend (merge strategy)
+// Sync localStorage data with JSONBin (merge strategy)
 export async function syncWithBackend(localData) {
   try {
     setSyncStatus(true);
@@ -137,27 +196,42 @@ export async function syncWithBackend(localData) {
     // Load backend data
     const backendData = await loadLeaderboardFromBackend();
     if (!backendData) {
-      console.log('No backend data available, keeping local data');
+      console.log('No JSONBin data available, keeping local data');
       return localData;
     }
 
-    // Merge strategy: keep the most recent entry for each player
-    const mergedData = [];
+    // Merge strategy: prefer playerId if present, then normalized nickname, then newest timestamp
     const playerMap = new Map();
+
+    // Helper function to create player key for deduplication
+    const getPlayerKey = (entry) => {
+      if (entry.playerId) {
+        return `id:${entry.playerId}`;
+      }
+      if (entry.nickname) {
+        return `nick:${sanitizeNickname(entry.nickname).toLowerCase()}`;
+      }
+      return `fallback:${entry.timestamp}:${Math.random()}`;
+    };
 
     // Process backend data first
     backendData.forEach(entry => {
       if (entry.nickname && entry.timestamp) {
-        playerMap.set(entry.nickname, entry);
+        const key = getPlayerKey(entry);
+        playerMap.set(key, entry);
       }
     });
 
-    // Process local data, overwriting if newer
+    // Process local data, overwriting if newer or has better identifier
     localData.forEach(entry => {
       if (entry.nickname && entry.timestamp) {
-        const existing = playerMap.get(entry.nickname);
-        if (!existing || entry.timestamp > existing.timestamp) {
-          playerMap.set(entry.nickname, entry);
+        const key = getPlayerKey(entry);
+        const existing = playerMap.get(key);
+        
+        if (!existing || 
+            entry.timestamp > existing.timestamp || 
+            (entry.playerId && !existing.playerId)) {
+          playerMap.set(key, entry);
         }
       }
     });
@@ -165,13 +239,13 @@ export async function syncWithBackend(localData) {
     // Convert back to array
     const merged = Array.from(playerMap.values());
     
-    // Save merged data back to backend
+    // Save merged data back to JSONBin
     await saveLeaderboardToBackend(merged);
     
     console.log(`Synced leaderboard: ${merged.length} players`);
     return merged;
   } catch (error) {
-    console.warn('Sync failed:', error);
+    console.warn('Sync failed:', error.message);
     return localData; // Fallback to local data
   } finally {
     setSyncStatus(false);
@@ -187,7 +261,7 @@ function setSyncStatus(syncing) {
   if (indicator) {
     indicator.style.display = syncing ? 'inline' : 'none';
     indicator.textContent = syncing ? '🔄' : '';
-    indicator.title = syncing ? 'Syncing with server...' : '';
+    indicator.title = syncing ? 'Syncing with JSONBin...' : '';
   }
 
   // Update refresh button if it exists
@@ -205,25 +279,35 @@ export function isSyncing() {
 
 // Get backend availability status
 export function isBackendOnline() {
-  return isBackendAvailable;
+  return isBackendAvailable && getJSONBinConfig().isConfigured;
 }
 
 // Initialize backend (check health)
 export async function initializeBackend() {
-  console.log('Initializing leaderboard backend...');
-  const available = await checkBackendHealth();
+  console.log('Initializing JSONBin leaderboard backend...');
   
-  if (available) {
-    console.log('Backend is online and ready');
+  // Try to read config from window globals first
+  const config = getJSONBinConfig();
+  if (config.isConfigured) {
+    const available = await checkBackendHealth();
+    
+    if (available) {
+      console.log('JSONBin backend is online and ready');
+    } else {
+      console.log('JSONBin backend is offline, using localStorage fallback');
+    }
+    
+    return available;
   } else {
-    console.log('Backend is offline, using localStorage fallback');
+    console.log('JSONBin not configured. Set window.JSONBIN_BIN_ID and window.JSONBIN_MASTER_KEY or use configureJSONBin()');
+    console.log('Using localStorage fallback');
+    isBackendAvailable = false;
+    return false;
   }
-  
-  return available;
 }
 
 // Manual backend reconnection attempt
 export async function retryBackendConnection() {
-  console.log('Attempting to reconnect to backend...');
+  console.log('Attempting to reconnect to JSONBin...');
   return await initializeBackend();
 }

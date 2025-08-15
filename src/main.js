@@ -52,8 +52,12 @@ import {
   initializeLeaderboard,
   isBackendOnline,
   isSyncing,
-  LEADERBOARD_CATEGORIES
+  LEADERBOARD_CATEGORIES,
+  loadLeaderboard,
+  saveLeaderboard,
+  configureJSONBin
 } from './leaderboard.js';
+import { sanitizeNickname } from './utils.js';
 import {
   loadIdleGame,
   saveIdleGame,
@@ -96,6 +100,9 @@ initializeLeaderboard().then(() => {
 window.canSubmitToLeaderboard = canSubmitToLeaderboard;
 window.submitToLeaderboard = submitToLeaderboard;
 window.getAnalytics = getAnalytics;
+window.configureJSONBin = configureJSONBin;
+window.initializeLeaderboard = initializeLeaderboard;
+window.syncLeaderboard = syncLeaderboard;
 
 let music;
 window.music = null; // Make music accessible globally for sound functions
@@ -992,7 +999,13 @@ function setupDefeatedOpponents() {
       const profile = getPlayerProfile();
       if (profile.nickname) {
         const leaderboard = await loadLeaderboard();
-        const filteredBoard = leaderboard.filter(entry => entry.nickname !== profile.nickname);
+        // Filter by playerId if available, otherwise by nickname
+        const filteredBoard = leaderboard.filter(entry => {
+          if (entry.playerId && profile.id) {
+            return entry.playerId !== profile.id;
+          }
+          return entry.nickname !== sanitizeNickname(profile.nickname);
+        });
         await saveLeaderboard(filteredBoard);
         
         // Update profile to disable sharing
