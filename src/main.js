@@ -45,6 +45,7 @@ import {
   getCreatureInfo,
   feedCreature,
   playWithCreature,
+  getPlayAvailability,
   meditateWithCreature,
   exploreRoom,
   interactWithRoomElement,
@@ -305,7 +306,8 @@ function setupDefeatedOpponents() {
   });
 
   playCompanionBtn.addEventListener('click', () => {
-    if (playWithCreature()) {
+    const result = playWithCreature();
+    if (result.success) {
       renderCompanionData();
       const creature = getCreature();
       let message = 'Played with your VORTEK! Happiness increased.';
@@ -322,18 +324,28 @@ function setupDefeatedOpponents() {
       else if (creature.focus >= 70) message = `${creature.name} enters the meditative flow of pure fun! Happiness increased.`;
       else if (creature.curiosity >= 70) message = `${creature.name} explores the mysteries of joy! Happiness increased.`;
       
+      // Add experience gain notification if it occurred
+      if (result.effects.gainedExp) {
+        message += ' ✨ Experience gained from joyful play!';
+      }
+      
       showCompanionMessage(message);
     } else {
       const creature = getCreature();
-      let message = 'Your VORTEK is too tired to play right now.';
+      let message = 'Your VORTEK cannot play right now.';
       
-      // Enhanced tired/rejection messages
-      if (creature.loyalty >= 90) message = `${creature.name} yearns to play but spirit needs restoration first.`;
-      else if (creature.loyalty >= 70) message = `${creature.name} loves you too much to play half-heartedly.`;
-      else if (creature.wisdom >= 90) message = `${creature.name} embraces the wisdom of rest before joy.`;
-      else if (creature.wisdom >= 70) message = `${creature.name} knows all things have their season.`;
-      else if (creature.focus >= 70) message = `${creature.name} cannot focus enough energy for proper play.`;
-      else if (creature.playfulness >= 70) message = `${creature.name} will play with renewed spirit once rested!`;
+      // Specific messages based on the reason
+      if (result.reason === 'cooldown') {
+        const mins = result.minutesRemaining;
+        if (creature.loyalty >= 90) message = `${creature.name} yearns to play but needs ${mins} minutes to regain enthusiasm.`;
+        else if (creature.loyalty >= 70) message = `${creature.name} loves you too much to play half-heartedly. Wait ${mins} minutes.`;
+        else if (creature.wisdom >= 70) message = `${creature.name} knows all things have their season. ${mins} minutes until playtime.`;
+        else message = `${creature.name} needs ${mins} more minutes before playing again.`;
+      } else if (result.reason === 'energy') {
+        if (creature.focus >= 70) message = `${creature.name} cannot focus enough energy for proper play. (Need ${result.energyNeeded} energy)`;
+        else if (creature.playfulness >= 70) message = `${creature.name} will play with renewed spirit once rested! (Need ${result.energyNeeded} energy)`;
+        else message = `${creature.name} is too tired to play. (Need ${result.energyNeeded} energy, have ${result.energyCurrent})`;
+      }
       
       showCompanionMessage(message);
     }
@@ -494,6 +506,9 @@ function setupDefeatedOpponents() {
     document.getElementById('companionExpNeeded').textContent = creatureInfo.expNeeded;
     document.getElementById('expBar').style.width = `${creatureInfo.expProgress}%`;
     
+    // Update evolution progress
+    updateEvolutionProgress(creatureInfo);
+    
     // Update influences with performance modifiers
     document.getElementById('battleInfluence').textContent = `${creatureInfo.battleInfluence}% (+${creatureInfo.performanceModifiers.battleBonus}% battle)`;
     document.getElementById('cardMastery').textContent = `${creatureInfo.cardMastery}% (${creatureInfo.performanceModifiers.experienceMultiplier.toFixed(1)}x exp)`;
@@ -511,6 +526,35 @@ function setupDefeatedOpponents() {
     updateCompanionNotification();
   }
 
+  function updateEvolutionProgress(creatureInfo) {
+    const stages = [
+      { name: 'EGG', displayName: 'Egg', level: 0 },
+      { name: 'HATCHLING', displayName: 'VORTEK Sprite', level: 5 },
+      { name: 'JUVENILE', displayName: 'Echo Beast', level: 15 },
+      { name: 'ADULT', displayName: 'Card Master', level: 30 },
+      { name: 'ELDER', displayName: 'VORTEKS Avatar', level: 50 }
+    ];
+    
+    const currentStageIndex = stages.findIndex(stage => stage.name === creatureInfo.stage);
+    const nextStageIndex = currentStageIndex + 1;
+    
+    if (nextStageIndex < stages.length) {
+      const nextStage = stages[nextStageIndex];
+      const currentLevel = creatureInfo.level;
+      const nextLevel = nextStage.level;
+      const progress = Math.min(100, (currentLevel / nextLevel) * 100);
+      
+      document.getElementById('evolutionText').textContent = `Next Evolution: Level ${nextLevel} (${nextStage.displayName})`;
+      document.getElementById('evolutionBar').style.width = `${progress}%`;
+      document.getElementById('evolutionProgress').style.display = 'block';
+    } else {
+      // Max evolution reached
+      document.getElementById('evolutionText').textContent = 'Maximum Evolution Achieved!';
+      document.getElementById('evolutionBar').style.width = '100%';
+      document.getElementById('evolutionProgress').style.display = 'block';
+    }
+  }
+
   function updateRoomElements(creatureInfo) {
     const elements = ['bed', 'mirror', 'bookshelf', 'toybox', 'plant', 'artEasel'];
     
@@ -520,12 +564,96 @@ function setupDefeatedOpponents() {
         if (creatureInfo.unlockedRoomElements.includes(elementName)) {
           element.classList.remove('hidden');
           element.classList.add('unlocked');
+          element.title = getRoomElementDescription(elementName, true);
         } else {
           element.classList.add('hidden');
           element.classList.remove('unlocked');
+          // Don't show locked elements for now to maintain clean look
         }
       }
     });
+    
+    // Add hints about next unlock in the room activity message
+    updateRoomUnlockHints(creatureInfo);
+  }
+  
+  function getRoomElementDescription(elementName, unlocked) {
+    const descriptions = {
+      bed: unlocked ? 'Cozy bed for resting (+15 Energy, +3 Happiness)' : '',
+      mirror: unlocked ? 'Magical mirror for self-reflection (+2 Curiosity, +2 Happiness)' : '',
+      bookshelf: unlocked ? 'Wisdom-filled bookshelf (-5 Energy, +4 Wisdom, +2 Focus)' : '',
+      toybox: unlocked ? 'Playful toybox for fun (-3 Energy, +5 Playfulness, +5 Happiness)' : '',
+      plant: unlocked ? 'Peaceful plant for focus (-2 Energy, +3 Focus, +2 Wisdom)' : '',
+      artEasel: unlocked ? 'Creative art easel (-8 Energy, +6 Creativity, +4 Happiness)' : ''
+    };
+    return descriptions[elementName] || '';
+  }
+  
+  function updateRoomUnlockHints(creatureInfo) {
+    const creature = getCreature();
+    const unlockHints = [];
+    
+    // Check what can be unlocked next
+    if (!creature.roomElements.mirror.unlocked && creature.level >= 5) {
+      const curiosityNeeded = Math.max(0, 30 - creature.curiosity);
+      if (curiosityNeeded > 0) {
+        unlockHints.push(`🪞 Mirror: Need ${curiosityNeeded} more Curiosity`);
+      } else {
+        unlockHints.push(`🪞 Mirror: Ready to unlock!`);
+      }
+    }
+    
+    if (!creature.roomElements.toybox.unlocked && creature.level >= 8) {
+      const playfulnessNeeded = Math.max(0, 50 - creature.playfulness);
+      if (playfulnessNeeded > 0) {
+        unlockHints.push(`🧸 Toybox: Need ${playfulnessNeeded} more Playfulness`);
+      } else {
+        unlockHints.push(`🧸 Toybox: Ready to unlock!`);
+      }
+    }
+    
+    if (!creature.roomElements.bookshelf.unlocked && creature.level >= 10) {
+      const wisdomNeeded = Math.max(0, 40 - creature.wisdom);
+      if (wisdomNeeded > 0) {
+        unlockHints.push(`📚 Bookshelf: Need ${wisdomNeeded} more Wisdom`);
+      } else {
+        unlockHints.push(`📚 Bookshelf: Ready to unlock!`);
+      }
+    }
+    
+    if (!creature.roomElements.plant.unlocked && creature.level >= 15) {
+      const focusNeeded = Math.max(0, 45 - creature.focus);
+      if (focusNeeded > 0) {
+        unlockHints.push(`🪴 Plant: Need ${focusNeeded} more Focus`);
+      } else {
+        unlockHints.push(`🪴 Plant: Ready to unlock!`);
+      }
+    }
+    
+    if (!creature.roomElements.artEasel.unlocked && creature.level >= 20) {
+      const creativityNeeded = Math.max(0, 50 - creature.creativity);
+      if (creativityNeeded > 0) {
+        unlockHints.push(`🎨 Art Easel: Need ${creativityNeeded} more Creativity`);
+      } else {
+        unlockHints.push(`🎨 Art Easel: Ready to unlock!`);
+      }
+    }
+    
+    // Add level-based hints for locked elements
+    if (creature.level < 5) unlockHints.push(`Reach Level 5 to unlock the Mirror`);
+    else if (creature.level < 8) unlockHints.push(`Reach Level 8 to unlock the Toybox`);
+    else if (creature.level < 10) unlockHints.push(`Reach Level 10 to unlock the Bookshelf`);
+    else if (creature.level < 15) unlockHints.push(`Reach Level 15 to unlock the Plant`);
+    else if (creature.level < 20) unlockHints.push(`Reach Level 20 to unlock the Art Easel`);
+    
+    // Update hint display
+    const hintElement = document.getElementById('roomUnlockHints');
+    if (hintElement && unlockHints.length > 0) {
+      hintElement.textContent = `Next: ${unlockHints[0]}`;
+      hintElement.style.display = 'block';
+    } else if (hintElement) {
+      hintElement.style.display = 'none';
+    }
   }
 
   function showCompanionMessage(message) {
