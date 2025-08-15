@@ -62,6 +62,7 @@ A modular, browser-based tactical card game built with vanilla JavaScript ES6 mo
 - **Defeated Opponents History**: Track and review all conquered opponents with dates
 - **Quirk Persistence**: Selected quirks survive page reloads until explicitly reset
 - **Enhanced Logging**: Actual opponent names in combat log (e.g., "[Gronky the Trickster] hits for 3")
+- **Deck Builder Progression**: All cards visible with unlock hints for locked content, improving discoverability
 - **Accessibility**: Motion-sensitive user support, comprehensive ARIA labels
 
 ### Quality Assurance
@@ -155,6 +156,12 @@ The game includes a comprehensive self-test suite accessible via the **DEBUG** b
 3. Add new unlock requirements in `src/card-unlock.js`
 
 ## 📝 Recent Major Updates
+
+### v2.2 - Deck Builder UX Enhancement
+- **Locked Cards Visibility**: Deck builder now shows all cards (both unlocked and locked) to improve progression clarity
+- **Unlock Hints**: Locked cards display grayed-out with unlock requirements and progress indicators
+- **Visual Polish**: Locked cards feature reduced opacity, grayscale filter, and prominent "LOCKED" badges
+- **Improved Discoverability**: Players can now see all available content and understand how to unlock it
 
 ### v2.1 - Bug Fixes & New Content
 - **Zap Infinite Loop Fix**: Resolved critical issue where Zap could create infinite loops when last card in deck

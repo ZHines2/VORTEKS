@@ -1,7 +1,7 @@
 import { CARDS } from '../data/cards.js';
 import { shuffle, $ } from './utils.js';
 import { cardText, renderCost } from './ui.js';
-import { getUnlockedCards } from './card-unlock.js';
+import { getUnlockedCards, getUnlockableCardsInfo } from './card-unlock.js';
 
 // Deck building functionality
 export function openDeckBuilder(done) {
@@ -11,15 +11,20 @@ export function openDeckBuilder(done) {
   const need = 20; 
   $('#deckNeed').textContent = need;
   
-  // Get only unlocked cards
+  // Get unlock status for all cards
   const unlockedCardIds = getUnlockedCards();
-  const availableCards = CARDS.filter(c => unlockedCardIds.includes(c.id));
+  const unlockableCardsInfo = getUnlockableCardsInfo();
   
-  // TODO: Future enhancement - show locked cards grayed out with unlock requirements:
-  // - Import getUnlockableCardsInfo() to show locked cards with descriptions
-  // - Display locked cards with reduced opacity and unlock hints
-  // - Make them unselectable but visible to show progression goals
+  // Create a map for quick lookup of unlock info
+  const unlockInfoMap = {};
+  unlockableCardsInfo.forEach(info => {
+    unlockInfoMap[info.id] = info;
+  });
   
+  // Show ALL cards in the deck builder (both unlocked and locked)
+  const availableCards = CARDS;
+  
+  // Initialize counts for all cards, but only unlocked cards can have non-zero counts
   const counts = {}; 
   availableCards.forEach(c => counts[c.id] = 0);
   
@@ -30,9 +35,69 @@ export function openDeckBuilder(done) {
   function rebuild() {
     grid.innerHTML = '';
     availableCards.forEach(c => {
+      const isUnlocked = unlockedCardIds.includes(c.id);
+      const unlockInfo = unlockInfoMap[c.id];
+      
       const card = document.createElement('div'); 
       card.className = 'qcard';
-      card.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><div><span style="margin-right:6px">${c.sym}</span>${c.name}</div><div class="cost">${renderCost(c)}</div></div><div style="margin-top:6px;font-size:10px">${cardText(c)}</div><div style="display:flex;gap:6px;margin-top:6px;align-items:center"><button class="btn" data-act="sub" data-id="${c.id}">-</button><div>${counts[c.id]}</div><button class="btn" data-act="add" data-id="${c.id}">+</button></div>`;
+      
+      // Apply visual styling for locked cards
+      if (!isUnlocked) {
+        card.style.opacity = '0.5';
+        card.style.filter = 'grayscale(1)';
+        card.style.position = 'relative';
+      }
+      
+      // Build the card content
+      let cardContent = `
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div><span style="margin-right:6px">${c.sym}</span>${c.name}</div>
+          <div class="cost">${renderCost(c)}</div>
+        </div>
+        <div style="margin-top:6px;font-size:10px">${cardText(c)}</div>
+      `;
+      
+      // Add unlock hint for locked cards
+      if (!isUnlocked && unlockInfo) {
+        cardContent += `<div style="margin-top:4px;font-size:9px;color:var(--accent);font-style:italic">${unlockInfo.description}</div>`;
+        if (unlockInfo.progress) {
+          cardContent += `<div style="margin-top:2px;font-size:8px;color:var(--good)">${unlockInfo.progress}</div>`;
+        }
+      }
+      
+      // Add controls (buttons will be disabled for locked cards)
+      const addDisabled = !isUnlocked;
+      const subDisabled = !isUnlocked || counts[c.id] === 0;
+      
+      cardContent += `
+        <div style="display:flex;gap:6px;margin-top:6px;align-items:center">
+          <button class="btn" data-act="sub" data-id="${c.id}" ${subDisabled ? 'disabled' : ''}>-</button>
+          <div>${counts[c.id]}</div>
+          <button class="btn" data-act="add" data-id="${c.id}" ${addDisabled ? 'disabled' : ''}>+</button>
+        </div>
+      `;
+      
+      card.innerHTML = cardContent;
+      
+      // Add LOCKED badge overlay for locked cards
+      if (!isUnlocked) {
+        const lockedBadge = document.createElement('div');
+        lockedBadge.style.cssText = `
+          position: absolute;
+          top: 4px;
+          right: 4px;
+          background: rgba(255, 100, 100, 0.9);
+          color: white;
+          padding: 2px 4px;
+          font-size: 8px;
+          font-weight: bold;
+          border-radius: 2px;
+          z-index: 1;
+        `;
+        lockedBadge.textContent = 'LOCKED';
+        card.appendChild(lockedBadge);
+      }
+      
       grid.appendChild(card);
     });
     cntEl.textContent = deckSize();
@@ -41,9 +106,14 @@ export function openDeckBuilder(done) {
   
   grid.onclick = (e) => {
     const b = e.target.closest('button.btn'); 
-    if (!b) return; 
+    if (!b || b.disabled) return; // Ignore clicks on disabled buttons
     const id = b.getAttribute('data-id'); 
     const act = b.getAttribute('data-act');
+    
+    // Double-check that the card is unlocked before allowing modifications
+    const isUnlocked = unlockedCardIds.includes(id);
+    if (!isUnlocked) return;
+    
     if (act === 'add') { 
       if (counts[id] < 4 && deckSize() < need) counts[id]++; 
     }
@@ -62,7 +132,12 @@ export function openDeckBuilder(done) {
   };
 
   $('#deckClear').onclick = () => { 
-    Object.keys(counts).forEach(k => counts[k] = 0); 
+    // Only clear counts for unlocked cards
+    Object.keys(counts).forEach(k => {
+      if (unlockedCardIds.includes(k)) {
+        counts[k] = 0;
+      }
+    }); 
     rebuild(); 
   };
   
