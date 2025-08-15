@@ -136,6 +136,64 @@ The game includes a comprehensive self-test suite accessible via the **DEBUG** b
 - Unlock system functionality
 - State management and persistence
 
+## 📡 JSONBin: Local Testing
+
+The game supports JSONBin.io for global leaderboard functionality. To test locally:
+
+### Setup JSONBin Account
+1. Sign up for a free account at [jsonbin.io](https://jsonbin.io)
+2. Create a new private bin in your dashboard
+3. Copy your BIN_ID from the bin URL (e.g., `https://jsonbin.io/12345abcd` → BIN_ID is `12345abcd`)
+4. Get your MASTER_KEY from the API Keys section
+
+### Local Testing Configuration
+**Option 1: Browser Console (Quick Testing)**
+```javascript
+// Set these in your browser console before playing:
+window.JSONBIN_BIN_ID = 'your-bin-id-here';
+window.JSONBIN_MASTER_KEY = 'your-master-key-here';
+
+// Then initialize the leaderboard:
+initializeLeaderboard();
+```
+
+**Option 2: Runtime Configuration**
+```javascript
+// Configure via the helper function:
+configureJSONBin({
+  binId: 'your-bin-id-here',
+  masterKey: 'your-master-key-here'
+});
+
+// Initialize the leaderboard:
+initializeLeaderboard();
+```
+
+### Testing Steps
+1. Configure JSONBin credentials as shown above
+2. Set up a player profile with nickname and enable stat sharing
+3. Play some games to generate analytics data
+4. Test the leaderboard functions:
+   ```javascript
+   // Submit current stats to leaderboard
+   submitToLeaderboard(getAnalytics());
+   
+   // Sync with JSONBin
+   syncLeaderboard();
+   ```
+5. Open the game in another browser/incognito window with the same BIN_ID to verify cross-browser functionality
+
+### Security Notes
+- **Never commit your MASTER_KEY to version control**
+- For production deployment, implement a serverless proxy (Vercel, Netlify Functions, etc.) to handle JSONBin authentication server-side
+- Move data validation and sanitization to the server side for production use
+- Consider rate limiting and abuse protection for production deployments
+
+### Fallback Behavior
+- If JSONBin is not configured, the game automatically falls back to localStorage-only mode
+- All existing functionality continues to work without JSONBin
+- Players can still use local leaderboards and profile features
+
 ## 🎨 Customization
 
 ### Adding New Cards

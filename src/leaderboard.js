@@ -7,8 +7,10 @@ import {
   syncWithBackend,
   initializeBackend,
   isBackendOnline,
-  isSyncing 
+  isSyncing,
+  configureJSONBin
 } from './leaderboard-backend.js';
+import { generateUUID, sanitizeNickname, clamp } from './utils.js';
 
 const LEADERBOARD_KEY = 'vorteks-global-leaderboard';
 const PLAYER_PROFILE_KEY = 'vorteks-player-profile';
@@ -25,6 +27,7 @@ const LEADERBOARD_CATEGORIES = {
 
 // Default player profile structure
 const DEFAULT_PLAYER_PROFILE = {
+  id: null, // UUIDv4 for unique identification
   nickname: null,
   shareStats: false,
   lastSubmitted: null
@@ -41,9 +44,17 @@ export function loadPlayerProfile() {
     } else {
       playerProfile = { ...DEFAULT_PLAYER_PROFILE };
     }
+    
+    // Ensure profile has a unique ID
+    if (!playerProfile.id) {
+      playerProfile.id = generateUUID();
+      savePlayerProfile(); // Save the new ID immediately
+    }
   } catch (e) {
     console.warn('Failed to load player profile:', e);
     playerProfile = { ...DEFAULT_PLAYER_PROFILE };
+    playerProfile.id = generateUUID();
+    savePlayerProfile();
   }
   return playerProfile;
 }
@@ -131,31 +142,44 @@ export async function submitToLeaderboard(analytics) {
 
   const leaderboard = await loadLeaderboard();
   const timestamp = Date.now();
+  const sanitizedNickname = sanitizeNickname(profile.nickname);
+  
+  if (!sanitizedNickname || sanitizedNickname.length < 3) {
+    console.warn('Nickname too short after sanitization');
+    return false;
+  }
 
-  // Create entry for this player
+  // Create entry for this player with sanitized/clamped stats
   const entry = {
-    nickname: profile.nickname,
+    playerId: profile.id, // Primary identifier
+    nickname: sanitizedNickname,
     timestamp: timestamp,
     stats: {
-      totalWins: analytics.battles.wins,
-      totalGames: analytics.battles.totalGames,
-      winStreak: analytics.battles.bestStreak,
-      perfectWins: analytics.battles.perfectWins,
-      quickWins: analytics.battles.quickWins,
-      winRate: parseFloat(analytics.battles.winRate.replace('%', '')),
-      favoriteCard: analytics.cards.favoriteCard || 'None',
-      uniqueCards: analytics.cards.uniqueCards,
-      totalCardsPlayed: analytics.cards.totalPlayed,
-      totalDamage: analytics.combat.totalDamage,
-      maxSingleHit: analytics.combat.maxSingleHit,
-      opponentsDefeated: analytics.opponents.uniqueDefeated,
-      easterEggsSeen: analytics.opponents.easterEggsSeen,
-      firstPlayed: analytics.session.firstPlayed
+      totalWins: clamp(analytics.battles.wins || 0, 0, 999999),
+      totalGames: clamp(analytics.battles.totalGames || 0, 0, 999999),
+      winStreak: clamp(analytics.battles.bestStreak || 0, 0, 999999),
+      perfectWins: clamp(analytics.battles.perfectWins || 0, 0, 999999),
+      quickWins: clamp(analytics.battles.quickWins || 0, 0, 999999),
+      winRate: clamp(parseFloat(analytics.battles.winRate.replace('%', '')) || 0, 0, 100),
+      favoriteCard: String(analytics.cards.favoriteCard || 'None').substring(0, 50),
+      uniqueCards: clamp(analytics.cards.uniqueCards || 0, 0, 999),
+      totalCardsPlayed: clamp(analytics.cards.totalPlayed || 0, 0, 999999),
+      totalDamage: clamp(analytics.combat.totalDamage || 0, 0, 999999),
+      maxSingleHit: clamp(analytics.combat.maxSingleHit || 0, 0, 999999),
+      opponentsDefeated: clamp(analytics.opponents.uniqueDefeated || 0, 0, 999),
+      easterEggsSeen: clamp(analytics.opponents.easterEggsSeen || 0, 0, 999),
+      firstPlayed: analytics.session.firstPlayed || timestamp
     }
   };
 
-  // Remove any existing entry for this player
-  const filteredBoard = leaderboard.filter(e => e.nickname !== profile.nickname);
+  // Remove any existing entry for this player (prefer playerId, fallback to nickname)
+  const filteredBoard = leaderboard.filter(e => {
+    if (e.playerId && profile.id) {
+      return e.playerId !== profile.id;
+    }
+    // Backward compatibility: filter by nickname if no playerId
+    return e.nickname !== sanitizedNickname;
+  });
   
   // Add new entry
   filteredBoard.push(entry);
@@ -257,7 +281,13 @@ export async function getPlayerRank(category) {
   if (!profile.nickname) return null;
   
   const leaderboard = await getLeaderboard(category, 1000); // Get full leaderboard
-  const rank = leaderboard.findIndex(entry => entry.nickname === profile.nickname);
+  const rank = leaderboard.findIndex(entry => {
+    // Prefer playerId match, fallback to nickname for backward compatibility
+    if (entry.playerId && profile.id) {
+      return entry.playerId === profile.id;
+    }
+    return entry.nickname === sanitizeNickname(profile.nickname);
+  });
   
   return rank >= 0 ? rank + 1 : null;
 }
@@ -309,4 +339,4 @@ export async function initializeLeaderboard() {
   }
 }
 
-export { LEADERBOARD_CATEGORIES, initializeBackend, isBackendOnline, isSyncing };
+export { LEADERBOARD_CATEGORIES, initializeBackend, isBackendOnline, isSyncing, configureJSONBin };
