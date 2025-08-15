@@ -28,7 +28,7 @@ html,body {
 #muteBtn {
   position: absolute;
   top: 18px;
-  right: 18px;
+  right: 62px; /* Position left of Companion button with consistent gap */
   z-index: 1001; /* Higher than start modal */
   background: var(--panel);
   color: var(--ink);
@@ -151,7 +151,7 @@ html,body {
 #leaderboardBtn {
   position: absolute;
   top: 18px;
-  right: 128px; /* Position between Defeated and Companion buttons */
+  right: 106px; /* Position between Defeated and Companion buttons with consistent gap */
   z-index: 1001; /* Higher than start modal */
   background: var(--panel);
   color: var(--accent);
@@ -176,7 +176,7 @@ html,body {
 #companionBtn {
   position: absolute;
   top: 18px;
-  right: 84px; /* Position left of Leaderboard button with consistent gap */
+  right: 106px; /* Position left of Leaderboard button with consistent gap */
   z-index: 1001; /* Higher than start modal */
   background: var(--panel);
   color: var(--accent);
@@ -201,7 +201,7 @@ html,body {
 #helpBtn {
   position: absolute;
   top: 18px;
-  right: 40px; /* Position left of companion button with gap */
+  right: 18px; /* Position at the far right with standard margin */
   z-index: 1001; /* Higher than start modal */
   background: var(--panel);
   color: var(--accent);
