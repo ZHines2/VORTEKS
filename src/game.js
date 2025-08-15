@@ -854,8 +854,15 @@ export const Game = {
       if (window.canSubmitToLeaderboard && window.canSubmitToLeaderboard()) {
         try {
           const analytics = window.getAnalytics();
-          if (window.submitToLeaderboard && window.submitToLeaderboard(analytics)) {
-            console.log('Battle result automatically submitted to leaderboard');
+          if (window.submitToLeaderboard) {
+            // Submit asynchronously without blocking game flow
+            window.submitToLeaderboard(analytics).then(success => {
+              if (success) {
+                console.log('Battle result automatically submitted to leaderboard');
+              }
+            }).catch(e => {
+              console.warn('Failed to auto-submit to leaderboard:', e);
+            });
           }
         } catch (e) {
           console.warn('Failed to auto-submit to leaderboard:', e);
