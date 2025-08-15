@@ -141,7 +141,6 @@ function saveSelectedQuirk(quirkId) {
 function setupDefeatedOpponents() {
   const defeatedModal = document.getElementById('defeatedModal');
   const defeatedCloseBtn = document.getElementById('defeatedCloseBtn');
-  const defeatedClearBtn = document.getElementById('defeatedClearBtn');
 
   // Defeated button click handler
   defeatedBtn.addEventListener('click', () => {
@@ -154,19 +153,9 @@ function setupDefeatedOpponents() {
     defeatedModal.hidden = true;
   });
 
-  // Clear button handler
-  defeatedClearBtn.addEventListener('click', () => {
-    const confirmed = confirm('Clear defeated opponents history? This cannot be undone.');
-    if (confirmed) {
-      clearDefeatedOpponents();
-      renderDefeatedOpponents();
-    }
-  });
-
   // Telemetry modal setup
   const telemetryModal = document.getElementById('telemetryModal');
   const telemetryCloseBtn = document.getElementById('telemetryCloseBtn');
-  const telemetryResetBtn = document.getElementById('telemetryResetBtn');
 
   // Telemetry button click handler
   telemetryBtn.addEventListener('click', () => {
@@ -177,15 +166,6 @@ function setupDefeatedOpponents() {
   // Telemetry close button handler
   telemetryCloseBtn.addEventListener('click', () => {
     telemetryModal.hidden = true;
-  });
-
-  // Telemetry reset button handler
-  telemetryResetBtn.addEventListener('click', () => {
-    const confirmed = confirm('Reset all analytics data? This cannot be undone.');
-    if (confirmed) {
-      resetTelemetry();
-      renderTelemetryData();
-    }
   });
 
   // VORTEK Companion modal setup
@@ -1058,9 +1038,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // Setup title image fallback logic
   setupTitleImage();
 
-  // Setup clear unlocks functionality
-  setupClearUnlocks();
-
   // Setup Campaign functionality
   setupCampaign();
 
@@ -1325,23 +1302,54 @@ document.addEventListener('DOMContentLoaded', () => {
     tryNextImage();
   }
 
-  // Setup clear unlocks functionality
-  function setupClearUnlocks() {
-    const unlocksClearBtn = document.getElementById('unlocksClearBtn');
+  // Consolidated reset all data functionality
+  function resetAllGameData() {
+    const confirmed = confirm('⚠️ RESET ALL DATA?\n\nThis will permanently delete:\n• All unlocked cards and achievements\n• All quirks and progress\n• Campaign data\n• VORTEK companion\n• Analytics and stats\n• Defeated opponents history\n\nThis action cannot be undone. Are you sure?');
     
-    if (!unlocksClearBtn) return;
-    
-    // Clear unlocks button functionality
-    unlocksClearBtn.addEventListener('click', () => {
-      const confirmed = confirm('Clear ALL unlocks and achievements? This cannot be undone.');
-      if (confirmed) {
-        resetUnlocks(); // Reset card unlocks
-        resetQuirks(); // Reset quirk unlocks  
-        clearSelectedQuirk(); // Clear selected quirk
-        clearDefeatedOpponents(); // Clear defeated opponents history
-        renderUnlocksModal();
+    if (confirmed) {
+      try {
+        // Reset all card and quirk unlocks
+        resetUnlocks();
+        resetQuirks();
+        clearSelectedQuirk();
+        
+        // Reset defeated opponents history
+        clearDefeatedOpponents();
+        
+        // Reset telemetry/analytics data
+        resetTelemetry();
+        
+        // Reset VORTEK companion
+        resetCreature();
+        
+        // Abandon any active campaign
+        if (window.Campaign && window.Campaign.active) {
+          window.Campaign.abandon();
+        }
+        
+        // Clear any other localStorage keys we might have missed
+        const keysToRemove = [
+          'vorteks-muted',
+          'vorteks-help-shown'
+        ];
+        
+        keysToRemove.forEach(key => {
+          try {
+            localStorage.removeItem(key);
+          } catch (e) {
+            console.warn('Failed to remove localStorage key:', key, e);
+          }
+        });
+        
+        // Show success message and reload the page to ensure clean state
+        alert('✅ All game data has been reset successfully!\n\nThe page will now reload to apply changes.');
+        window.location.reload();
+        
+      } catch (error) {
+        console.error('Error during data reset:', error);
+        alert('❌ Error occurred during reset. Some data may not have been cleared properly.');
       }
-    });
+    }
   }
 
   // Setup Campaign functionality
@@ -1439,6 +1447,11 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('campaignContinueBtn').onclick = () => {
       modal.hidden = true;
       continueCampaign();
+    };
+    
+    // Reset all data button handler
+    document.getElementById('resetAllDataBtn').onclick = () => {
+      resetAllGameData();
     };
   }
   window.showStart = showStart;
