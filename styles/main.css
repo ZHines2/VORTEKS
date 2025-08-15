@@ -147,11 +147,36 @@ html,body {
   outline: 2px solid var(--accent);
 }
 
+/* --- Leaderboard button --- */
+#leaderboardBtn {
+  position: absolute;
+  top: 18px;
+  right: 128px; /* Position between Defeated and Companion buttons */
+  z-index: 1001; /* Higher than start modal */
+  background: var(--panel);
+  color: var(--accent);
+  border: 2px solid var(--border);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  opacity: 0.85;
+  transition: opacity 0.2s, transform 0.3s ease-in-out;
+  font-family: 'Press Start 2P', monospace;
+}
+#leaderboardBtn:hover,
+#leaderboardBtn:focus {
+  opacity: 1;
+  outline: 2px solid var(--accent);
+}
+
 /* --- Companion button --- */
 #companionBtn {
   position: absolute;
   top: 18px;
-  right: 106px; /* Position left of Help button with consistent gap */
+  right: 84px; /* Position left of Leaderboard button with consistent gap */
   z-index: 1001; /* Higher than start modal */
   background: var(--panel);
   color: var(--accent);
@@ -176,7 +201,7 @@ html,body {
 #helpBtn {
   position: absolute;
   top: 18px;
-  right: 62px; /* Position left of companion button with gap */
+  right: 40px; /* Position left of companion button with gap */
   z-index: 1001; /* Higher than start modal */
   background: var(--panel);
   color: var(--accent);
@@ -202,6 +227,7 @@ html,body {
 #unlocksBtn,
 #glossaryBtn,
 #defeatedBtn,
+#leaderboardBtn,
 #companionBtn,
 #muteBtn,
 #helpBtn {
@@ -213,6 +239,7 @@ html,body {
 .modal-open #unlocksBtn,
 .modal-open #glossaryBtn,
 .modal-open #defeatedBtn,
+.modal-open #leaderboardBtn,
 .modal-open #companionBtn,
 .modal-open #muteBtn,
 .modal-open #helpBtn {
