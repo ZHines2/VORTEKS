@@ -1,6 +1,15 @@
 // leaderboard.js
 // VORTEKS Global Leaderboard System
 
+import { 
+  loadLeaderboardFromBackend, 
+  saveLeaderboardToBackend, 
+  syncWithBackend,
+  initializeBackend,
+  isBackendOnline,
+  isSyncing 
+} from './leaderboard-backend.js';
+
 const LEADERBOARD_KEY = 'vorteks-global-leaderboard';
 const PLAYER_PROFILE_KEY = 'vorteks-player-profile';
 
@@ -66,35 +75,61 @@ export function updatePlayerProfile(updates) {
   return profile;
 }
 
-// Load leaderboard data from localStorage
-export function loadLeaderboard() {
+// Load leaderboard data from backend or localStorage
+export async function loadLeaderboard() {
   try {
+    // Try to load from backend first
+    if (isBackendOnline()) {
+      const backendData = await loadLeaderboardFromBackend();
+      if (backendData) {
+        // Also save to localStorage as cache
+        saveLeaderboardToLocalStorage(backendData);
+        return backendData;
+      }
+    }
+    
+    // Fallback to localStorage
     const stored = localStorage.getItem(LEADERBOARD_KEY);
     return stored ? JSON.parse(stored) : [];
   } catch (e) {
     console.warn('Failed to load leaderboard:', e);
+    // Final fallback - empty array
     return [];
   }
 }
 
-// Save leaderboard data to localStorage
-export function saveLeaderboard(data) {
+// Save leaderboard data to localStorage only
+function saveLeaderboardToLocalStorage(data) {
   try {
     localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(data));
   } catch (e) {
-    console.warn('Failed to save leaderboard:', e);
+    console.warn('Failed to save leaderboard to localStorage:', e);
+  }
+}
+
+// Save leaderboard data to both backend and localStorage
+export async function saveLeaderboard(data) {
+  // Always save to localStorage first (immediate fallback)
+  saveLeaderboardToLocalStorage(data);
+  
+  // Try to save to backend
+  if (isBackendOnline()) {
+    const success = await saveLeaderboardToBackend(data);
+    if (!success) {
+      console.log('Backend save failed, data is still saved locally');
+    }
   }
 }
 
 // Submit player stats to leaderboard
-export function submitToLeaderboard(analytics) {
+export async function submitToLeaderboard(analytics) {
   const profile = getPlayerProfile();
   
   if (!profile.shareStats || !profile.nickname) {
     return false; // Player hasn't opted in or set nickname
   }
 
-  const leaderboard = loadLeaderboard();
+  const leaderboard = await loadLeaderboard();
   const timestamp = Date.now();
 
   // Create entry for this player
@@ -126,7 +161,7 @@ export function submitToLeaderboard(analytics) {
   filteredBoard.push(entry);
   
   // Save updated leaderboard
-  saveLeaderboard(filteredBoard);
+  await saveLeaderboard(filteredBoard);
   
   // Update last submitted timestamp
   profile.lastSubmitted = timestamp;
@@ -136,8 +171,8 @@ export function submitToLeaderboard(analytics) {
 }
 
 // Get leaderboard for a specific category
-export function getLeaderboard(category, limit = 10) {
-  const leaderboard = loadLeaderboard();
+export async function getLeaderboard(category, limit = 10) {
+  const leaderboard = await loadLeaderboard();
   
   if (leaderboard.length === 0) {
     return [];
@@ -217,11 +252,11 @@ export function getLeaderboardCategories() {
 }
 
 // Get player's rank in a specific category
-export function getPlayerRank(category) {
+export async function getPlayerRank(category) {
   const profile = getPlayerProfile();
   if (!profile.nickname) return null;
   
-  const leaderboard = getLeaderboard(category, 1000); // Get full leaderboard
+  const leaderboard = await getLeaderboard(category, 1000); // Get full leaderboard
   const rank = leaderboard.findIndex(entry => entry.nickname === profile.nickname);
   
   return rank >= 0 ? rank + 1 : null;
@@ -234,9 +269,44 @@ export function canSubmitToLeaderboard() {
 }
 
 // Reset all leaderboard data (admin function)
-export function resetLeaderboard() {
+export async function resetLeaderboard() {
   localStorage.removeItem(LEADERBOARD_KEY);
+  
+  // If backend is available, clear it too
+  if (isBackendOnline()) {
+    await saveLeaderboardToBackend([]);
+  }
+  
   return true;
 }
 
-export { LEADERBOARD_CATEGORIES };
+// Sync local data with backend
+export async function syncLeaderboard() {
+  if (!isBackendOnline()) {
+    console.log('Backend offline, cannot sync');
+    return false;
+  }
+  
+  try {
+    const localData = JSON.parse(localStorage.getItem(LEADERBOARD_KEY) || '[]');
+    const syncedData = await syncWithBackend(localData);
+    saveLeaderboardToLocalStorage(syncedData);
+    return true;
+  } catch (error) {
+    console.warn('Sync failed:', error);
+    return false;
+  }
+}
+
+// Initialize the leaderboard system
+export async function initializeLeaderboard() {
+  // Initialize backend connection
+  await initializeBackend();
+  
+  // If backend is available, try to sync existing local data
+  if (isBackendOnline()) {
+    await syncLeaderboard();
+  }
+}
+
+export { LEADERBOARD_CATEGORIES, initializeBackend, isBackendOnline, isSyncing };

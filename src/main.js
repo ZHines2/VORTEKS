@@ -48,8 +48,10 @@ import {
   getPlayerRank,
   canSubmitToLeaderboard,
   resetLeaderboard,
-  loadLeaderboard,
-  saveLeaderboard,
+  syncLeaderboard,
+  initializeLeaderboard,
+  isBackendOnline,
+  isSyncing,
   LEADERBOARD_CATEGORIES
 } from './leaderboard.js';
 import {
@@ -82,6 +84,13 @@ loadTelemetry();
 
 // Initialize player profile for leaderboards
 loadPlayerProfile();
+
+// Initialize leaderboard backend
+initializeLeaderboard().then(() => {
+  console.log('Leaderboard system initialized');
+}).catch(error => {
+  console.warn('Leaderboard initialization error:', error);
+});
 
 // Make leaderboard functions available globally for auto-submission
 window.canSubmitToLeaderboard = canSubmitToLeaderboard;
@@ -206,8 +215,8 @@ function setupDefeatedOpponents() {
   let currentLeaderboardCategory = 'total_wins';
 
   // Leaderboard button click handler
-  leaderboardBtn.addEventListener('click', () => {
-    renderLeaderboardData();
+  leaderboardBtn.addEventListener('click', async () => {
+    await renderLeaderboardData();
     leaderboardModal.hidden = false;
   });
 
@@ -217,8 +226,8 @@ function setupDefeatedOpponents() {
   });
 
   // Refresh leaderboard button handler
-  refreshLeaderboardBtn.addEventListener('click', () => {
-    renderLeaderboardData();
+  refreshLeaderboardBtn.addEventListener('click', async () => {
+    await renderLeaderboardData();
   });
 
   // Profile settings button handler
@@ -231,8 +240,8 @@ function setupDefeatedOpponents() {
     profileModal.hidden = true;
   });
 
-  profileSaveBtn.addEventListener('click', () => {
-    saveProfileSettings();
+  profileSaveBtn.addEventListener('click', async () => {
+    await saveProfileSettings();
   });
 
   deleteProfileBtn.addEventListener('click', () => {
@@ -803,14 +812,28 @@ function setupDefeatedOpponents() {
   }
 
   // Leaderboard rendering functions
-  function renderLeaderboardData() {
+  async function renderLeaderboardData() {
     renderProfileStatus();
-    renderLeaderboardCategory(currentLeaderboardCategory);
+    await renderLeaderboardCategory(currentLeaderboardCategory);
   }
 
   function renderProfileStatus() {
     const profile = getPlayerProfile();
     const profileStatus = document.getElementById('profileStatus');
+    const backendStatus = document.getElementById('backendStatus');
+    
+    // Update backend status indicator
+    if (backendStatus) {
+      if (isBackendOnline()) {
+        backendStatus.textContent = '🌐';
+        backendStatus.title = 'Connected to global server';
+        backendStatus.style.color = 'var(--good)';
+      } else {
+        backendStatus.textContent = '📱';
+        backendStatus.title = 'Using local storage only';
+        backendStatus.style.color = 'var(--ink)';
+      }
+    }
     
     if (profile.shareStats && profile.nickname) {
       profileStatus.innerHTML = `Sharing as <strong>${profile.nickname}</strong> - Last updated: ${profile.lastSubmitted ? new Date(profile.lastSubmitted).toLocaleDateString() : 'Never'}`;
@@ -824,7 +847,7 @@ function setupDefeatedOpponents() {
     }
   }
 
-  function renderLeaderboardCategory(category) {
+  async function renderLeaderboardCategory(category) {
     const categories = getLeaderboardCategories();
     const categoryInfo = categories.find(cat => cat.id === category);
     
@@ -833,7 +856,7 @@ function setupDefeatedOpponents() {
     titleEl.innerHTML = `<strong>${categoryInfo.icon} ${categoryInfo.name} - ${categoryInfo.description}</strong>`;
     
     // Get leaderboard data
-    const leaderboard = getLeaderboard(category, 50);
+    const leaderboard = await getLeaderboard(category, 50);
     const listEl = document.getElementById('leaderboardList');
     
     if (leaderboard.length === 0) {
@@ -849,7 +872,7 @@ function setupDefeatedOpponents() {
     
     // Get player's rank if they're on the leaderboard
     const profile = getPlayerProfile();
-    const playerRank = profile.nickname ? getPlayerRank(category) : null;
+    const playerRank = profile.nickname ? await getPlayerRank(category) : null;
     
     // Render leaderboard entries
     listEl.innerHTML = leaderboard.map((entry, index) => {
@@ -915,7 +938,7 @@ function setupDefeatedOpponents() {
     profileModal.hidden = false;
   }
 
-  function saveProfileSettings() {
+  async function saveProfileSettings() {
     const nickname = nicknameInput.value.trim();
     const shareStats = shareStatsCheckbox.checked;
     
@@ -934,24 +957,24 @@ function setupDefeatedOpponents() {
     // If sharing is enabled and we have a nickname, submit current stats
     if (shareStats && nickname) {
       const analytics = getAnalytics();
-      if (submitToLeaderboard(analytics)) {
+      if (await submitToLeaderboard(analytics)) {
         console.log('Stats submitted to leaderboard');
       }
     }
     
     // Close modal and refresh leaderboard display
     profileModal.hidden = true;
-    renderLeaderboardData();
+    await renderLeaderboardData();
   }
 
-  function deleteLeaderboardEntry() {
+  async function deleteLeaderboardEntry() {
     if (confirm('Are you sure you want to delete your leaderboard entry? This cannot be undone.')) {
       // Load current leaderboard and remove player's entry
       const profile = getPlayerProfile();
       if (profile.nickname) {
-        const leaderboard = loadLeaderboard();
+        const leaderboard = await loadLeaderboard();
         const filteredBoard = leaderboard.filter(entry => entry.nickname !== profile.nickname);
-        saveLeaderboard(filteredBoard);
+        await saveLeaderboard(filteredBoard);
         
         // Update profile to disable sharing
         updatePlayerProfile({
@@ -960,7 +983,7 @@ function setupDefeatedOpponents() {
         });
         
         profileModal.hidden = true;
-        renderLeaderboardData();
+        await renderLeaderboardData();
         alert('Your leaderboard entry has been deleted.');
       }
     }
