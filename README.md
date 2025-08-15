@@ -169,6 +169,9 @@ configureJSONBin({
 initializeLeaderboard();
 ```
 
+### Quick public-read test bin
+If you just want to test leaderboard reads without a master key, use the public test BIN_ID configured in the code: `689f8e49d0ea881f405a220d`. This bin is public-read so you can verify leaderboard reads from any browser. Do NOT commit or share any master keys; for writes use a server-side proxy or set window.JSONBIN_MASTER_KEY locally for dev testing only.
+
 ### Testing Steps
 1. Configure JSONBin credentials as shown above
 2. Set up a player profile with nickname and enable stat sharing
