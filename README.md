@@ -172,6 +172,48 @@ initializeLeaderboard();
 ### Quick public-read test bin
 If you just want to test leaderboard reads without a master key, use the public test BIN_ID configured in the code: `689f8e49d0ea881f405a220d`. This bin is public-read so you can verify leaderboard reads from any browser. Do NOT commit or share any master keys; for writes use a server-side proxy or set window.JSONBIN_MASTER_KEY locally for dev testing only.
 
+### JSONBin Data Schema
+The leaderboard uses the following JSON structure in the bin:
+
+```json
+{
+  "leaderboard": [
+    {
+      "playerId": "uuid-v4-or-custom-id",
+      "nickname": "YourNick",
+      "timestamp": 1692123456789,
+      "stats": {
+        "totalWins": 3,
+        "winStreak": 1,
+        "perfectWins": 0,
+        "quickWins": 0,
+        "winRate": 75.0,
+        "totalGames": 4
+      }
+    }
+  ]
+}
+```
+
+**Entry Schema Details:**
+- `playerId`: Unique identifier (UUID v4 format recommended)
+- `nickname`: Player display name (max 20 characters, sanitized)
+- `timestamp`: Unix timestamp in milliseconds for entry creation/update
+- `stats`: Object containing player statistics
+  - `totalWins`: Total number of games won
+  - `winStreak`: Current consecutive wins
+  - `perfectWins`: Wins achieved with full HP
+  - `quickWins`: Wins achieved in few turns
+  - `winRate`: Win percentage (0-100)
+  - `totalGames`: Total games played
+
+**Initial Bin Setup:**
+To seed a new public bin, create it with this minimal structure:
+
+```json
+{ "leaderboard": [] }
+```
+
 ### Testing Steps
 1. Configure JSONBin credentials as shown above
 2. Set up a player profile with nickname and enable stat sharing
@@ -185,6 +227,22 @@ If you just want to test leaderboard reads without a master key, use the public 
    syncLeaderboard();
    ```
 5. Open the game in another browser/incognito window with the same BIN_ID to verify cross-browser functionality
+
+### Testing Writes Locally
+To test write functionality (submitting scores), you need a master key:
+
+```javascript
+// In browser console for local testing only:
+window.JSONBIN_MASTER_KEY = 'your-master-key-here';
+
+// Or use the configuration helper:
+configureJSONBin({
+  binId: 'your-bin-id-here',
+  masterKey: 'your-master-key-here'
+});
+```
+
+**Important**: The public test bin (`689f8e49d0ea881f405a220d`) is read-only. For write testing, create your own private bin with a master key.
 
 ### Security Notes
 - **Never commit your MASTER_KEY to version control**

@@ -89,6 +89,9 @@ loadTelemetry();
 // Initialize player profile for leaderboards
 loadPlayerProfile();
 
+// Configure JSONBin with public-read test bin before leaderboard initialization
+configureJSONBin({ binId: '689f8e49d0ea881f405a220d' });
+
 // Initialize leaderboard backend
 initializeLeaderboard().then(() => {
   console.log('Leaderboard system initialized');
@@ -106,6 +109,15 @@ window.getAnalytics = getAnalytics;
 window.configureJSONBin = configureJSONBin;
 window.initializeLeaderboard = initializeLeaderboard;
 window.syncLeaderboard = syncLeaderboard;
+window.loadLeaderboard = loadLeaderboard;
+window.saveLeaderboard = saveLeaderboard;
+window.getLeaderboard = getLeaderboard;
+window.resetLeaderboard = resetLeaderboard;
+window.getPlayerRank = getPlayerRank;
+window.getLeaderboardCategories = getLeaderboardCategories;
+window.isBackendOnline = isBackendOnline;
+window.isSyncing = isSyncing;
+window.LEADERBOARD_CATEGORIES = LEADERBOARD_CATEGORIES;
 
 let music;
 window.music = null; // Make music accessible globally for sound functions
