@@ -17,233 +17,91 @@ html,body {
   color: var(--ink);
 }
 
+/* Button header container */
+.button-header {
+  background: var(--panel);
+  border-bottom: 2px solid var(--border);
+  padding: 12px 18px;
+  position: sticky;
+  top: 0;
+  z-index: 1002;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.button-container {
+  max-width: 980px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Responsive adjustments for button header */
+@media (max-width: 768px) {
+  .button-header {
+    padding: 8px 12px;
+  }
+  
+  .button-container {
+    gap: 8px;
+    justify-content: center;
+  }
+  
+  .button-container button {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+}
+
 .wrap {
   max-width:980px;
   margin:0 auto;
   padding:18px;
-  position: relative; /* ensure muteBtn overlays relative to this */
+  position: relative;
 }
 
-/* --- Mute button --- */
+/* --- Header buttons shared styles --- */
+.button-container button {
+  background: var(--panel);
+  color: var(--accent);
+  border: 2px solid var(--border);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  opacity: 0.85;
+  transition: opacity 0.2s, transform 0.3s ease-in-out;
+  font-family: 'Press Start 2P', monospace;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.button-container button:hover,
+.button-container button:focus {
+  opacity: 1;
+  outline: 2px solid var(--accent);
+}
+
+/* Specific overrides for mute button */
 #muteBtn {
-  position: absolute;
-  top: 18px;
-  right: 62px; /* Position left of Companion button with consistent gap */
-  z-index: 1001; /* Higher than start modal */
-  background: var(--panel);
   color: var(--ink);
-  border: 2px solid var(--border);
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  font-size: 20px;
-  cursor: pointer;
-  opacity: 0.85;
-  transition: opacity 0.2s, transform 0.3s ease-in-out;
-}
-#muteBtn:hover,
-#muteBtn:focus {
-  opacity: 1;
-  outline: 2px solid var(--accent);
 }
 
-/* --- Telemetry button --- */
-#telemetryBtn {
-  position: absolute;
-  top: 18px;
-  right: 282px; /* Position left of Unlocks button with gap */
-  z-index: 1001; /* Higher than start modal */
-  background: var(--panel);
-  color: var(--accent);
-  border: 2px solid var(--border);
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  font-size: 20px;
-  font-weight: bold;
-  cursor: pointer;
-  opacity: 0.85;
-  transition: opacity 0.2s, transform 0.3s ease-in-out;
-  font-family: 'Press Start 2P', monospace;
-}
-#telemetryBtn:hover,
-#telemetryBtn:focus {
-  opacity: 1;
-  outline: 2px solid var(--accent);
-}
-
-/* --- Unlocks button --- */
-#unlocksBtn {
-  position: absolute;
-  top: 18px;
-  right: 238px; /* Position left of Glossary button with gap */
-  z-index: 1001; /* Higher than start modal */
-  background: var(--panel);
-  color: var(--accent);
-  border: 2px solid var(--border);
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  font-size: 20px;
-  font-weight: bold;
-  cursor: pointer;
-  opacity: 0.85;
-  transition: opacity 0.2s, transform 0.3s ease-in-out;
-  font-family: 'Press Start 2P', monospace;
-}
-#unlocksBtn:hover,
-#unlocksBtn:focus {
-  opacity: 1;
-  outline: 2px solid var(--accent);
-}
-
-/* --- Glossary button --- */
-#glossaryBtn {
-  position: absolute;
-  top: 18px;
-  right: 194px; /* Position left of Defeated button with gap */
-  z-index: 1001; /* Higher than start modal */
-  background: var(--panel);
-  color: var(--accent);
-  border: 2px solid var(--border);
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  font-size: 20px;
-  font-weight: bold;
-  cursor: pointer;
-  opacity: 0.85;
-  transition: opacity 0.2s, transform 0.3s ease-in-out;
-  font-family: 'Press Start 2P', monospace;
-}
-#glossaryBtn:hover,
-#glossaryBtn:focus {
-  opacity: 1;
-  outline: 2px solid var(--accent);
-}
-
-/* --- Defeated Opponents button --- */
-#defeatedBtn {
-  position: absolute;
-  top: 18px;
-  right: 150px; /* Position left of Companion button with gap */
-  z-index: 1001; /* Higher than start modal */
-  background: var(--panel);
-  color: var(--accent);
-  border: 2px solid var(--border);
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  font-size: 20px;
-  font-weight: bold;
-  cursor: pointer;
-  opacity: 0.85;
-  transition: opacity 0.2s, transform 0.3s ease-in-out;
-  font-family: 'Press Start 2P', monospace;
-}
-#defeatedBtn:hover,
-#defeatedBtn:focus {
-  opacity: 1;
-  outline: 2px solid var(--accent);
-}
-
-/* --- Leaderboard button --- */
-#leaderboardBtn {
-  position: absolute;
-  top: 18px;
-  right: 106px; /* Position between Defeated and Companion buttons with consistent gap */
-  z-index: 1001; /* Higher than start modal */
-  background: var(--panel);
-  color: var(--accent);
-  border: 2px solid var(--border);
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  font-size: 20px;
-  font-weight: bold;
-  cursor: pointer;
-  opacity: 0.85;
-  transition: opacity 0.2s, transform 0.3s ease-in-out;
-  font-family: 'Press Start 2P', monospace;
-}
-#leaderboardBtn:hover,
-#leaderboardBtn:focus {
-  opacity: 1;
-  outline: 2px solid var(--accent);
-}
-
-/* --- Companion button --- */
-#companionBtn {
-  position: absolute;
-  top: 18px;
-  right: 84px; /* Position between Leaderboard and Mute buttons */
-  z-index: 1001; /* Higher than start modal */
-  background: var(--panel);
-  color: var(--accent);
-  border: 2px solid var(--border);
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  font-size: 20px;
-  font-weight: bold;
-  cursor: pointer;
-  opacity: 0.85;
-  transition: opacity 0.2s, transform 0.3s ease-in-out;
-  font-family: 'Press Start 2P', monospace;
-}
-#companionBtn:hover,
-#companionBtn:focus {
-  opacity: 1;
-  outline: 2px solid var(--accent);
-}
-
-/* --- Help button --- */
-#helpBtn {
-  position: absolute;
-  top: 18px;
-  right: 18px; /* Position at the far right with standard margin */
-  z-index: 1001; /* Higher than start modal */
-  background: var(--panel);
-  color: var(--accent);
-  border: 2px solid var(--border);
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  font-size: 20px;
-  font-weight: bold;
-  cursor: pointer;
-  opacity: 0.85;
-  transition: opacity 0.2s, transform 0.3s ease-in-out;
-  font-family: 'Press Start 2P', monospace;
-}
-#helpBtn:hover,
-#helpBtn:focus {
-  opacity: 1;
-  outline: 2px solid var(--accent);
-}
+/* --- Old individual button styles (now removed) --- */
 
 /* --- Top menu button transitions for modal states --- */
-#telemetryBtn,
-#unlocksBtn,
-#glossaryBtn,
-#defeatedBtn,
-#leaderboardBtn,
-#companionBtn,
-#muteBtn,
-#helpBtn {
+.button-container button {
   transition: opacity 0.2s, transform 0.3s ease-in-out;
 }
 
 /* Hide top menu when modal is open to prevent overlap */
-.modal-open #telemetryBtn,
-.modal-open #unlocksBtn,
-.modal-open #glossaryBtn,
-.modal-open #defeatedBtn,
-.modal-open #leaderboardBtn,
-.modal-open #companionBtn,
-.modal-open #muteBtn,
-.modal-open #helpBtn {
-  transform: translateX(100px);
+.modal-open .button-header {
+  transform: translateY(-10px);
   opacity: 0.3;
   pointer-events: none;
 }
