@@ -161,7 +161,30 @@ export async function loadLeaderboard() {
     try {
       const entries = await fetchLeaderboardFromJSONBin();
       backendOnline = true;
-      // If it's object with leaderboard property, adapt above
+
+      // If backend returned an array, merge any local-only entries so users who
+      // submitted locally without a master key still see themselves in the UI.
+      if (Array.isArray(entries)) {
+        const local = await loadLeaderboardFromLocal();
+        const map = new Map();
+        const keyFor = e => e.playerId ? `id:${e.playerId}` : (e.nickname ? `nick:${sanitizeNickname(e.nickname)}` : null);
+
+        // Backend entries take precedence
+        (entries || []).forEach(e => {
+          const k = keyFor(e);
+          if (k) map.set(k, e);
+        });
+
+        // Add local entries that do not exist on backend
+        (local || []).forEach(e => {
+          const k = keyFor(e);
+          if (!k) return;
+          if (!map.has(k)) map.set(k, e);
+        });
+
+        return Array.from(map.values());
+      }
+
       return Array.isArray(entries) ? entries : [];
     } catch (e) {
       backendOnline = false;
