@@ -1,5 +1,5 @@
 import { CARDS } from '../data/cards.js';
-import { shuffle, $ } from './utils.js';
+import { shuffle, $, showModal, hideModal } from './utils.js';
 import { cardText, renderCost } from './ui.js';
 import { getUnlockedCards, getUnlockableCardsInfo } from './card-unlock.js';
 
@@ -30,6 +30,74 @@ export function openDeckBuilder(done) {
   
   function deckSize() { 
     return Object.values(counts).reduce((a, b) => a + b, 0); 
+  }
+  
+  // Deck save/load functionality
+  function saveDeckToSlot(slotNumber) {
+    if (deckSize() === 0) return; // Don't save empty decks
+    
+    const deckData = { ...counts }; // Copy counts object
+    localStorage.setItem(`deckSlot${slotNumber}`, JSON.stringify(deckData));
+    
+    // Update button text to show it has a saved deck
+    const slotBtn = $(`#deckSlot${slotNumber}`);
+    if (slotBtn) {
+      slotBtn.textContent = `SLOT ${slotNumber} ✓`;
+      slotBtn.style.background = 'var(--good)';
+      slotBtn.style.color = 'black';
+    }
+  }
+  
+  function loadDeckFromSlot(slotNumber) {
+    const savedData = localStorage.getItem(`deckSlot${slotNumber}`);
+    if (!savedData) return false;
+    
+    try {
+      const savedCounts = JSON.parse(savedData);
+      
+      // Validate that all cards in the saved deck are still unlocked
+      let validDeck = true;
+      for (const cardId in savedCounts) {
+        if (savedCounts[cardId] > 0 && !unlockedCardIds.includes(cardId)) {
+          validDeck = false;
+          break;
+        }
+      }
+      
+      if (!validDeck) {
+        alert(`Deck in slot ${slotNumber} contains cards that are no longer unlocked!`);
+        return false;
+      }
+      
+      // Load the deck
+      Object.keys(counts).forEach(cardId => {
+        counts[cardId] = savedCounts[cardId] || 0;
+      });
+      
+      rebuild();
+      return true;
+    } catch (e) {
+      console.error('Failed to load deck from slot', slotNumber, e);
+      return false;
+    }
+  }
+  
+  function updateSlotButtonStates() {
+    for (let i = 1; i <= 3; i++) {
+      const savedData = localStorage.getItem(`deckSlot${i}`);
+      const slotBtn = $(`#deckSlot${i}`);
+      if (slotBtn) {
+        if (savedData) {
+          slotBtn.textContent = `SLOT ${i} ✓`;
+          slotBtn.style.background = 'var(--good)';
+          slotBtn.style.color = 'black';
+        } else {
+          slotBtn.textContent = `SLOT ${i}`;
+          slotBtn.style.background = '';
+          slotBtn.style.color = '';
+        }
+      }
+    }
   }
   
   function rebuild() {
@@ -124,7 +192,7 @@ export function openDeckBuilder(done) {
   };
   
   $('#deckCancel').onclick = () => {
-    modal.hidden = true;
+    hideModal(modal);
     // Return to start screen without progressing to quirk selection
     if (window.showStart) {
       window.showStart();
@@ -148,16 +216,27 @@ export function openDeckBuilder(done) {
         deck.push(CARDS.find(c => c.id === id)); 
       } 
     }
-    modal.hidden = true; 
+    hideModal(modal);
     done(shuffle(deck));
   };
   
   $('#deckQuick').onclick = () => { 
-    modal.hidden = true; 
+    hideModal(modal);
     done(buildRandomDeck(20, 4)); 
   };
   
-  modal.hidden = false; 
+  // Deck slot load buttons
+  $('#deckSlot1').onclick = () => loadDeckFromSlot(1);
+  $('#deckSlot2').onclick = () => loadDeckFromSlot(2);
+  $('#deckSlot3').onclick = () => loadDeckFromSlot(3);
+  
+  // Deck slot save buttons
+  $('#deckSave1').onclick = () => saveDeckToSlot(1);
+  $('#deckSave2').onclick = () => saveDeckToSlot(2);
+  $('#deckSave3').onclick = () => saveDeckToSlot(3);
+  
+  showModal(modal);
+  updateSlotButtonStates();
   rebuild();
 }
 
