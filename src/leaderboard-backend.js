@@ -8,10 +8,13 @@
   For quick prototyping, configure via browser console:
   
   window.JSONBIN_BIN_ID = 'your-bin-id';
-  window.JSONBIN_MASTER_KEY = 'your-master-key'; // For testing only!
+  window.JSONBIN_MASTER_KEY = 'your-master-key'; // Optional: only needed for writes!
   
   Or use the configureJSONBin helper:
   configureJSONBin({ binId: 'your-bin-id', masterKey: 'your-master-key' });
+  
+  Read operations work with public bins without a master key.
+  Write operations require a master key for security.
   
   SECURITY WARNING: Never commit MASTER_KEY to your repository!
   For production, use a serverless proxy to handle JSONBin authentication.
@@ -48,7 +51,7 @@ function getJSONBinConfig() {
   return {
     binId: currentBinId,
     masterKey: currentMasterKey,
-    isConfigured: !!(currentBinId && currentMasterKey)
+    isConfigured: !!currentBinId // Only binId required, masterKey is optional for read-only operations
   };
 }
 
@@ -67,10 +70,14 @@ export async function checkBackendHealth() {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), BACKEND_CONFIG.FALLBACK_TIMEOUT);
     
+    const headers = {};
+    // Only send master key header if we have one
+    if (config.masterKey) {
+      headers['X-Master-Key'] = config.masterKey;
+    }
+    
     const response = await fetch(`${BACKEND_CONFIG.API_BASE}/b/${config.binId}/latest`, {
-      headers: {
-        'X-Master-Key': config.masterKey
-      },
+      headers,
       signal: controller.signal
     });
     
@@ -107,10 +114,14 @@ export async function loadLeaderboardFromBackend() {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), BACKEND_CONFIG.FALLBACK_TIMEOUT);
     
+    const headers = {};
+    // Only send master key header if we have one
+    if (config.masterKey) {
+      headers['X-Master-Key'] = config.masterKey;
+    }
+    
     const response = await fetch(`${BACKEND_CONFIG.API_BASE}/b/${config.binId}/latest`, {
-      headers: {
-        'X-Master-Key': config.masterKey
-      },
+      headers,
       signal: controller.signal
     });
     
@@ -145,6 +156,12 @@ export async function saveLeaderboardToBackend(leaderboardData) {
   
   if (!isBackendAvailable || !config.isConfigured) {
     console.log('JSONBin unavailable, skipping save');
+    return false;
+  }
+
+  // Master key is required for write operations
+  if (!config.masterKey) {
+    console.log('JSONBin save requires master key, skipping save');
     return false;
   }
 
@@ -299,7 +316,8 @@ export async function initializeBackend() {
     
     return available;
   } else {
-    console.log('JSONBin not configured. Set window.JSONBIN_BIN_ID and window.JSONBIN_MASTER_KEY or use configureJSONBin()');
+    console.log('JSONBin not configured. Set window.JSONBIN_BIN_ID or use configureJSONBin()');
+    console.log('Note: MASTER_KEY is only required for write operations');
     console.log('Using localStorage fallback');
     isBackendAvailable = false;
     return false;
