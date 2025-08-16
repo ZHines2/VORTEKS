@@ -124,5 +124,27 @@ export const MOTTOS = [
   "As above in strategy, so below in execution ⭐⬇️",
   "The VORTEK whispers secrets only the heart can understand 💝🗣️",
   "In each battle lies the seed of transcendence 🌱⚡",
-  "Time is an illusion. Turns are temporary. Victory is eternal ⏰♾️"
+  "Time is an illusion. Turns are temporary. Victory is eternal ⏰♾️",
+
+  // New mottos for enhanced gaming wisdom 
+  "Modal positioning fixed: no more UI overlap anxiety! 🎯",
+  "Deck save slots: because forgetting your perfect build hurts 💾",
+  "Presto card now 100% crash-free (probably) 🎩✨",
+  "Three deck slots: past, present, and future perfection 🕐🕕🕘",
+  "Life is like a deck builder - you need good cards and backup plans 🃏",
+  "The wise player saves often, the wiser player saves smart 💡",
+  "Circular references: when even your data structure gets confused 🔄😵",
+  "localStorage: where dreams of perfect decks go to live forever 💭",
+  "Stress testing: because Murphy's Law applies to card games too ⚡🔧",
+  "Edge cases: the dark corners where bugs love to hide 🕷️",
+  "Emergent errors: when features develop consciousness and rebel 🤖💥",
+  "Card descriptions: finally, no more guessing what things do! 📝",
+  "Quality assurance: testing today, sleeping soundly tonight 😴",
+  "Bug-free code: the mythical unicorn of programming 🦄",
+  "Defensive programming: paranoia that actually pays off 🛡️💰",
+  "User experience: making players smile instead of rage-quit 😊",
+  "Array bounds checking: because off-by-one errors aren't fashionable 📐",
+  "Null reference exceptions: the 'hello world' of debugging pain 🚫💀",
+  "Clean code: readable by humans, executable by machines 📚⚙️",
+  "Twenty new mottos: achievement unlocked! 🏆✨"
 ];
