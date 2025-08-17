@@ -88,6 +88,7 @@ import {
   getRoomInteractionMessage
 } from './idle-game.js';
 import { initVortekGenerator, generateVortekAppearance, playVortekSound } from './vortek-generator.js';
+import { generateChronicle, getCurrentChronicle, saveCurrentChronicle, clearCurrentChronicle } from './lore.js';
 
 const MUSIC_FILE = 'VORTEKS.mp3';
 const LS_KEY = 'vorteks-muted';
@@ -142,6 +143,7 @@ const defeatedBtn = document.getElementById('defeatedBtn');
 const leaderboardBtn = document.getElementById('leaderboardBtn');
 const telemetryBtn = document.getElementById('telemetryBtn');
 const companionBtn = document.getElementById('companionBtn');
+const loreBtn = document.getElementById('loreBtn');
 
 // Initialize idle game system
 loadIdleGame();
@@ -233,6 +235,40 @@ function setupDefeatedOpponents() {
   // Telemetry close button handler
   telemetryCloseBtn.addEventListener('click', () => {
     telemetryModal.hidden = true;
+  });
+
+  // Lore modal setup
+  const loreModal = document.getElementById('loreModal');
+  const loreCloseBtn = document.getElementById('loreCloseBtn');
+  const generateLoreBtn = document.getElementById('generateLoreBtn');
+  const refreshLoreBtn = document.getElementById('refreshLoreBtn');
+  const favoriteChronicleBtn = document.getElementById('favoriteChronicleBtn');
+
+  // Lore button click handler
+  loreBtn.addEventListener('click', () => {
+    renderLoreModal();
+    loreModal.hidden = false;
+  });
+
+  // Lore close button handler
+  loreCloseBtn.addEventListener('click', () => {
+    loreModal.hidden = true;
+  });
+
+  // Generate new chronicle handler
+  generateLoreBtn.addEventListener('click', () => {
+    generateNewChronicle();
+  });
+
+  // Refresh current chronicle handler
+  refreshLoreBtn.addEventListener('click', () => {
+    refreshCurrentChronicle();
+  });
+
+  // Favorite chronicle handler
+  favoriteChronicleBtn.addEventListener('click', () => {
+    // TODO: Implement favorite system
+    alert('Chronicle favoriting will be available in a future update!');
   });
 
   // Leaderboard modal setup
@@ -871,6 +907,106 @@ function setupDefeatedOpponents() {
       <div><strong>Easter Eggs Seen:</strong> ${analytics.opponents.easterEggsSeen} | <strong>Play Time:</strong> ${analytics.session.playTime}</div>
       <div><strong>First Played:</strong> ${analytics.session.firstPlayed}</div>
     `;
+  }
+
+  // Lore rendering functions
+  function renderLoreModal() {
+    const currentChronicle = getCurrentChronicle();
+    if (currentChronicle) {
+      displayChronicle(currentChronicle);
+    } else {
+      displayWelcomeMessage();
+    }
+  }
+
+  function generateNewChronicle() {
+    const generateBtn = document.getElementById('generateLoreBtn');
+    generateBtn.disabled = true;
+    generateBtn.textContent = '🌌 Weaving tale...';
+    
+    // Add a small delay for dramatic effect
+    setTimeout(() => {
+      try {
+        const chronicle = generateChronicle();
+        saveCurrentChronicle(chronicle);
+        displayChronicle(chronicle);
+      } catch (error) {
+        console.error('Error generating chronicle:', error);
+        displayErrorMessage();
+      } finally {
+        generateBtn.disabled = false;
+        generateBtn.textContent = '🌌 Generate New Chronicle';
+      }
+    }, 1000);
+  }
+
+  function refreshCurrentChronicle() {
+    const currentChronicle = getCurrentChronicle();
+    if (currentChronicle) {
+      displayChronicle(currentChronicle);
+    } else {
+      generateNewChronicle();
+    }
+  }
+
+  function displayChronicle(chronicle) {
+    const titleEl = document.getElementById('chronicleTitle');
+    const textEl = document.getElementById('chronicleText');
+    const insightsEl = document.getElementById('chronicleInsights');
+    const statsEl = document.getElementById('chronicleStats');
+
+    titleEl.textContent = chronicle.title;
+    textEl.innerHTML = formatChronicleText(chronicle.content);
+    
+    // Show insights
+    insightsEl.style.display = 'block';
+    statsEl.textContent = chronicle.insights;
+    
+    // Show favorite button
+    const favoriteBtn = document.getElementById('favoriteChronicleBtn');
+    favoriteBtn.hidden = false;
+  }
+
+  function displayWelcomeMessage() {
+    const titleEl = document.getElementById('chronicleTitle');
+    const textEl = document.getElementById('chronicleText');
+    const insightsEl = document.getElementById('chronicleInsights');
+
+    titleEl.textContent = 'Welcome to the VORTEKS Chronicles';
+    textEl.innerHTML = `
+      <div style="text-align:center; opacity:0.7; padding:40px 20px;">
+        <div style="font-size:48px; margin-bottom:16px;">📜</div>
+        <div style="font-size:16px; color:var(--accent);">The Cosmic Scrolls Await</div>
+        <div style="margin-top:8px;">Click "Generate New Chronicle" to weave a tale of your adventures through the VORTEKS universe, drawing from your battles, your VORTEK companion's growth, and the mysteries you've unlocked.</div>
+      </div>
+    `;
+    insightsEl.style.display = 'none';
+    
+    // Hide favorite button
+    const favoriteBtn = document.getElementById('favoriteChronicleBtn');
+    favoriteBtn.hidden = true;
+  }
+
+  function displayErrorMessage() {
+    const titleEl = document.getElementById('chronicleTitle');
+    const textEl = document.getElementById('chronicleText');
+    
+    titleEl.textContent = 'Chronicle Generation Error';
+    textEl.innerHTML = `
+      <div style="text-align:center; opacity:0.7; padding:40px 20px;">
+        <div style="font-size:48px; margin-bottom:16px;">⚠️</div>
+        <div style="font-size:16px; color:var(--bad);">The Cosmic Scrolls are temporarily unavailable</div>
+        <div style="margin-top:8px;">There was an error generating your chronicle. Please try again.</div>
+      </div>
+    `;
+  }
+
+  function formatChronicleText(text) {
+    // Add some simple formatting to make the text more readable
+    return text
+      .split('\n\n')
+      .map(paragraph => `<p style="margin-bottom:16px;">${paragraph}</p>`)
+      .join('');
   }
 
   // Leaderboard rendering functions
