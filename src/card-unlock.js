@@ -171,6 +171,18 @@ const UNLOCK_META = [
       }
       return false;
     }
+  },
+  {
+    id: 'impervious',
+    kind: 'achievement',
+    description: 'Access the debug menu.',
+    progressHint: () => 'Open the debug screen to unlock this card.',
+    check: (ctx, state) => {
+      if (ctx.event === 'debugAccess') {
+        return true;
+      }
+      return false;
+    }
   }
 ];
 

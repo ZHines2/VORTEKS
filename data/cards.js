@@ -223,5 +223,18 @@ export const CARDS = [
     status: { target: { burn: null, freezeEnergy: 0 }, self: { nextPlus: 0, maxEnergyDelta: 0, energyNowDelta: 0, cleanse: false } }, 
     scaling: {}, 
     ai: { role: 'sustain', pri: 50 } 
+  },
+  { 
+    id: 'impervious', 
+    sym: icons.impervious, 
+    name: 'Impervious', 
+    description: 'Become immune to all damage next turn. Shields are maintained.',
+    cost: 2, 
+    type: 'power', 
+    tags: ['immunity', 'defense'],
+    effects: { damage: 0, pierce: false, heal: 0, shield: 0, draw: 0 }, 
+    status: { target: { burn: null, freezeEnergy: 0 }, self: { nextPlus: 0, maxEnergyDelta: 0, energyNowDelta: 0, cleanse: false, imperviousNext: true } }, 
+    scaling: {}, 
+    ai: { role: 'defend', pri: 85 } 
   }
 ];

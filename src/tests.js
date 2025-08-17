@@ -747,6 +747,239 @@ export function runSelfTests(Game, log, showStart) {
     }
   }
 
-  log('Stress tests complete - all new additions tested for emergent errors.');
+  // Test Debug Implementation
+  {
+    log('Testing debug implementation...');
+    
+    // Test debug screen elements exist
+    if (typeof document !== 'undefined') {
+      const debugElements = [
+        'debugScreen',
+        'debugCloseBtn', 
+        'debugUnlockAll',
+        'debugLockAll',
+        'debugUnlockFerriglobin',
+        'debugUnlockImpervious',
+        'debugShowUnlocks',
+        'debugStartCampaign',
+        'debugEndCampaign',
+        'debugMaxHP',
+        'debugMaxShield',
+        'debugMaxEnergy'
+      ];
+      
+      let missingElements = [];
+      debugElements.forEach(id => {
+        const element = document.getElementById(id);
+        if (!element) {
+          missingElements.push(id);
+        }
+      });
+      
+      assertEqual('All debug elements exist', missingElements.length, 0, log);
+      if (missingElements.length > 0) {
+        log('Missing debug elements: ' + missingElements.join(', '));
+      }
+    } else {
+      log('SKIP: Debug UI tests require browser environment');
+    }
+    
+    // Test debug unlock functionality
+    if (window.CardUnlock && typeof window.CardUnlock.debugUnlock === 'function') {
+      const initialUnlocked = window.CardUnlock.getUnlockedCards().length;
+      
+      // Test unlocking a card through debug
+      let debugUnlockSuccess = false;
+      try {
+        debugUnlockSuccess = window.CardUnlock.debugUnlock('impervious');
+        assertEqual('Debug unlock returns success for new card', debugUnlockSuccess, true, log);
+        
+        const afterUnlock = window.CardUnlock.getUnlockedCards().length;
+        assertEqual('Debug unlock increases unlocked count', afterUnlock, initialUnlocked + 1, log);
+        
+        // Test unlocking same card again
+        const secondUnlock = window.CardUnlock.debugUnlock('impervious');
+        assertEqual('Debug unlock returns false for already unlocked card', secondUnlock, false, log);
+        
+      } catch (error) {
+        log('ERROR: Debug unlock failed: ' + error.message);
+      }
+    } else {
+      log('SKIP: CardUnlock.debugUnlock not available');
+    }
+    
+    // Test debug access unlock event
+    if (window.CardUnlock && typeof window.CardUnlock.checkAchievementUnlocks === 'function') {
+      // Reset impervious unlock for testing
+      if (window.CardUnlock.resetUnlocks) {
+        window.CardUnlock.resetUnlocks();
+      }
+      
+      let debugAccessSuccess = false;
+      try {
+        // Simulate debug access
+        window.CardUnlock.checkAchievementUnlocks({
+          event: 'debugAccess'
+        });
+        
+        const unlockedCards = window.CardUnlock.getUnlockedCards();
+        const imperviousUnlocked = unlockedCards.includes('impervious');
+        assertEqual('Debug access unlocks Impervious card', imperviousUnlocked, true, log);
+        
+      } catch (error) {
+        log('ERROR: Debug access unlock failed: ' + error.message);
+      }
+    } else {
+      log('SKIP: CardUnlock.checkAchievementUnlocks not available');
+    }
+  }
+
+  // Test Impervious Card Mechanics
+  {
+    log('Testing Impervious card mechanics...');
+    const me = createPlayer(false);
+    const foe = createPlayer(true);
+    const imperviousCard = CARDS.find(c => c.id === 'impervious');
+    
+    if (imperviousCard) {
+      const testGame = Object.create(Game);
+      testGame.you = me;
+      testGame.opp = foe;
+      testGame.turn = 'you';
+      testGame.over = false;
+      testGame.stats = { maxBurnAmount: 0 };
+      
+      // Test 1: Impervious card grants immunity for next turn
+      assertEqual('Impervious card exists', !!imperviousCard, true, log);
+      assertEqual('Impervious has correct cost', imperviousCard.cost, 2, log);
+      assertEqual('Impervious is power type', imperviousCard.type, 'power', log);
+      
+      // Test 2: Playing Impervious grants imperviousNext status
+      const originalSetLog = Game.setLogFunction;
+      Game.setLogFunction(() => {});
+      
+      me.status.imperviousNext = false;
+      testGame.applyCard(imperviousCard, me, foe, false);
+      assertEqual('Playing Impervious grants imperviousNext status', me.status.imperviousNext, true, log);
+      
+      // Test 3: Starting turn activates immunity
+      me.status.impervious = false;
+      testGame.startTurn(me);
+      assertEqual('Turn start activates immunity', me.status.impervious, true, log);
+      assertEqual('Turn start clears imperviousNext', me.status.imperviousNext, false, log);
+      
+      // Test 4: Immunity blocks direct damage
+      me.hp = 20;
+      me.shield = 5;
+      const originalHP = me.hp;
+      const originalShield = me.shield;
+      
+      testGame.hit(me, 10, false, false);
+      assertEqual('Immunity blocks damage to HP', me.hp, originalHP, log);
+      assertEqual('Immunity maintains shields', me.shield, originalShield, log);
+      
+      // Test 5: Immunity blocks pierce damage
+      testGame.hit(me, 8, true, false);
+      assertEqual('Immunity blocks pierce damage', me.hp, originalHP, log);
+      assertEqual('Immunity maintains shields against pierce', me.shield, originalShield, log);
+      
+      // Test 6: Immunity blocks burn damage
+      me.status.burn = 5;
+      me.status.burnTurns = 2;
+      testGame.hit(me, me.status.burn, true, false); // Simulate burn damage
+      assertEqual('Immunity blocks burn damage', me.hp, originalHP, log);
+      
+      // Test 7: Next turn clears immunity
+      me.status.impervious = true;
+      testGame.startTurn(me); // Second turn start should clear immunity
+      assertEqual('Second turn clears immunity', me.status.impervious, false, log);
+      
+      // Test 8: Damage works normally after immunity ends
+      testGame.hit(me, 3, false, false);
+      assertEqual('Damage works after immunity ends', me.hp < originalHP, true, log);
+      
+      Game.setLogFunction(originalSetLog);
+    } else {
+      log('SKIP: Impervious card not found for testing');
+    }
+  }
+
+  // Test Purge clears Impervious
+  {
+    log('Testing Purge clears Impervious...');
+    const me = createPlayer(false);
+    const foe = createPlayer(true);
+    const purgeCard = CARDS.find(c => c.id === 'purge');
+    
+    if (purgeCard) {
+      const testGame = Object.create(Game);
+      testGame.you = me;
+      testGame.opp = foe;
+      testGame.turn = 'you';
+      testGame.over = false;
+      
+      // Set up immunity states
+      me.status.impervious = true;
+      me.status.imperviousNext = true;
+      
+      const originalSetLog = Game.setLogFunction;
+      Game.setLogFunction(() => {});
+      
+      // Apply purge card
+      testGame.applyCard(purgeCard, me, foe, false);
+      
+      Game.setLogFunction(originalSetLog);
+      
+      assertEqual('Purge clears impervious status', me.status.impervious, false, log);
+      assertEqual('Purge clears imperviousNext status', me.status.imperviousNext, false, log);
+    } else {
+      log('SKIP: Purge card not found for testing');
+    }
+  }
+
+  // Test Impervious stacking behavior
+  {
+    log('Testing Impervious stacking behavior...');
+    const me = createPlayer(false);
+    const foe = createPlayer(true);
+    const imperviousCard = CARDS.find(c => c.id === 'impervious');
+    
+    if (imperviousCard) {
+      const testGame = Object.create(Game);
+      testGame.you = me;
+      testGame.opp = foe;
+      testGame.turn = 'you';
+      testGame.over = false;
+      
+      const originalSetLog = Game.setLogFunction;
+      Game.setLogFunction(() => {});
+      
+      // Play Impervious twice in one turn
+      me.status.imperviousNext = false;
+      testGame.applyCard(imperviousCard, me, foe, false);
+      const afterFirst = me.status.imperviousNext;
+      
+      testGame.applyCard(imperviousCard, me, foe, false);
+      const afterSecond = me.status.imperviousNext;
+      
+      assertEqual('First Impervious grants status', afterFirst, true, log);
+      assertEqual('Second Impervious does not stack', afterSecond, true, log); // Should still be true, not stacked
+      
+      // Activate immunity
+      testGame.startTurn(me);
+      assertEqual('Immunity activates normally', me.status.impervious, true, log);
+      
+      // Test that playing Impervious while already immune extends it
+      me.energy = 3; // Give energy to play card
+      testGame.applyCard(imperviousCard, me, foe, false);
+      assertEqual('Playing Impervious while immune sets imperviousNext', me.status.imperviousNext, true, log);
+      
+      Game.setLogFunction(originalSetLog);
+    } else {
+      log('SKIP: Impervious card not found for testing');
+    }
+  }
+
+  log('Debug and Impervious tests complete.');
   log('Self-tests complete.');
 }

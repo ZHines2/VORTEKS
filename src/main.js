@@ -1384,6 +1384,14 @@ function setupDebugScreen() {
     }
   };
 
+  document.getElementById('debugUnlockImpervious').onclick = () => {
+    if (unlockCard('impervious', 'debug')) {
+      debugLog('Impervious unlocked!');
+    } else {
+      debugLog('Impervious was already unlocked');
+    }
+  };
+
   document.getElementById('debugShowUnlocks').onclick = () => {
     const unlocked = getUnlockedCards();
     debugLog(`Unlocked cards: ${unlocked.join(', ')}`);
@@ -1708,6 +1716,11 @@ document.addEventListener('DOMContentLoaded', () => {
   };
   document.getElementById('selfTest').onclick = () => {
     document.getElementById('debugScreen').hidden = false;
+    
+    // Trigger Impervious card unlock for debug access
+    checkAchievementUnlocks({
+      event: 'debugAccess'
+    });
   };
 
   // Quirk selection handler

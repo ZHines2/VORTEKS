@@ -285,6 +285,20 @@ export const Game = {
       p.status.droidProcNext = false;
     }
     
+    // Handle Impervious status transition
+    if (p.status && p.status.imperviousNext) {
+      // Activate immunity for this turn
+      p.status.impervious = true;
+      p.status.imperviousNext = false;
+      const actorName = p === this.you ? '[YOU]' : '[OPPONENT]';
+      logMessage(`${actorName} is now Impervious - immune to all damage this turn.`);
+    } else if (p.status && p.status.impervious) {
+      // Clear immunity at start of next turn
+      p.status.impervious = false;
+      const actorName = p === this.you ? '[YOU]' : '[OPPONENT]';
+      logMessage(`${actorName} Impervious effect ends.`);
+    }
+    
     // Apply quirk effects for player turns
     if (p === this.you && p.quirk) {
       this.applyQuirkTurnStart(p);
@@ -433,6 +447,17 @@ export const Game = {
   
   hit(target, dmg, pierce = false, simulate = false) {
     const atk = this.turn === 'you' ? this.you : this.opp;
+    
+    // Check for immunity - if target is impervious, no damage is dealt
+    if (target.status && target.status.impervious) {
+      if (!simulate) {
+        const targetName = target === this.you ? '[YOU]' : '[OPPONENT]';
+        logMessage(`${targetName} is Impervious - damage blocked by immunity!`);
+        // Show immunity effect
+        if (window.bumpShield) window.bumpShield(target);
+      }
+      return; // No damage dealt, shields maintained
+    }
     
     // Apply Focus bonus (+nextPlus) and consume it
     if (atk.status.nextPlus && atk.status.nextPlus > 0) {
@@ -769,6 +794,17 @@ export const Game = {
       if (status.self.droidProcArm && !simulate) { 
         state.me.status.droidProcNext = true; 
       }
+      if (status.self.imperviousNext && !simulate) {
+        // Impervious effect: grant immunity next turn
+        if (!state.me.status) state.me.status = {};
+        state.me.status.imperviousNext = true;
+        const isPlayer = (state.me === this.you);
+        if (isPlayer) {
+          logYou('becomes Impervious - immune to all damage next turn');
+        } else {
+          logOpp('becomes Impervious - immune to all damage next turn');
+        }
+      }
       if (status.self.cleanse && !simulate) {
         // Purge effect: clear all status effects
         const isPlayer = (state.me === this.you);
@@ -788,6 +824,11 @@ export const Game = {
         state.me.status.curiosityPower = false;
         state.me.status.droidProcNext = false;
         state.me.status.curiosityNextDraw = false;
+        
+        // Clear immunity effects
+        if (!state.me.status) state.me.status = {};
+        state.me.status.impervious = false;
+        state.me.status.imperviousNext = false;
         
         // FX: Purge effect
         if (window.fxPurge) window.fxPurge(state.me);

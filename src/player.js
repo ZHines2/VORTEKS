@@ -19,7 +19,9 @@ export function createPlayer(isAI = false) {
       burnTurns: 0, 
       frozenNext: 0, 
       nextPlus: 0, 
-      firstAttackUsed: false 
+      firstAttackUsed: false,
+      impervious: false,
+      imperviousNext: false
     },
     quirk: null,
     

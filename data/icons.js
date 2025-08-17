@@ -14,5 +14,6 @@ export const icons = {
   purge: '💨',
   wallop: '👊',
   presto: '🎩',
-  ferriglobin: '🩸'
+  ferriglobin: '🩸',
+  impervious: '🛡️'
 };
