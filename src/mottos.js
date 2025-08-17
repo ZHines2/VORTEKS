@@ -146,5 +146,22 @@ export const MOTTOS = [
   "Array bounds checking: because off-by-one errors aren't fashionable 📐",
   "Null reference exceptions: the 'hello world' of debugging pain 🚫💀",
   "Clean code: readable by humans, executable by machines 📚⚙️",
-  "Twenty new mottos: achievement unlocked! 🏆✨"
+  "Twenty new mottos: achievement unlocked! 🏆✨",
+  
+  // Journey and Evolution Mottos
+  "From humble beginnings: a card game born of passion and pixels 🌱✨",
+  "Debug buttons in production: because transparency builds trust 🔍💝",
+  "Community feedback: the compass that guides our development 🧭🗣️",
+  "Every bug report is a gift wrapped in frustration 🎁🐛",
+  "Version control: where every mistake is just a commit away 📝⏪",
+  "Feature creep: when good ideas collide with reality 🌊💡",
+  "Responsive design: making pixels dance on every screen size 📱💃",
+  "Performance optimization: milliseconds matter in the heat of battle ⚡⏱️",
+  "User testing: watching players break things we never imagined 👀💥",
+  "Code reviews: where humility meets craftsmanship 📖🔨",
+  "Documentation: the love letter to future developers 💌📚",
+  "Open source spirit: sharing knowledge, building together 🤝🌍",
+  "Iterative development: perfect is the enemy of shipped 🔄🚢",
+  "Accessibility: ensuring everyone can join the battle 🌟♿",
+  "Cross-platform compatibility: one code, many worlds 🌐⚔️"
 ];

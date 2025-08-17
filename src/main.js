@@ -135,6 +135,7 @@ let music;
 window.music = null; // Make music accessible globally for sound functions
 const muteBtn = document.getElementById('muteBtn');
 const helpBtn = document.getElementById('helpBtn');
+const debugBtn = document.getElementById('debugBtn');
 const unlocksBtn = document.getElementById('unlocksBtn');
 const glossaryBtn = document.getElementById('glossaryBtn');
 const defeatedBtn = document.getElementById('defeatedBtn');
@@ -1191,6 +1192,16 @@ function setupHelp() {
     }
   });
 
+  // Debug button click handler
+  debugBtn.addEventListener('click', () => {
+    document.getElementById('debugScreen').hidden = false;
+    
+    // Trigger Impervious card unlock for debug access
+    checkAchievementUnlocks({
+      event: 'debugAccess'
+    });
+  });
+
   // Close button handler
   helpCloseBtn.addEventListener('click', () => {
     helpModal.hidden = true;
@@ -2112,6 +2123,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Reset all card and quirk unlocks
         resetUnlocks();
         resetQuirks();
+        resetFlavors();
         clearSelectedQuirk();
         
         // Reset defeated opponents history
