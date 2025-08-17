@@ -330,6 +330,9 @@ export const Game = {
   endTurn() {
     const me = this.turn === 'you' ? this.you : this.opp;
     
+    // Clear echo flag when turn ends
+    me.echoNext = false;
+    
     // Log end turn
     if (me === this.you) {
       logYou('ends turn');
@@ -422,6 +425,23 @@ export const Game = {
     const playedCard = p.removeFromHand(idx);
     // apply via interpreter
     this.applyCard(card, p, (p === this.you ? this.opp : this.you), false);
+    
+    // Check if this card should be echoed (and it's not Echo itself to prevent infinite loops)
+    if (p.echoNext && card.id !== 'echo' && !this.isEchoing) {
+      // Clear the echo flag first to prevent infinite loops
+      p.echoNext = false;
+      // Set echoing flag and repeat the card without cost
+      const wasEchoing = this.isEchoing;
+      this.isEchoing = true;
+      if (isPlayer) {
+        logYou(`Echo triggers - repeating ${cardName}`);
+      } else {
+        logOpp(`Echo triggers - repeating ${cardName}`);
+      }
+      this.applyCard(card, p, (p === this.you ? this.opp : this.you), false);
+      this.isEchoing = wasEchoing;
+    }
+    
     // now discard the card AFTER all effects are resolved (prevents infinite loops)
     // Check if this card was stolen via Presto and return to original owner
     if (playedCard.stolenFrom && playedCard.originalOwner && playedCard.originalOwner.discard) {
@@ -837,17 +857,14 @@ export const Game = {
     
     // 4) special: Echo
     if (card.id === 'echo') {
-      const last = me.lastPlayed && me.lastPlayed.id !== 'echo' ? me.lastPlayed : null;
-      if (last) {
-        // Echo repeats last card without paying its cost
-        // Add a flag to prevent recursive echoes and ensure clean state
-        const wasEchoing = this.isEchoing;
-        this.isEchoing = true;
-        this.applyCard(last, me, them, simulate);
-        this.isEchoing = wasEchoing;
-      } else {
-        if (!simulate) { 
-          me.draw(1); 
+      // Echo sets a flag to repeat the next non-Echo card played
+      if (!simulate) {
+        me.echoNext = true;
+        const isPlayer = (me === this.you);
+        if (isPlayer) {
+          logYou('prepares to echo the next card played');
+        } else {
+          logOpp('prepares to echo the next card played');
         }
       }
       // FX: Echo effect

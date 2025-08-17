@@ -14,6 +14,7 @@ export function createPlayer(isAI = false) {
     energy: 0, 
     maxEnergy: 3,
     lastPlayed: null,
+    echoNext: false, // Flag to indicate next card should be echoed
     status: { 
       burn: 0, 
       burnTurns: 0, 

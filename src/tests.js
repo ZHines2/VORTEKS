@@ -81,10 +81,9 @@ export function runSelfTests(Game, log, showStart) {
   
   // Added tests (new)
   { 
-    // Echo repeats last
+    // Echo sets up next card repeat
     const me = createPlayer(false); 
     const foe = createPlayer(true);
-    me.lastPlayed = CARDS.find(c => c.id === 'swords');
     const testGame = Object.create(Game);
     testGame.you = me;
     testGame.opp = foe;
@@ -98,7 +97,7 @@ export function runSelfTests(Game, log, showStart) {
     Game.setLogFunction(() => {});
     testGame.applyCard(CARDS.find(c => c.id === 'echo'), me, foe, false);
     Game.setLogFunction(originalSetLog);
-    assertEqual('Echo repeats last attack', foe.hp <= 17, true, log);
+    assertEqual('Echo sets echoNext flag', me.echoNext, true, log);
   }
   
   { 
@@ -296,10 +295,7 @@ export function runSelfTests(Game, log, showStart) {
     testGame.opp = foe;
     testGame.isEchoing = false;
     
-    // Set up last played as Zap
-    me.lastPlayed = CARDS.find(c => c.id === 'bolt'); // Zap card
-    
-    // Apply Echo card
+    // Apply Echo card to set echoNext flag
     const echoCard = CARDS.find(c => c.id === 'echo');
     const initialDeckSize = me.deck.length;
     const initialHandSize = me.hand.length;
@@ -310,9 +306,56 @@ export function runSelfTests(Game, log, showStart) {
     const finalDeckSize = me.deck.length;
     const finalHandSize = me.hand.length;
     
-    // The exact numbers depend on deck state, but we check that it didn't break
-    assertEqual('Echo-Zap interaction maintains valid game state', typeof finalDeckSize, 'number', log);
+    // Check that echoNext flag was set
+    assertEqual('Echo sets echoNext flag correctly', me.echoNext, true, log);
+    assertEqual('Echo-setup maintains valid game state', typeof finalDeckSize, 'number', log);
     assertEqual('Echo flag properly managed', testGame.isEchoing, false, log);
+  }
+
+  // Test complete Echo functionality - Echo then play another card
+  {
+    const me = createPlayer(false);
+    const foe = createPlayer(true);
+    foe.hp = 20; // Reset to full health
+    const testGame = Object.create(Game);
+    testGame.you = me;
+    testGame.opp = foe;
+    testGame.turn = 'you';
+    testGame.isEchoing = false;
+    testGame.checkWin = () => {};
+    
+    // Mock the playCard function to test the echo trigger
+    const originalApplyCard = testGame.applyCard;
+    let applyCardCallCount = 0;
+    testGame.applyCard = function(card, player, target, simulate) {
+      applyCardCallCount++;
+      return originalApplyCard.call(this, card, player, target, simulate);
+    };
+    
+    // Set a mock log function
+    const originalSetLog = Game.setLogFunction;
+    Game.setLogFunction(() => {});
+    
+    // First: Play Echo
+    const echoCard = CARDS.find(c => c.id === 'echo');
+    testGame.applyCard(echoCard, me, foe, false);
+    assertEqual('Echo sets echoNext flag', me.echoNext, true, log);
+    
+    // Reset apply card counter
+    applyCardCallCount = 0;
+    
+    // Second: Play an attack card
+    const swordsCard = CARDS.find(c => c.id === 'swords');
+    me.hand = [swordsCard]; // Put swords in hand
+    me.energy = 5; // Ensure enough energy
+    testGame.playCard(me, 0); // Play the swords card
+    
+    // After playing swords with echo active, should be called twice (once for play, once for echo)
+    assertEqual('Echo triggers and repeats card', applyCardCallCount, 2, log);
+    assertEqual('Echo flag cleared after use', me.echoNext, false, log);
+    
+    // Restore original functions
+    Game.setLogFunction(originalSetLog);
   }
 
   // Test streak mechanism - ensure it only increments once per win
