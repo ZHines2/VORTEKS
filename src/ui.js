@@ -107,6 +107,9 @@ export function cardText(c) {
   if (c.id === 'presto') {
     parts.push('Steal a random card from opponent\'s discard pile. Return when used.');
   }
+  if (c.id === 'ferriglobin') {
+    parts.push('Transform all your shield into health.');
+  }
   
   // Add stolen card indicator text
   if (c.stolenFrom) {
@@ -194,6 +197,14 @@ export function predictCard(card, me, them, Game) {
   }
   if (card.id === 'loop') { 
     out.push(`+1🔆 max`); 
+  }
+  if (card.id === 'ferriglobin') {
+    const shieldToConvert = beforeMeSh; // Use shield before card effect
+    if (shieldToConvert > 0) {
+      out.push(`${shieldToConvert} sh→hp`);
+    } else {
+      out.push('no shield');
+    }
   }
   if (card.id === 'echo' && (!me.lastPlayed || me.lastPlayed.id === 'echo')) {
     out = ['draw 1'];

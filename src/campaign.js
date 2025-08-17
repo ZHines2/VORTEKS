@@ -3,6 +3,7 @@
 
 import { CAMPAIGN } from './config.js';
 import { CARDS } from '../data/cards.js';
+import { checkAchievementUnlocks } from './card-unlock.js';
 
 const CAMPAIGN_STORAGE_KEY = 'vorteks-campaign';
 
@@ -76,6 +77,12 @@ export const Campaign = {
     campaignState.boosterLevel = campaignState.victories; // boosterLevel == victories
     
     console.log(`Campaign victory #${campaignState.victories}, booster level: ${campaignState.boosterLevel}`);
+    
+    // Check for card unlocks based on booster level
+    checkAchievementUnlocks({
+      event: 'campaignVictory',
+      boosterLevel: campaignState.boosterLevel
+    });
     
     // Generate rewards based on opponent deck
     const rewards = this.generateRewards(opponentDeck);

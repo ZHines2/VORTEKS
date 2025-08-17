@@ -1336,6 +1336,304 @@ window.GameStats = {
   }
 };
 
+// --- Expose Campaign for debugging and unlock system ---
+window.Campaign = Campaign;
+
+// --- Debug Screen Functions ---
+function debugLog(message) {
+  const logEl = document.getElementById('debugLog');
+  if (logEl) {
+    const timestamp = new Date().toLocaleTimeString();
+    logEl.innerHTML += `[${timestamp}] ${message}<br>`;
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+  console.log(`[DEBUG] ${message}`);
+}
+
+function setupDebugScreen() {
+  // Close button
+  document.getElementById('debugCloseBtn').onclick = () => {
+    document.getElementById('debugScreen').hidden = true;
+  };
+
+  // Clear log button
+  document.getElementById('debugClearLog').onclick = () => {
+    document.getElementById('debugLog').innerHTML = '';
+  };
+
+  // Card Testing Section
+  document.getElementById('debugUnlockAll').onclick = () => {
+    const cards = CARDS.map(c => c.id);
+    let unlocked = 0;
+    cards.forEach(cardId => {
+      if (unlockCard(cardId, 'debug')) unlocked++;
+    });
+    debugLog(`Unlocked ${unlocked} cards`);
+  };
+
+  document.getElementById('debugLockAll').onclick = () => {
+    resetUnlocks();
+    debugLog('All cards locked (reset to starter cards)');
+  };
+
+  document.getElementById('debugUnlockFerriglobin').onclick = () => {
+    if (unlockCard('ferriglobin', 'debug')) {
+      debugLog('Ferriglobin unlocked!');
+    } else {
+      debugLog('Ferriglobin was already unlocked');
+    }
+  };
+
+  document.getElementById('debugUnlockImpervious').onclick = () => {
+    if (unlockCard('impervious', 'debug')) {
+      debugLog('Impervious unlocked!');
+    } else {
+      debugLog('Impervious was already unlocked');
+    }
+  };
+
+  document.getElementById('debugShowUnlocks').onclick = () => {
+    const unlocked = getUnlockedCards();
+    debugLog(`Unlocked cards: ${unlocked.join(', ')}`);
+    const unlockInfo = getUnlockableCardsInfo();
+    unlockInfo.forEach(info => {
+      const status = info.unlocked ? '✓' : '✗';
+      debugLog(`${status} ${info.id}: ${info.description}`);
+    });
+  };
+
+  document.getElementById('debugUnlockCard').onclick = () => {
+    const cardId = document.getElementById('debugCardId').value.trim();
+    if (!cardId) {
+      debugLog('Please enter a card ID');
+      return;
+    }
+    if (unlockCard(cardId, 'debug')) {
+      debugLog(`Card '${cardId}' unlocked!`);
+    } else {
+      debugLog(`Card '${cardId}' was already unlocked or doesn't exist`);
+    }
+    document.getElementById('debugCardId').value = '';
+  };
+
+  // Campaign Testing Section
+  document.getElementById('debugStartCampaign').onclick = () => {
+    Campaign.start();
+    debugLog('Campaign started');
+  };
+
+  document.getElementById('debugEndCampaign').onclick = () => {
+    if (Campaign.active) {
+      Campaign.abandon();
+      debugLog('Campaign ended');
+    } else {
+      debugLog('No active campaign to end');
+    }
+  };
+
+  document.getElementById('debugShowCampaign').onclick = () => {
+    if (Campaign.active) {
+      debugLog(`Campaign active - Victories: ${Campaign.victories}, Booster Level: ${Campaign.boosterLevel}`);
+      debugLog(`Deck: ${Campaign.deck.join(', ')}`);
+    } else {
+      debugLog('No active campaign');
+    }
+  };
+
+  document.getElementById('debugSetBooster').onclick = () => {
+    const level = parseInt(document.getElementById('debugBoosterLevel').value);
+    if (isNaN(level) || level < 0) {
+      debugLog('Please enter a valid booster level (0 or higher)');
+      return;
+    }
+    
+    if (!Campaign.active) {
+      Campaign.start();
+      debugLog('Started campaign for booster level testing');
+    }
+    
+    // Simulate victories to reach the booster level
+    const currentLevel = Campaign.boosterLevel;
+    if (level > currentLevel) {
+      const victories = level - currentLevel;
+      for (let i = 0; i < victories; i++) {
+        Campaign.recordVictory(['swords', 'shield', 'heart']); // Dummy deck
+      }
+      debugLog(`Set booster level to ${level} (added ${victories} victories)`);
+    } else {
+      debugLog(`Booster level is already ${currentLevel} (requested ${level})`);
+    }
+    document.getElementById('debugBoosterLevel').value = '';
+  };
+
+  // Player State Testing Section
+  document.getElementById('debugMaxHP').onclick = () => {
+    if (window.Game && window.Game.you) {
+      window.Game.you.hp = 999;
+      debugLog('Player HP set to 999');
+      window.render();
+    } else {
+      debugLog('No active game to modify');
+    }
+  };
+
+  document.getElementById('debugMaxShield').onclick = () => {
+    if (window.Game && window.Game.you) {
+      window.Game.you.shield = 999;
+      debugLog('Player shield set to 999');
+      window.render();
+    } else {
+      debugLog('No active game to modify');
+    }
+  };
+
+  document.getElementById('debugMaxEnergy').onclick = () => {
+    if (window.Game && window.Game.you) {
+      window.Game.you.energy = 999;
+      window.Game.you.maxEnergy = 999;
+      debugLog('Player energy set to 999');
+      window.render();
+    } else {
+      debugLog('No active game to modify');
+    }
+  };
+
+  document.getElementById('debugResetPlayer').onclick = () => {
+    if (window.Game && window.Game.you) {
+      window.Game.you.hp = 20;
+      window.Game.you.shield = 0;
+      window.Game.you.energy = 3;
+      window.Game.you.maxEnergy = 3;
+      debugLog('Player state reset to defaults');
+      window.render();
+    } else {
+      debugLog('No active game to modify');
+    }
+  };
+
+  document.getElementById('debugApplyHP').onclick = () => {
+    const hp = parseInt(document.getElementById('debugSetHP').value);
+    if (isNaN(hp) || hp < 1) {
+      debugLog('Please enter a valid HP amount (1 or higher)');
+      return;
+    }
+    if (window.Game && window.Game.you) {
+      window.Game.you.hp = hp;
+      debugLog(`Player HP set to ${hp}`);
+      window.render();
+    } else {
+      debugLog('No active game to modify');
+    }
+    document.getElementById('debugSetHP').value = '';
+  };
+
+  document.getElementById('debugApplyShield').onclick = () => {
+    const shield = parseInt(document.getElementById('debugSetShield').value);
+    if (isNaN(shield) || shield < 0) {
+      debugLog('Please enter a valid shield amount (0 or higher)');
+      return;
+    }
+    if (window.Game && window.Game.you) {
+      window.Game.you.shield = shield;
+      debugLog(`Player shield set to ${shield}`);
+      window.render();
+    } else {
+      debugLog('No active game to modify');
+    }
+    document.getElementById('debugSetShield').value = '';
+  };
+
+  // Testing & Analytics Section
+  document.getElementById('debugRunTests').onclick = () => {
+    debugLog('Running self tests...');
+    runSelfTests(Game, (msg) => debugLog(`TEST: ${msg}`), () => {});
+  };
+
+  document.getElementById('debugClearTelemetry').onclick = () => {
+    resetTelemetry();
+    debugLog('Telemetry data cleared');
+  };
+
+  document.getElementById('debugShowAnalytics').onclick = () => {
+    const analytics = getAnalytics();
+    debugLog('Analytics Data:');
+    Object.entries(analytics).forEach(([key, value]) => {
+      debugLog(`  ${key}: ${JSON.stringify(value)}`);
+    });
+  };
+
+  document.getElementById('debugResetCompanion').onclick = () => {
+    resetCreature();
+    debugLog('VORTEK companion reset');
+  };
+
+  // Game Control Section
+  document.getElementById('debugQuickBattle').onclick = () => {
+    if (window.Game && !window.Game.battleActive) {
+      // Use the existing quickstart functionality
+      buildRandomDeck();
+      debugLog('Started quick battle with random deck');
+    } else {
+      debugLog('Battle already active or game not initialized');
+    }
+  };
+
+  document.getElementById('debugEndTurn').onclick = () => {
+    if (window.Game && window.Game.battleActive && window.Game.turn === 'you') {
+      window.Game.endTurn();
+      debugLog('Forced turn end');
+    } else {
+      debugLog('Cannot end turn (no active battle or not your turn)');
+    }
+  };
+
+  document.getElementById('debugWinBattle').onclick = () => {
+    if (window.Game && window.Game.battleActive) {
+      window.Game.opp.hp = 0;
+      debugLog('Opponent HP set to 0 - battle should end');
+      window.render();
+    } else {
+      debugLog('No active battle to win');
+    }
+  };
+
+  document.getElementById('debugLoseBattle').onclick = () => {
+    if (window.Game && window.Game.battleActive) {
+      window.Game.you.hp = 0;
+      debugLog('Player HP set to 0 - battle should end');
+      window.render();
+    } else {
+      debugLog('No active battle to lose');
+    }
+  };
+
+  // Quirk Testing Section
+  document.getElementById('debugUnlockAllQuirks').onclick = () => {
+    const quirks = getUnlockableQuirksInfo();
+    let unlocked = 0;
+    quirks.forEach(quirk => {
+      if (unlockQuirk(quirk.id, 'debug')) unlocked++;
+    });
+    debugLog(`Unlocked ${unlocked} quirks`);
+  };
+
+  document.getElementById('debugResetQuirks').onclick = () => {
+    resetQuirks();
+    debugLog('All quirks reset to defaults');
+  };
+
+  document.getElementById('debugShowQuirks').onclick = () => {
+    const quirks = getUnlockableQuirksInfo();
+    debugLog('Quirk Status:');
+    quirks.forEach(quirk => {
+      const status = quirk.unlocked ? '✓' : '✗';
+      debugLog(`  ${status} ${quirk.name}: ${quirk.description}`);
+    });
+  };
+
+  debugLog('Debug screen initialized successfully');
+}
+
 function clearSelectedQuirk() {
   saveSelectedQuirk(null);
 }
@@ -1358,6 +1656,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Setup Campaign functionality
   setupCampaign();
+
+  // Setup Debug Screen
+  setupDebugScreen();
 
   // Usual game boot
   const logFunction = function log(entry){
@@ -1413,7 +1714,14 @@ document.addEventListener('DOMContentLoaded', () => {
     
     document.getElementById('startModal').hidden = false; 
   };
-  document.getElementById('selfTest').onclick = () => runSelfTests(Game, logFunction, showStart);
+  document.getElementById('selfTest').onclick = () => {
+    document.getElementById('debugScreen').hidden = false;
+    
+    // Trigger Impervious card unlock for debug access
+    checkAchievementUnlocks({
+      event: 'debugAccess'
+    });
+  };
 
   // Quirk selection handler
   window.onQuirkSelected = function(quirkId) {

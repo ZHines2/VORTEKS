@@ -11,7 +11,7 @@ The VORTEK companion is a sophisticated tamagotchi-like system that evolves base
 |-------|-----------|-------|------|-------------------|
 | **Egg** | 0 | 🥚 | tiny | Starting stage |
 | **VORTEK Sprite** | 5 | 🌟 | small | +10 Wisdom, +15 Curiosity, +10 Playfulness |
-| **Echo Beast** | 15 | ⚡ | medium | +15 Power, +20 Courage, +10 Focus |
+| **Echo Beast** | 15 | 🔆 | medium | +15 Power, +20 Courage, +10 Focus |
 | **Card Master** | 30 | 🔮 | large | +15 Wisdom, +10 Power, +20 Creativity, +15 Loyalty |
 | **VORTEKS Avatar** | 50 | 🌌 | massive | +20 Wisdom, +20 Power, +25 Courage, +20 Focus, +15 Creativity, Loyalty=100 |
 
@@ -25,7 +25,7 @@ The VORTEK companion is a sophisticated tamagotchi-like system that evolves base
 
 ### Core Stats (0-100)
 1. **❤️ Happiness** - Overall mood and contentment
-2. **⚡ Energy** - Physical stamina for activities
+2. **🔆 Energy** - Physical stamina for activities
 3. **🧠 Wisdom** - Knowledge and battle understanding
 4. **💪 Power** - Combat effectiveness and strength
 

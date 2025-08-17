@@ -14,12 +14,15 @@ export function createPlayer(isAI = false) {
     energy: 0, 
     maxEnergy: 3,
     lastPlayed: null,
+    echoNext: false, // Flag to indicate next card should be echoed
     status: { 
       burn: 0, 
       burnTurns: 0, 
       frozenNext: 0, 
       nextPlus: 0, 
-      firstAttackUsed: false 
+      firstAttackUsed: false,
+      impervious: false,
+      imperviousNext: false
     },
     quirk: null,
     

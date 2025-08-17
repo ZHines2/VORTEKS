@@ -150,6 +150,52 @@ const UNLOCK_META = [
     description: 'Defeat any Trickster opponent.',
     progressHint: () => 'Find and defeat any Trickster opponent.',
     check: () => false // Handled by persona defeat system
+  },
+  {
+    id: 'ferriglobin',
+    kind: 'achievement',
+    description: 'Reach booster level 5 in campaign mode.',
+    progressHint: () => {
+      try {
+        // Import Campaign module to check booster level
+        const Campaign = window.Campaign || {};
+        const boosterLevel = Campaign.boosterLevel || 0;
+        return `Campaign booster level: ${boosterLevel}/5`;
+      } catch {
+        return 'Campaign booster level: 0/5';
+      }
+    },
+    check: (ctx, state) => {
+      if (ctx.event === 'campaignVictory' && ctx.boosterLevel != null) {
+        return ctx.boosterLevel >= 5;
+      }
+      return false;
+    }
+  },
+  {
+    id: 'impervious',
+    kind: 'achievement',
+    description: 'Access the debug menu.',
+    progressHint: () => 'Open the debug screen to unlock this card.',
+    check: (ctx, state) => {
+      if (ctx.event === 'debugAccess') {
+        return true;
+      }
+      return false;
+    }
+  },
+  {
+    id: 'overload',
+    kind: 'achievement', 
+    description: 'Use Echo card 10 times cumulatively.',
+    progressHint: s => `Echo uses: ${s.progress.echoUseCount || 0}/10`,
+    check: (ctx, state) => {
+      if (ctx.event === 'cardPlayed' && ctx.cardId === 'echo') {
+        state.progress.echoUseCount = (state.progress.echoUseCount || 0) + 1;
+        return state.progress.echoUseCount >= 10;
+      }
+      return false;
+    }
   }
 ];
 

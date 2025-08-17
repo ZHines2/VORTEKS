@@ -56,6 +56,20 @@ export const CARDS = [
     ai: { role: 'trick', pri: 65 } 
   },
   { 
+    id: 'overload', 
+    sym: icons.overload, 
+    name: 'Overload', 
+    description: 'The next non-Overload card you play this turn will be repeated.',
+    cost: 1, 
+    type: 'skill', 
+    tags: ['overload'],
+    effects: { damage: 0, pierce: false, heal: 0, shield: 0, draw: 0 }, 
+    status: { target: { burn: null, freezeEnergy: 0 }, self: { nextPlus: 0, maxEnergyDelta: 0, energyNowDelta: 0, cleanse: false } }, 
+    conditions: {}, 
+    scaling: {}, 
+    ai: { role: 'trick', pri: 70 } 
+  },
+  { 
     id: 'fire', 
     sym: icons.fire, 
     name: 'Ignite', 
@@ -210,5 +224,31 @@ export const CARDS = [
     status: { target: { burn: null, freezeEnergy: 0 }, self: { nextPlus: 0, maxEnergyDelta: 0, energyNowDelta: 0, cleanse: false } }, 
     scaling: {}, 
     ai: { role: 'utility', pri: 45 } 
+  },
+  { 
+    id: 'ferriglobin', 
+    sym: icons.ferriglobin, 
+    name: 'Ferriglobin', 
+    description: 'Transform all your shield into health. Blood magic transmutation.',
+    cost: 3, 
+    type: 'skill', 
+    tags: ['transmute', 'heal'],
+    effects: { damage: 0, pierce: false, heal: 0, shield: 0, draw: 0, ferriglobin: true }, 
+    status: { target: { burn: null, freezeEnergy: 0 }, self: { nextPlus: 0, maxEnergyDelta: 0, energyNowDelta: 0, cleanse: false } }, 
+    scaling: {}, 
+    ai: { role: 'sustain', pri: 50 } 
+  },
+  { 
+    id: 'impervious', 
+    sym: icons.impervious, 
+    name: 'Impervious', 
+    description: 'Become immune to all damage next turn. Shields are maintained.',
+    cost: 2, 
+    type: 'power', 
+    tags: ['immunity', 'defense'],
+    effects: { damage: 0, pierce: false, heal: 0, shield: 0, draw: 0 }, 
+    status: { target: { burn: null, freezeEnergy: 0 }, self: { nextPlus: 0, maxEnergyDelta: 0, energyNowDelta: 0, cleanse: false, imperviousNext: true } }, 
+    scaling: {}, 
+    ai: { role: 'defend', pri: 85 } 
   }
 ];

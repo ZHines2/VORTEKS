@@ -285,6 +285,20 @@ export const Game = {
       p.status.droidProcNext = false;
     }
     
+    // Handle Impervious status transition
+    if (p.status && p.status.imperviousNext) {
+      // Activate immunity for this turn
+      p.status.impervious = true;
+      p.status.imperviousNext = false;
+      const actorName = p === this.you ? '[YOU]' : '[OPPONENT]';
+      logMessage(`${actorName} is now Impervious - immune to all damage this turn.`);
+    } else if (p.status && p.status.impervious) {
+      // Clear immunity at start of next turn
+      p.status.impervious = false;
+      const actorName = p === this.you ? '[YOU]' : '[OPPONENT]';
+      logMessage(`${actorName} Impervious effect ends.`);
+    }
+    
     // Apply quirk effects for player turns
     if (p === this.you && p.quirk) {
       this.applyQuirkTurnStart(p);
@@ -315,6 +329,9 @@ export const Game = {
   
   endTurn() {
     const me = this.turn === 'you' ? this.you : this.opp;
+    
+    // Clear overload flag when turn ends
+    me.echoNext = false;
     
     // Log end turn
     if (me === this.you) {
@@ -408,6 +425,23 @@ export const Game = {
     const playedCard = p.removeFromHand(idx);
     // apply via interpreter
     this.applyCard(card, p, (p === this.you ? this.opp : this.you), false);
+    
+    // Check if this card should be echoed by Overload (and it's not Overload itself to prevent infinite loops)
+    if (p.echoNext && card.id !== 'overload' && !this.isEchoing) {
+      // Clear the echo flag first to prevent infinite loops
+      p.echoNext = false;
+      // Set echoing flag and repeat the card without cost
+      const wasEchoing = this.isEchoing;
+      this.isEchoing = true;
+      if (isPlayer) {
+        logYou(`Overload triggers - repeating ${cardName}`);
+      } else {
+        logOpp(`Overload triggers - repeating ${cardName}`);
+      }
+      this.applyCard(card, p, (p === this.you ? this.opp : this.you), false);
+      this.isEchoing = wasEchoing;
+    }
+    
     // now discard the card AFTER all effects are resolved (prevents infinite loops)
     // Check if this card was stolen via Presto and return to original owner
     if (playedCard.stolenFrom && playedCard.originalOwner && playedCard.originalOwner.discard) {
@@ -433,6 +467,17 @@ export const Game = {
   
   hit(target, dmg, pierce = false, simulate = false) {
     const atk = this.turn === 'you' ? this.you : this.opp;
+    
+    // Check for immunity - if target is impervious, no damage is dealt
+    if (target.status && target.status.impervious) {
+      if (!simulate) {
+        const targetName = target === this.you ? '[YOU]' : '[OPPONENT]';
+        logMessage(`${targetName} is Impervious - damage blocked by immunity!`);
+        // Show immunity effect
+        if (window.bumpShield) window.bumpShield(target);
+      }
+      return; // No damage dealt, shields maintained
+    }
     
     // Apply Focus bonus (+nextPlus) and consume it
     if (atk.status.nextPlus && atk.status.nextPlus > 0) {
@@ -692,6 +737,39 @@ export const Game = {
         }
       }
     }
+    if (effects.ferriglobin && !simulate) {
+      // Ferriglobin effect: convert all shield to health
+      const isPlayer = (state.me === this.you);
+      const shieldAmount = state.me.shield;
+      
+      if (shieldAmount > 0) {
+        // Remove all shield
+        state.me.shield = 0;
+        
+        // Convert to healing
+        state.me.hp = this.applyHeal(state.me, shieldAmount);
+        
+        if (isPlayer) {
+          logYou(`converts ${shieldAmount} shield to ${shieldAmount} health`);
+          // Record healing for telemetry
+          recordCombat({
+            healingReceived: shieldAmount
+          });
+        } else {
+          logOpp(`converts ${shieldAmount} shield to ${shieldAmount} health`);
+        }
+        
+        // FX: Healing effect
+        if (window.fxHeal) window.fxHeal(state.me);
+      } else {
+        // No shield to convert
+        if (isPlayer) {
+          logYou('has no shield to convert');
+        } else {
+          logOpp('has no shield to convert');
+        }
+      }
+    }
     
     // 3) statuses
     if (burnObj && !simulate) { 
@@ -736,6 +814,17 @@ export const Game = {
       if (status.self.droidProcArm && !simulate) { 
         state.me.status.droidProcNext = true; 
       }
+      if (status.self.imperviousNext && !simulate) {
+        // Impervious effect: grant immunity next turn
+        if (!state.me.status) state.me.status = {};
+        state.me.status.imperviousNext = true;
+        const isPlayer = (state.me === this.you);
+        if (isPlayer) {
+          logYou('becomes Impervious - immune to all damage next turn');
+        } else {
+          logOpp('becomes Impervious - immune to all damage next turn');
+        }
+      }
       if (status.self.cleanse && !simulate) {
         // Purge effect: clear all status effects
         const isPlayer = (state.me === this.you);
@@ -756,12 +845,17 @@ export const Game = {
         state.me.status.droidProcNext = false;
         state.me.status.curiosityNextDraw = false;
         
+        // Clear immunity effects
+        if (!state.me.status) state.me.status = {};
+        state.me.status.impervious = false;
+        state.me.status.imperviousNext = false;
+        
         // FX: Purge effect
         if (window.fxPurge) window.fxPurge(state.me);
       }
     }
     
-    // 4) special: Echo
+    // 4) special: Echo (repeat last card)
     if (card.id === 'echo') {
       const last = me.lastPlayed && me.lastPlayed.id !== 'echo' ? me.lastPlayed : null;
       if (last) {
@@ -771,12 +865,42 @@ export const Game = {
         this.isEchoing = true;
         this.applyCard(last, me, them, simulate);
         this.isEchoing = wasEchoing;
+        if (!simulate) {
+          const isPlayer = (me === this.you);
+          if (isPlayer) {
+            logYou(`repeats ${last.name}`);
+          } else {
+            logOpp(`repeats ${last.name}`);
+          }
+        }
       } else {
         if (!simulate) { 
           me.draw(1); 
+          const isPlayer = (me === this.you);
+          if (isPlayer) {
+            logYou('has no valid card to echo, draws 1 card instead');
+          } else {
+            logOpp('has no valid card to echo, draws 1 card instead');
+          }
         }
       }
       // FX: Echo effect
+      if (!simulate && window.fxEcho) window.fxEcho(state.me);
+    }
+    
+    // 5) special: Overload (prepare to repeat next card)
+    if (card.id === 'overload') {
+      // Overload sets a flag to repeat the next non-Overload card played
+      if (!simulate) {
+        me.echoNext = true;
+        const isPlayer = (me === this.you);
+        if (isPlayer) {
+          logYou('prepares to overload the next card played');
+        } else {
+          logOpp('prepares to overload the next card played');
+        }
+      }
+      // FX: Overload effect (reuse echo effect for now)
       if (!simulate && window.fxEcho) window.fxEcho(state.me);
     }
     

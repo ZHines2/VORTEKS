@@ -34,7 +34,7 @@
     .card .ct {font-size:8px; color: var(--accent); margin-top:6px; min-height:22px}
     .card .pv {position:absolute; bottom:4px; left:8px; right:8px; font-size:8px; color:#fff; opacity:.95}
     .cost {position:absolute; top:6px; right:6px; width:22px; height:22px; border:2px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:10px}
-    .cost::before{content:'⚡'; margin-right:2px; font-size:10px}
+    .cost::before{content:'🔆'; margin-right:2px; font-size:10px}
     .insufficient{filter:grayscale(1)}
 
     .controls {display:flex; gap:8px; margin-top:8px}
@@ -78,7 +78,7 @@
           <div class="hud">
             <div class="pill">OPP ❤<span id="oppHP"></span></div>
             <div class="pill sh">🛡<span id="oppSH"></span></div>
-            <div class="pill en">⚡<span id="oppEN"></span></div>
+            <div class="pill en">🔆<span id="oppEN"></span></div>
           </div>
           <div class="status" id="oppStatus"></div>
           <div class="controls">
@@ -93,7 +93,7 @@
       <div class="hud">
         <div class="pill">YOU ❤<span id="youHP"></span></div>
         <div class="pill sh">🛡<span id="youSH"></span></div>
-        <div class="pill en">⚡<span id="youEN"></span></div>
+        <div class="pill en">🔆<span id="youEN"></span></div>
         <div class="pill" id="streakPill" title="Win streak">STREAK <span id="streak"></span></div>
       </div>
       <div class="status" id="youStatus"></div>
@@ -143,7 +143,7 @@
     <div class="box">
       <div><strong>Pick a Quirk</strong> — one‑line identity for this run.</div>
       <div class="qgrid">
-        <div class="qcard" data-quirk="minty">MINTY<br/><small>Start with +1 max ⚡ (and +1 now).</small></div>
+        <div class="qcard" data-quirk="minty">MINTY<br/><small>Start with +1 max 🔆 (and +1 now).</small></div>
         <div class="qcard" data-quirk="spicy">SPICY<br/><small>Your Burns deal +1.</small></div>
         <div class="qcard" data-quirk="piercer">PIERCER<br/><small>Your first attack each turn pierces 1.</small></div>
       </div>
@@ -233,7 +233,7 @@
   }
 
   // ---------- Core Game Data ----------
-  const icons = { heart:'♥', swords:'⚔', shield:'🛡', echo:'🔁', fire:'🔥', snow:'❄', bolt:'⚡', star:'✨', dagger:'🗡', loop:'⟳' };
+  const icons = { heart:'♥', swords:'⚔', shield:'🛡', echo:'🔁', fire:'🔥', snow:'❄', bolt:'🔆', star:'✨', dagger:'🗡', loop:'⟳' };
   const clamp = (n,min,max)=>Math.max(min,Math.min(max,n));
   const rng = (n)=>Math.floor(Math.random()*n);
   const shuffle = a => { for(let i=a.length-1;i>0;i--){ const j=rng(i+1); [a[i],a[j]]=[a[j],a[i]] } return a };
@@ -463,10 +463,10 @@
     if(e.heal){ parts.push(`Heal ${e.heal}.`); }
     if(e.draw){ parts.push(`Draw ${e.draw}.`); }
     if(st.burn){ parts.push(`Burn ${st.burn.amount} for ${st.burn.turns}.`); }
-    if(st.freezeEnergy){ parts.push(`Foe -${st.freezeEnergy} ⚡ next.`); }
+    if(st.freezeEnergy){ parts.push(`Foe -${st.freezeEnergy} 🔆 next.`); }
     if(self.nextPlus){ parts.push(`+${self.nextPlus} next atk.`); }
-    if(self.maxEnergyDelta){ parts.push(`+${self.maxEnergyDelta} max ⚡.`); }
-    if(self.energyNowDelta){ parts.push(`+${self.energyNowDelta} ⚡ now.`); }
+    if(self.maxEnergyDelta){ parts.push(`+${self.maxEnergyDelta} max 🔆.`); }
+    if(self.energyNowDelta){ parts.push(`+${self.energyNowDelta} 🔆 now.`); }
     if(c.id==='echo'){ parts.push('Repeat last non‑Echo, else draw 1.'); }
     return parts.join(' ');
   }
@@ -483,9 +483,9 @@
     const heal = Math.max(0, meClone.hp - beforeMeHP);
     let out=[]; if(dmg) out.push(`${dmg} dmg`); if(shGain) out.push(`+${shGain} sh`); if(heal) out.push(`+${heal} hp`);
     if(card.id==='fire'){ out.push(`burn ${(themClone.status.burn||0)}`); }
-    if(card.id==='snow'){ out.push(`-1⚡ next`); }
+    if(card.id==='snow'){ out.push(`-1🔆 next`); }
     if(card.id==='star'){ out.push(`next +2`); }
-    if(card.id==='loop'){ out.push(`+1⚡ max`); }
+    if(card.id==='loop'){ out.push(`+1🔆 max`); }
     if(card.id==='echo' && (!me.lastPlayed || me.lastPlayed.id==='echo')) out = ['draw 1'];
     return '→ ' + (out.join(', ')||'');
   }
