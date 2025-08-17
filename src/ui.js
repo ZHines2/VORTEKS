@@ -107,6 +107,9 @@ export function cardText(c) {
   if (c.id === 'presto') {
     parts.push('Steal a random card from opponent\'s discard pile. Return when used.');
   }
+  if (c.id === 'ferriglobin') {
+    parts.push('Transform all your shield into health.');
+  }
   
   // Add stolen card indicator text
   if (c.stolenFrom) {

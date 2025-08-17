@@ -150,6 +150,27 @@ const UNLOCK_META = [
     description: 'Defeat any Trickster opponent.',
     progressHint: () => 'Find and defeat any Trickster opponent.',
     check: () => false // Handled by persona defeat system
+  },
+  {
+    id: 'ferriglobin',
+    kind: 'achievement',
+    description: 'Reach booster level 5 in campaign mode.',
+    progressHint: () => {
+      try {
+        // Import Campaign module to check booster level
+        const Campaign = window.Campaign || {};
+        const boosterLevel = Campaign.boosterLevel || 0;
+        return `Campaign booster level: ${boosterLevel}/5`;
+      } catch {
+        return 'Campaign booster level: 0/5';
+      }
+    },
+    check: (ctx, state) => {
+      if (ctx.event === 'campaignVictory' && ctx.boosterLevel != null) {
+        return ctx.boosterLevel >= 5;
+      }
+      return false;
+    }
   }
 ];
 

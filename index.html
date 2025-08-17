@@ -681,6 +681,109 @@
       </div>
     </div>
   </div>
+
+  <!-- Debug Screen (Full Screen) -->
+  <div id="debugScreen" class="debug-screen" hidden>
+    <div class="debug-container">
+      <div class="debug-header">
+        <h2>🛠️ VORTEKS Debug Panel</h2>
+        <button id="debugCloseBtn" class="debug-btn debug-close">✕</button>
+      </div>
+      
+      <div class="debug-content">
+        <!-- Card Testing Section -->
+        <div class="debug-section">
+          <h3>🃏 Card Testing</h3>
+          <div class="debug-grid">
+            <button id="debugUnlockAll" class="debug-btn">Unlock All Cards</button>
+            <button id="debugLockAll" class="debug-btn">Lock All Cards</button>
+            <button id="debugUnlockFerriglobin" class="debug-btn">Unlock Ferriglobin</button>
+            <button id="debugShowUnlocks" class="debug-btn">Show Unlock Status</button>
+          </div>
+          <div class="debug-input-group">
+            <label for="debugCardId">Unlock Specific Card:</label>
+            <input type="text" id="debugCardId" placeholder="Card ID (e.g., ferriglobin)" class="debug-input">
+            <button id="debugUnlockCard" class="debug-btn">Unlock</button>
+          </div>
+        </div>
+
+        <!-- Campaign Testing Section -->
+        <div class="debug-section">
+          <h3>🏛️ Campaign Testing</h3>
+          <div class="debug-grid">
+            <button id="debugStartCampaign" class="debug-btn">Start Campaign</button>
+            <button id="debugEndCampaign" class="debug-btn">End Campaign</button>
+            <button id="debugShowCampaign" class="debug-btn">Show Campaign Status</button>
+          </div>
+          <div class="debug-input-group">
+            <label for="debugBoosterLevel">Set Booster Level:</label>
+            <input type="number" id="debugBoosterLevel" placeholder="0-10" min="0" max="10" class="debug-input">
+            <button id="debugSetBooster" class="debug-btn">Set Level</button>
+          </div>
+        </div>
+
+        <!-- Player State Testing Section -->
+        <div class="debug-section">
+          <h3>👤 Player State</h3>
+          <div class="debug-grid">
+            <button id="debugMaxHP" class="debug-btn">Max HP</button>
+            <button id="debugMaxShield" class="debug-btn">Max Shield</button>
+            <button id="debugMaxEnergy" class="debug-btn">Max Energy</button>
+            <button id="debugResetPlayer" class="debug-btn">Reset Player</button>
+          </div>
+          <div class="debug-input-group">
+            <label for="debugSetHP">Set HP:</label>
+            <input type="number" id="debugSetHP" placeholder="HP amount" min="1" max="999" class="debug-input">
+            <button id="debugApplyHP" class="debug-btn">Apply</button>
+          </div>
+          <div class="debug-input-group">
+            <label for="debugSetShield">Set Shield:</label>
+            <input type="number" id="debugSetShield" placeholder="Shield amount" min="0" max="999" class="debug-input">
+            <button id="debugApplyShield" class="debug-btn">Apply</button>
+          </div>
+        </div>
+
+        <!-- Test Running Section -->
+        <div class="debug-section">
+          <h3>🧪 Testing & Analytics</h3>
+          <div class="debug-grid">
+            <button id="debugRunTests" class="debug-btn">Run All Tests</button>
+            <button id="debugClearTelemetry" class="debug-btn">Clear Telemetry</button>
+            <button id="debugShowAnalytics" class="debug-btn">Show Analytics</button>
+            <button id="debugResetCompanion" class="debug-btn">Reset Companion</button>
+          </div>
+        </div>
+
+        <!-- Game Control Section -->
+        <div class="debug-section">
+          <h3>🎮 Game Control</h3>
+          <div class="debug-grid">
+            <button id="debugQuickBattle" class="debug-btn">Quick Battle</button>
+            <button id="debugEndTurn" class="debug-btn">Force End Turn</button>
+            <button id="debugWinBattle" class="debug-btn">Win Battle</button>
+            <button id="debugLoseBattle" class="debug-btn">Lose Battle</button>
+          </div>
+        </div>
+
+        <!-- Quirk Testing Section -->
+        <div class="debug-section">
+          <h3>✨ Quirk Testing</h3>
+          <div class="debug-grid">
+            <button id="debugUnlockAllQuirks" class="debug-btn">Unlock All Quirks</button>
+            <button id="debugResetQuirks" class="debug-btn">Reset Quirks</button>
+            <button id="debugShowQuirks" class="debug-btn">Show Quirk Status</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="debug-output">
+        <h3>📊 Debug Output</h3>
+        <div id="debugLog" class="debug-log"></div>
+        <button id="debugClearLog" class="debug-btn">Clear Log</button>
+      </div>
+    </div>
+  </div>
+
   <script type="module" src="src/main.js"></script>
 </body>
 </html>
