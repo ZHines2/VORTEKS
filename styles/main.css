@@ -1430,3 +1430,50 @@ button.card:disabled {
     font-size: 14px;
   }
 }
+
+/* Flavor system styles */
+.flavor-card {
+  padding: 12px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  background: rgba(75, 35, 102, 0.3);
+  transition: all 0.2s;
+  position: relative;
+}
+
+.flavor-card:hover {
+  background: rgba(75, 35, 102, 0.5);
+  transform: translateY(-2px);
+}
+
+.flavor-card.selected {
+  border-color: var(--accent);
+  background: var(--panel);
+}
+
+.color-preview {
+  display: flex;
+  height: 20px;
+  margin: 6px 0;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.flavor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 12px;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+  .flavor-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .flavor-card {
+    padding: 8px;
+  }
+}

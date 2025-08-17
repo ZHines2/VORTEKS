@@ -1,5 +1,6 @@
 import { ACHIEVEMENTS, MIGRATION_VERSION, DEBUG } from './config.js';
 import { CARDS } from '../data/cards.js';
+import { FLAVORS, FLAVOR_UNLOCKS } from '../data/flavors.js';
 
 // card-unlock.js
 // VORTEKS Card Unlock System
@@ -7,6 +8,8 @@ import { CARDS } from '../data/cards.js';
 
 const LS_KEY = 'vorteks-card-unlocks';
 const LS_QUIRKS_KEY = 'vorteks-quirks';
+const LS_FLAVORS_KEY = 'vorteks-flavors';
+const LS_CURRENT_FLAVOR_KEY = 'vorteks-current-flavor';
 const STORAGE_VERSION = MIGRATION_VERSION;
 
 // 6 starter cards (always unlocked immediately)
@@ -412,6 +415,62 @@ function saveQuirksState(state) {
 
 let _quirksState = loadQuirksState();
 
+// Flavors state management
+function freshFlavorsState() {
+  const base = { version: STORAGE_VERSION, unlocked: {} };
+  // Origin flavor is always unlocked
+  base.unlocked['origin'] = true;
+  return base;
+}
+
+function loadFlavorsState() {
+  try {
+    const raw = localStorage.getItem(LS_FLAVORS_KEY);
+    if (!raw) {
+      const s = freshFlavorsState();
+      saveFlavorsState(s);
+      return s;
+    }
+    const parsed = JSON.parse(raw);
+    
+    // Handle migration from older versions
+    if (parsed.version !== STORAGE_VERSION) {
+      if (DEBUG.LOG_MIGRATIONS) {
+        console.log(`Migrating flavors storage from version ${parsed.version || 'undefined'} to ${STORAGE_VERSION}`);
+      }
+      
+      // Preserve unlocked flavors where possible
+      const migrated = freshFlavorsState();
+      if (parsed.unlocked) {
+        migrated.unlocked = { ...migrated.unlocked, ...parsed.unlocked };
+      }
+      if (parsed.progress) {
+        migrated.progress = { ...parsed.progress };
+      }
+      
+      saveFlavorsState(migrated);
+      return migrated;
+    }
+    
+    parsed.unlocked ||= {};
+    parsed.progress ||= {};
+    return parsed;
+  } catch (error) {
+    if (DEBUG.LOG_MIGRATIONS) {
+      console.warn('Failed to parse flavors storage, reinitializing:', error);
+    }
+    const s = freshFlavorsState();
+    saveFlavorsState(s);
+    return s;
+  }
+}
+
+function saveFlavorsState(state) {
+  try { localStorage.setItem(LS_FLAVORS_KEY, JSON.stringify(state)); } catch {}
+}
+
+let _flavorsState = loadFlavorsState();
+
 function freshState() {
   const base = {
     version: STORAGE_VERSION,
@@ -633,6 +692,9 @@ function checkAchievementUnlocks(ctx) {
   // Also check quirk unlocks
   checkQuirkUnlocks(ctx);
   
+  // Also check flavor unlocks
+  checkFlavorUnlocks(ctx);
+  
   if (unlockedAny) saveState(_state);
 }
 
@@ -641,6 +703,109 @@ function recordBattleResult(result) {
   if (result === 'win') _state.stats.totalWins = (_state.stats.totalWins || 0) + 1;
   saveState(_state);
 }
+
+// Flavor functions
+function isFlavorUnlocked(id) { return !!_flavorsState.unlocked[id]; }
+function getUnlockedFlavors() { return Object.keys(_flavorsState.unlocked).filter(k => _flavorsState.unlocked[k]); }
+
+function unlockFlavor(id, cause = '') {
+  if (isFlavorUnlocked(id)) return false;
+  _flavorsState.unlocked[id] = true;
+  saveFlavorsState(_flavorsState);
+  announceFlavorUnlock(id, cause);
+  return true;
+}
+
+function announceFlavorUnlock(id, cause) {
+  const flavorMeta = FLAVORS.find(f => f.id === id);
+  const flavorName = flavorMeta ? flavorMeta.name : id;
+  const msg = `FLAVOR UNLOCKED: ${flavorName}${cause ? ' (' + cause + ')' : ''}`;
+  if (window.log) window.log(msg);
+  // Lightweight toast
+  try {
+    const existing = document.getElementById('unlockToast');
+    if (existing) existing.remove();
+    const div = document.createElement('div');
+    div.id = 'unlockToast';
+    div.textContent = msg;
+    Object.assign(div.style, {
+      position: 'fixed', top: '12px', left: '50%', transform: 'translateX(-50%)',
+      background: 'var(--accent)', color: 'black', padding: '6px 12px', fontSize: '12px',
+      fontWeight: 'bold', borderRadius: '6px', zIndex: 9999, boxShadow: '0 2px 6px rgba(0,0,0,0.4)'
+    });
+    document.body.appendChild(div);
+    setTimeout(()=>div.remove(), 4000);
+  } catch {}
+}
+
+function getUnlockableFlavorsInfo() {
+  return FLAVORS.map(f => ({
+    id: f.id,
+    name: f.name,
+    description: f.description,
+    unlocked: isFlavorUnlocked(f.id),
+    colors: f.colors
+  }));
+}
+
+function getFlavorUnlockInfo() {
+  return FLAVOR_UNLOCKS.map(f => ({
+    id: f.id,
+    unlocked: isFlavorUnlocked(f.id),
+    description: f.description,
+    progress: f.progressHint ? f.progressHint(_flavorsState) : ''
+  }));
+}
+
+function getCurrentFlavor() {
+  try {
+    return localStorage.getItem(LS_CURRENT_FLAVOR_KEY) || 'origin';
+  } catch {
+    return 'origin';
+  }
+}
+
+function setCurrentFlavor(flavorId) {
+  try {
+    localStorage.setItem(LS_CURRENT_FLAVOR_KEY, flavorId);
+    applyFlavor(flavorId);
+  } catch {}
+}
+
+function applyFlavor(flavorId) {
+  const flavor = FLAVORS.find(f => f.id === flavorId);
+  if (!flavor) return;
+  
+  const root = document.documentElement;
+  Object.entries(flavor.colors).forEach(([key, value]) => {
+    root.style.setProperty(`--${key}`, value);
+  });
+}
+
+function checkFlavorUnlocks(ctx) {
+  let unlockedAny = false;
+  for (const flavorUnlock of FLAVOR_UNLOCKS) {
+    if (isFlavorUnlocked(flavorUnlock.id)) continue;
+    const before = JSON.stringify(_flavorsState.progress);
+    const success = flavorUnlock.check(ctx, _flavorsState);
+    const after = JSON.stringify(_flavorsState.progress);
+    if (success) {
+      unlockFlavor(flavorUnlock.id, 'Achievement');
+      unlockedAny = true;
+    } else if (before !== after) {
+      saveFlavorsState(_flavorsState); // progress changed
+    }
+    if (ctx.event === 'battleEnd' && flavorUnlock.resetBattleFlags) flavorUnlock.resetBattleFlags(_flavorsState);
+  }
+  if (unlockedAny) saveFlavorsState(_flavorsState);
+}
+
+function resetFlavors() {
+  _flavorsState = freshFlavorsState();
+  saveFlavorsState(_flavorsState);
+}
+
+function debugUnlockFlavor(id) { unlockFlavor(id, 'debug'); }
 
 // TODO (future): expose richer API for a dedicated Unlocks UI panel.
 
@@ -661,5 +826,17 @@ export {
   debugUnlock,
   checkPersonaDefeatUnlocks,
   checkAchievementUnlocks,
-  recordBattleResult
+  recordBattleResult,
+  // Flavor functions
+  isFlavorUnlocked,
+  getUnlockedFlavors,
+  unlockFlavor,
+  getUnlockableFlavorsInfo,
+  getFlavorUnlockInfo,
+  getCurrentFlavor,
+  setCurrentFlavor,
+  applyFlavor,
+  checkFlavorUnlocks,
+  resetFlavors,
+  debugUnlockFlavor
 };

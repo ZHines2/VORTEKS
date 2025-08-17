@@ -5,7 +5,7 @@ A modular, browser-based tactical card game built with vanilla JavaScript ES6 mo
 
 ## 🎮 Current Game State Summary
 
-**VORTEKS v2.3** features a complete card battler experience with 19 unique cards, 5 AI personas, 8 unlockable quirks, sophisticated mechanics, and extensive polish. Comprehensive automated test suite ensures rock-solid gameplay reliability.
+**VORTEKS v2.4** features a complete card battler experience with 20 unique cards, 5 AI personas, 8 unlockable quirks, 20 color flavor themes, sophisticated mechanics, enhanced ghost opponents, and extensive polish. Comprehensive automated test suite ensures rock-solid gameplay reliability.
 
 ## 🏗️ Project Structure
 
@@ -44,11 +44,12 @@ A modular, browser-based tactical card game built with vanilla JavaScript ES6 mo
 - **Energy & Resource Management**: Complete with uncapping and status effects
 - **Turn-Based Combat**: Robust state management and win conditions
 
-### Content Systems - 95% Complete ✅
-- **Card Database**: 19/20 planned cards implemented (95%)
+### Content Systems - 100% Complete ✅
+- **Card Database**: 20/20 planned cards implemented (100%)
 - **Unlock Progression**: All achievement and unlock systems functional (100%)
 - **Quirk System**: 8 quirks with diverse gameplay modifications (100%)
-- **AI Personas**: Complete with procedural face generation (100%)
+- **AI Personas**: Complete with procedural face generation and ghost variations (100%)
+- **Color Flavor System**: 20 unique UI themes with diverse unlock requirements (100%)
 
 ### Polish & UX - 90% Complete ✅
 - **UI/UX Design**: Clean Unicode aesthetic with responsive design (95%)
@@ -74,10 +75,10 @@ A modular, browser-based tactical card game built with vanilla JavaScript ES6 mo
 ## ✨ Core Features
 
 ### Card Battle System
-- **19 Unique Cards**: From basic Strike/Guard to advanced Reconsider/Droid Protocol, plus special Wallop/Overload/Ferriglobin/Impervious
+- **20 Unique Cards**: From basic Strike/Guard to advanced Reconsider/Droid Protocol, plus special Wallop/Overload/Ferriglobin/Impervious/Reap
 - **3 Card Types**: Attack, Skill, and Power cards with distinct mechanics
 - **Energy Management**: Strategic resource allocation each turn (🔆)
-- **Advanced Mechanics**: Pierce damage, burn stacks, echo effects, energy uncapping, life costs, immunity effects
+- **Advanced Mechanics**: Pierce damage, burn stacks, echo effects, energy uncapping, life costs, immunity effects, mutual damage
 - **Status Effects**: Shields, healing, freeze, and next-turn modifiers
 
 ### AI Opponents & Personas
@@ -88,11 +89,20 @@ A modular, browser-based tactical card game built with vanilla JavaScript ES6 mo
 
 ### Progressive Unlock System
 - **Achievement-Based Cards**: 13 cards unlocked via specific gameplay achievements
-- **Persona Defeats**: Special cards unlocked by defeating Cat, Robot, Doctor, and Bruiser opponents
+- **Persona Defeats**: Special cards unlocked by defeating Cat, Robot, Doctor, Bruiser, and Ghost opponents
 - **Debug Menu Exclusives**: Ultra-rare Impervious card unlocked only through debug access
 - **Quirk Unlocks**: 8 gameplay-modifying quirks earned through skilled play
 - **Echo Usage Tracking**: Overload card unlocked after using Echo 10+ times
 - **Progress Tracking**: Detailed progress hints and achievement monitoring
+- **Color Flavor Unlocks**: 20 unique UI themes unlocked through diverse gameplay achievements
+
+### Color Flavor System
+- **20 Unique Themes**: From Origin (default purple) to Neon (cyberpunk) and Shadow (monochrome)
+- **Diverse Unlock Requirements**: Win streaks, persona defeats, specific card usage, perfect games, and unique challenges
+- **Thematic Color Palettes**: Each flavor reflects its name with carefully chosen color schemes
+- **Persistent Selection**: Your chosen flavor persists across sessions
+- **Visual Preview**: Live color swatches show each theme's palette before selection
+- **Achievement Integration**: Flavor unlocks tied to existing and new gameplay milestones
 
 ### UX & Polish Features
 - **Start Screen Enhancement**: 75% dim overlay, multi-layer fog effects, text shadows
@@ -116,9 +126,10 @@ A modular, browser-based tactical card game built with vanilla JavaScript ES6 mo
 1. Open `index.html` in a modern web browser (or serve via static server for best experience)
 2. Choose **QUICK START** for immediate action or **BUILD DECK** for customization
 3. Select a quirk that matches your playstyle
-4. Use energy (🔆) to play cards strategically
-5. Balance offense, defense, and card draw to defeat AI opponents
-6. Build win streaks to unlock advanced cards and quirks
+4. Use the 🎨 **Flavors** button to change color themes (unlock more through gameplay)
+5. Use energy (🔆) to play cards strategically
+6. Balance offense, defense, and card draw to defeat AI opponents
+7. Build win streaks to unlock advanced cards, quirks, and flavor themes
 
 ### Game Mechanics
 - **Energy System**: Start with 3 energy, gain 1 per turn (max 6, or more with quirks)
@@ -132,7 +143,41 @@ A modular, browser-based tactical card game built with vanilla JavaScript ES6 mo
 - **Shield Stacking**: Build defensive walls while setting up combos
 - **Burn Tactics**: Apply damage-over-time for consistent pressure
 
-## 🚀 Technical Features
+## 🎨 Color Flavor Master List
+
+### Flavor Themes & Unlock Requirements
+
+| Flavor | Colors | Unlock Requirement |
+|--------|---------|-------------------|
+| **Origin** | Purple depths, golden borders, cyan accents | *Always unlocked (default theme)* |
+| **Crimson** | Blood red, iron gray, warm highlights | Win 3 battles using life-cost cards (Wallop/Presto) |
+| **Azure** | Deep ocean blues, crystal clarity | Defeat any Robot opponent |
+| **Verdant** | Living green, earth tones | Use Echo 5 times in a single battle and win |
+| **Amber** | Warm orange glow, burnished copper | Win a battle with 15+ energy in a single turn |
+| **Violet** | Rich purples, magenta highlights | Defeat any Trickster opponent |
+| **Frost** | Ice blues, silver gleam | Use Freeze 3 times in a single battle and win |
+| **Shadow** | Darkness, steel gray, monochrome | Win 5 battles with perfect health (no damage taken) |
+| **Solar** | Brilliant gold, sunfire yellow | Use Focus 4 times in a single turn |
+| **Ocean** | Deep teal, seafoam green | Defeat any Doctor opponent |
+| **Rose** | Soft pinks, cherry blossoms | Defeat any Cat opponent |
+| **Copper** | Bronze patina, ancient metals | Win a 10-win streak |
+| **Neon** | Electric cyan, hot pink, cyberpunk | Use Reap successfully and win the battle |
+| **Forest** | Deep woodland green, moss tones | Win 15 total battles |
+| **Sunset** | Warm orange, gentle pink | Defeat any Bruiser opponent |
+| **Midnight** | Dark navy, starlight blues | Defeat any Ghost opponent |
+| **Cherry** | Rich red-pink, burgundy | Use burn effects to deal 20+ total damage in one battle |
+| **Sage** | Muted gray-green, silver | Win a battle using only skill cards (no attacks or powers) |
+| **Ember** | Glowing red-orange, charcoal | Deal 30+ damage in a single turn |
+| **Lunar** | Silver-blue, moonbeam white | Win 25 total battles |
+
+### Theme Categories
+- **Persona-Based**: Azure, Violet, Ocean, Rose, Sunset, Midnight (defeat specific opponents)
+- **Combat Achievement**: Crimson, Shadow, Cherry, Ember (combat prowess challenges)  
+- **Card Mastery**: Verdant, Frost, Solar, Neon, Sage (specific card usage patterns)
+- **Progression**: Copper, Forest, Lunar (win milestone achievements)
+- **Energy Management**: Amber (resource management skill)
+
+*Each flavor completely transforms the game's visual aesthetic while maintaining perfect readability and UI consistency.*
 
 ### Modern Architecture
 - **ES6 Modules**: Clean separation of concerns, no build step required
@@ -314,6 +359,14 @@ configureJSONBin({
 3. Add new unlock requirements in `src/card-unlock.js`
 
 ## 📝 Recent Major Updates
+
+### v2.4 - Color Flavor System & Enhanced Content
+- **Color Flavor System**: 20 unique UI themes with diverse unlock requirements
+- **Reap Card Added**: High-risk mutual damage card unlocked by defeating ghost opponents
+- **Enhanced Ghost Opponents**: Increased frequency (12%), rich visual variations, strategic AI
+- **Reconsider Rebalance**: Fixed cost to 3 energy (previously consumed all energy)
+- **Complete Documentation**: Updated README with Reap card and comprehensive flavor system guide
+- **Flavor Debug Tools**: Full debug panel integration for testing and development
 
 ### v2.3 - Strategic Depth & Debug Tools
 - **Echo/Overload Rework**: Echo reverted to repeat LAST card, new Overload card repeats NEXT card
