@@ -88,6 +88,7 @@ import {
   getRoomInteractionMessage
 } from './idle-game.js';
 import { initVortekGenerator, generateVortekAppearance, playVortekSound } from './vortek-generator.js';
+import { generateChronicle, getCurrentChronicle, saveCurrentChronicle, clearCurrentChronicle } from './lore.js';
 
 const MUSIC_FILE = 'VORTEKS.mp3';
 const LS_KEY = 'vorteks-muted';
@@ -142,6 +143,7 @@ const defeatedBtn = document.getElementById('defeatedBtn');
 const leaderboardBtn = document.getElementById('leaderboardBtn');
 const telemetryBtn = document.getElementById('telemetryBtn');
 const companionBtn = document.getElementById('companionBtn');
+const loreBtn = document.getElementById('loreBtn');
 
 // Initialize idle game system
 loadIdleGame();
@@ -234,6 +236,74 @@ function setupDefeatedOpponents() {
   telemetryCloseBtn.addEventListener('click', () => {
     telemetryModal.hidden = true;
   });
+
+  // Lore modal setup
+  const loreModal = document.getElementById('loreModal');
+  const loreCloseBtn = document.getElementById('loreCloseBtn');
+  const generateLoreBtn = document.getElementById('generateLoreBtn');
+  const refreshLoreBtn = document.getElementById('refreshLoreBtn');
+  const favoriteChronicleBtn = document.getElementById('favoriteChronicleBtn');
+  
+  // TTS elements
+  const ttsToggleBtn = document.getElementById('ttsToggleBtn');
+  const ttsControls = document.getElementById('ttsControls');
+  const ttsPlayBtn = document.getElementById('ttsPlayBtn');
+  const ttsPauseBtn = document.getElementById('ttsPauseBtn');
+  const ttsStopBtn = document.getElementById('ttsStopBtn');
+  const ttsStatusText = document.getElementById('ttsStatusText');
+  
+  // TTS state
+  let ttsEnabled = localStorage.getItem('vorteks-tts-enabled') === 'true';
+  let currentSpeech = null;
+  let ttsIsPlaying = false;
+
+  // Lore button click handler
+  loreBtn.addEventListener('click', () => {
+    renderLoreModal();
+    loreModal.hidden = false;
+  });
+
+  // Lore close button handler
+  loreCloseBtn.addEventListener('click', () => {
+    stopChronicle(); // Stop any ongoing speech when closing modal
+    loreModal.hidden = true;
+  });
+
+  // Generate new chronicle handler
+  generateLoreBtn.addEventListener('click', () => {
+    generateNewChronicle();
+  });
+
+  // Refresh current chronicle handler
+  refreshLoreBtn.addEventListener('click', () => {
+    refreshCurrentChronicle();
+  });
+
+  // Favorite chronicle handler
+  favoriteChronicleBtn.addEventListener('click', () => {
+    // TODO: Implement favorite system
+    alert('Chronicle favoriting will be available in a future update!');
+  });
+
+  // TTS event handlers
+  ttsToggleBtn.addEventListener('click', () => {
+    toggleTTS();
+  });
+  
+  ttsPlayBtn.addEventListener('click', () => {
+    playChronicle();
+  });
+  
+  ttsPauseBtn.addEventListener('click', () => {
+    pauseChronicle();
+  });
+  
+  ttsStopBtn.addEventListener('click', () => {
+    stopChronicle();
+  });
+  
+  // Initialize TTS UI state
+  updateTTSButtonState();
 
   // Leaderboard modal setup
   const leaderboardModal = document.getElementById('leaderboardModal');
@@ -871,6 +941,269 @@ function setupDefeatedOpponents() {
       <div><strong>Easter Eggs Seen:</strong> ${analytics.opponents.easterEggsSeen} | <strong>Play Time:</strong> ${analytics.session.playTime}</div>
       <div><strong>First Played:</strong> ${analytics.session.firstPlayed}</div>
     `;
+  }
+
+  // Lore rendering functions
+  function renderLoreModal() {
+    const currentChronicle = getCurrentChronicle();
+    if (currentChronicle) {
+      displayChronicle(currentChronicle);
+    } else {
+      displayWelcomeMessage();
+    }
+  }
+
+  function generateNewChronicle() {
+    const generateBtn = document.getElementById('generateLoreBtn');
+    generateBtn.disabled = true;
+    generateBtn.textContent = '🌌 Weaving tale...';
+    
+    // Add a small delay for dramatic effect
+    setTimeout(() => {
+      try {
+        const chronicle = generateChronicle();
+        saveCurrentChronicle(chronicle);
+        displayChronicle(chronicle);
+      } catch (error) {
+        console.error('Error generating chronicle:', error);
+        displayErrorMessage();
+      } finally {
+        generateBtn.disabled = false;
+        generateBtn.textContent = '🌌 Generate New Chronicle';
+      }
+    }, 1000);
+  }
+
+  function refreshCurrentChronicle() {
+    const currentChronicle = getCurrentChronicle();
+    if (currentChronicle) {
+      displayChronicle(currentChronicle);
+    } else {
+      generateNewChronicle();
+    }
+  }
+
+  function displayChronicle(chronicle) {
+    const titleEl = document.getElementById('chronicleTitle');
+    const textEl = document.getElementById('chronicleText');
+    const insightsEl = document.getElementById('chronicleInsights');
+    const statsEl = document.getElementById('chronicleStats');
+
+    // Stop any ongoing speech when new chronicle is displayed
+    stopChronicle();
+
+    titleEl.textContent = chronicle.title;
+    textEl.innerHTML = formatChronicleText(chronicle.content);
+    
+    // Show insights
+    insightsEl.style.display = 'block';
+    statsEl.textContent = chronicle.insights;
+    
+    // Show favorite button
+    const favoriteBtn = document.getElementById('favoriteChronicleBtn');
+    favoriteBtn.hidden = false;
+    
+    // Update TTS controls for new content
+    if (ttsEnabled) {
+      updateTTSControlsState();
+    }
+  }
+
+  function displayWelcomeMessage() {
+    const titleEl = document.getElementById('chronicleTitle');
+    const textEl = document.getElementById('chronicleText');
+    const insightsEl = document.getElementById('chronicleInsights');
+
+    // Stop any ongoing speech
+    stopChronicle();
+
+    titleEl.textContent = 'Welcome to the VORTEKS Chronicles';
+    textEl.innerHTML = `
+      <div style="text-align:center; opacity:0.7; padding:40px 20px;">
+        <div style="font-size:48px; margin-bottom:16px;">📜</div>
+        <div style="font-size:16px; color:var(--accent);">The Cosmic Scrolls Await</div>
+        <div style="margin-top:8px;">Click "Generate New Chronicle" to weave a tale of your adventures through the VORTEKS universe, drawing from your battles, your VORTEK companion's growth, and the mysteries you've unlocked.</div>
+      </div>
+    `;
+    insightsEl.style.display = 'none';
+    
+    // Hide favorite button
+    const favoriteBtn = document.getElementById('favoriteChronicleBtn');
+    favoriteBtn.hidden = true;
+    
+    // Reset TTS controls
+    if (ttsEnabled) {
+      updateTTSControlsState();
+    }
+  }
+
+  function displayErrorMessage() {
+    const titleEl = document.getElementById('chronicleTitle');
+    const textEl = document.getElementById('chronicleText');
+    
+    titleEl.textContent = 'Chronicle Generation Error';
+    textEl.innerHTML = `
+      <div style="text-align:center; opacity:0.7; padding:40px 20px;">
+        <div style="font-size:48px; margin-bottom:16px;">⚠️</div>
+        <div style="font-size:16px; color:var(--bad);">The Cosmic Scrolls are temporarily unavailable</div>
+        <div style="margin-top:8px;">There was an error generating your chronicle. Please try again.</div>
+      </div>
+    `;
+  }
+
+  function formatChronicleText(text) {
+    // Add some simple formatting to make the text more readable
+    return text
+      .split('\n\n')
+      .map(paragraph => `<p style="margin-bottom:16px;">${paragraph}</p>`)
+      .join('');
+  }
+
+  // TTS Functions
+  function toggleTTS() {
+    ttsEnabled = !ttsEnabled;
+    localStorage.setItem('vorteks-tts-enabled', ttsEnabled.toString());
+    updateTTSButtonState();
+    
+    if (!ttsEnabled && currentSpeech) {
+      stopChronicle();
+    }
+  }
+  
+  function updateTTSButtonState() {
+    if (!window.speechSynthesis) {
+      ttsToggleBtn.disabled = true;
+      ttsToggleBtn.textContent = '🔇 TTS Not Available';
+      ttsToggleBtn.title = 'Text-to-speech is not supported in this browser';
+      return;
+    }
+    
+    ttsToggleBtn.textContent = ttsEnabled ? '🔊 Read Aloud (ON)' : '🔇 Read Aloud (OFF)';
+    ttsToggleBtn.title = ttsEnabled ? 'Disable text-to-speech' : 'Enable text-to-speech';
+    ttsControls.style.display = ttsEnabled ? 'flex' : 'none';
+    
+    if (ttsEnabled) {
+      updateTTSControlsState();
+    }
+  }
+  
+  function updateTTSControlsState() {
+    if (!currentSpeech || !ttsIsPlaying) {
+      ttsPlayBtn.disabled = false;
+      ttsPauseBtn.disabled = true;
+      ttsStopBtn.disabled = true;
+      ttsStatusText.textContent = 'Ready to read';
+    } else {
+      ttsPlayBtn.disabled = ttsIsPlaying && !window.speechSynthesis.paused;
+      ttsPauseBtn.disabled = !ttsIsPlaying || window.speechSynthesis.paused;
+      ttsStopBtn.disabled = false;
+      
+      if (window.speechSynthesis.paused) {
+        ttsStatusText.textContent = 'Paused';
+      } else if (ttsIsPlaying) {
+        ttsStatusText.textContent = 'Reading...';
+      }
+    }
+  }
+  
+  function cleanTextForSpeech(text) {
+    // Remove HTML tags and clean up text for speech
+    return text
+      .replace(/<[^>]*>/g, '') // Remove HTML tags
+      .replace(/\n\n+/g, '. ') // Replace paragraph breaks with pauses
+      .replace(/\n/g, ' ') // Replace line breaks with spaces
+      .replace(/\s+/g, ' ') // Normalize whitespace
+      .trim();
+  }
+  
+  function playChronicle() {
+    if (!window.speechSynthesis || !ttsEnabled) return;
+    
+    // If paused, resume
+    if (currentSpeech && window.speechSynthesis.paused) {
+      window.speechSynthesis.resume();
+      updateTTSControlsState();
+      return;
+    }
+    
+    // Stop any existing speech
+    if (currentSpeech) {
+      stopChronicle();
+    }
+    
+    // Get the chronicle text
+    const titleEl = document.getElementById('chronicleTitle');
+    const textEl = document.getElementById('chronicleText');
+    
+    if (!titleEl || !textEl) return;
+    
+    const title = titleEl.textContent;
+    const content = cleanTextForSpeech(textEl.textContent);
+    
+    if (!content.trim()) {
+      ttsStatusText.textContent = 'No text to read';
+      return;
+    }
+    
+    // Create speech with title and content
+    const speechText = `${title}. ${content}`;
+    currentSpeech = new SpeechSynthesisUtterance(speechText);
+    
+    // Configure speech settings
+    currentSpeech.rate = 0.9; // Slightly slower for better comprehension
+    currentSpeech.pitch = 1.0;
+    currentSpeech.volume = 0.8;
+    
+    // Set event handlers
+    currentSpeech.onstart = () => {
+      ttsIsPlaying = true;
+      updateTTSControlsState();
+    };
+    
+    currentSpeech.onend = () => {
+      ttsIsPlaying = false;
+      currentSpeech = null;
+      ttsStatusText.textContent = 'Reading complete';
+      updateTTSControlsState();
+    };
+    
+    currentSpeech.onerror = (event) => {
+      console.error('Speech synthesis error:', event.error);
+      ttsIsPlaying = false;
+      currentSpeech = null;
+      ttsStatusText.textContent = 'Error occurred';
+      updateTTSControlsState();
+    };
+    
+    currentSpeech.onpause = () => {
+      updateTTSControlsState();
+    };
+    
+    currentSpeech.onresume = () => {
+      updateTTSControlsState();
+    };
+    
+    // Start speaking
+    window.speechSynthesis.speak(currentSpeech);
+    ttsStatusText.textContent = 'Starting...';
+    updateTTSControlsState();
+  }
+  
+  function pauseChronicle() {
+    if (!window.speechSynthesis || !currentSpeech || !ttsIsPlaying) return;
+    
+    window.speechSynthesis.pause();
+    updateTTSControlsState();
+  }
+  
+  function stopChronicle() {
+    if (!window.speechSynthesis) return;
+    
+    window.speechSynthesis.cancel();
+    ttsIsPlaying = false;
+    currentSpeech = null;
+    ttsStatusText.textContent = 'Stopped';
+    updateTTSControlsState();
   }
 
   // Leaderboard rendering functions

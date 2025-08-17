@@ -20,6 +20,7 @@
       <button id="defeatedBtn" aria-label="Defeated Opponents" title="View defeated opponents history">🏴</button>
       <button id="leaderboardBtn" aria-label="Leaderboards" title="View global player rankings">🏅</button>
       <button id="companionBtn" aria-label="VORTEK Companion" title="Check on your VORTEK companion">🌟</button>
+      <button id="loreBtn" aria-label="VORTEKS Chronicles" title="Read tales of your journey through the VORTEKS universe">📜</button>
       <button id="debugBtn" aria-label="Debug Menu" title="Open debug panel for testing and development">⛔</button>
       <button id="muteBtn" aria-label="Mute music" title="Mute/unmute music">🔊</button>
       <button id="helpBtn" aria-label="Help" title="How to play VORTEKS">?</button>
@@ -690,6 +691,58 @@
       <!-- Close Button -->
       <div style="display:flex; justify-content:center;">
         <button id="companionCloseBtn" class="btn">CLOSE</button>
+      </div>
+    </div>
+  </div>
+  <!-- VORTEKS Chronicles/Lore Modal -->
+  <div class="modal" id="loreModal" hidden>
+    <div class="box" style="width:min(96vw, 900px); max-height:90vh; overflow-y:auto;">
+      <div style="font-size:18px; color:var(--accent); margin:8px 0 16px; text-align:center">
+        <strong>📜 VORTEKS Chronicles</strong>
+        <div style="font-size:12px; opacity:0.7; margin-top:4px;">Tales of your journey through the infinite dimensions</div>
+      </div>
+      
+      <!-- Chronicle Generation Controls -->
+      <div style="display:flex; gap:8px; justify-content:center; margin-bottom:16px; flex-wrap:wrap;">
+        <button id="generateLoreBtn" class="btn" style="background:var(--magic); color:white; font-weight:bold;" title="Generate a new tale based on your journey">🌌 Generate New Chronicle</button>
+        <button id="refreshLoreBtn" class="btn" title="Refresh the current chronicle">🔄 Refresh Tale</button>
+        <button id="favoriteChronicleBtn" class="btn" title="Save this chronicle to favorites" hidden>⭐ Favorite</button>
+        <button id="ttsToggleBtn" class="btn" title="Toggle text-to-speech for chronicles">🔊 Read Aloud</button>
+      </div>
+      
+      <!-- TTS Controls (hidden by default) -->
+      <div id="ttsControls" style="display:none; gap:8px; justify-content:center; margin-bottom:16px; flex-wrap:wrap;">
+        <button id="ttsPlayBtn" class="btn" style="background:var(--good); color:white;" title="Play/Resume reading">▶️ Play</button>
+        <button id="ttsPauseBtn" class="btn" style="background:var(--warning); color:white;" title="Pause reading">⏸️ Pause</button>
+        <button id="ttsStopBtn" class="btn" style="background:var(--bad); color:white;" title="Stop reading">⏹️ Stop</button>
+        <div id="ttsStatus" style="display:flex; align-items:center; color:var(--accent); font-size:12px; padding:0 8px;">
+          <span id="ttsStatusText">Ready to read</span>
+        </div>
+      </div>
+      
+      <!-- Chronicle Display Area -->
+      <div id="chronicleContent" style="background:linear-gradient(135deg, rgba(0,0,0,0.4), rgba(59, 130, 246, 0.1)); padding:20px; border-radius:8px; margin-bottom:16px; min-height:300px; border:1px solid var(--border);">
+        <div id="chronicleTitle" style="font-size:16px; color:var(--accent); font-weight:bold; margin-bottom:12px; text-align:center; border-bottom:1px solid var(--border); padding-bottom:8px;">
+          Welcome to the VORTEKS Chronicles
+        </div>
+        <div id="chronicleText" style="font-size:14px; line-height:1.6; color:var(--ink); text-align:justify;">
+          <div style="text-align:center; opacity:0.7; padding:40px 20px;">
+            <div style="font-size:48px; margin-bottom:16px;">📜</div>
+            <div style="font-size:16px; color:var(--accent);">The Cosmic Scrolls Await</div>
+            <div style="margin-top:8px;">Click "Generate New Chronicle" to weave a tale of your adventures through the VORTEKS universe, drawing from your battles, your VORTEK companion's growth, and the mysteries you've unlocked.</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Chronicle Insights -->
+      <div id="chronicleInsights" style="background:rgba(0,0,0,0.3); padding:12px; border-radius:4px; margin-bottom:16px; display:none;">
+        <div style="font-size:12px; color:var(--accent); margin-bottom:6px;"><strong>Chronicle Insights</strong></div>
+        <div id="chronicleStats" style="font-size:11px; color:var(--ink); opacity:0.8; line-height:1.4;"></div>
+      </div>
+      
+      <!-- Close Button -->
+      <div style="display:flex; justify-content:center;">
+        <button id="loreCloseBtn" class="btn">CLOSE</button>
       </div>
     </div>
   </div>
