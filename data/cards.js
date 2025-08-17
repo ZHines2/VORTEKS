@@ -210,5 +210,18 @@ export const CARDS = [
     status: { target: { burn: null, freezeEnergy: 0 }, self: { nextPlus: 0, maxEnergyDelta: 0, energyNowDelta: 0, cleanse: false } }, 
     scaling: {}, 
     ai: { role: 'utility', pri: 45 } 
+  },
+  { 
+    id: 'ferriglobin', 
+    sym: icons.ferriglobin, 
+    name: 'Ferriglobin', 
+    description: 'Transform all your shield into health. Blood magic transmutation.',
+    cost: 3, 
+    type: 'skill', 
+    tags: ['transmute', 'heal'],
+    effects: { damage: 0, pierce: false, heal: 0, shield: 0, draw: 0, ferriglobin: true }, 
+    status: { target: { burn: null, freezeEnergy: 0 }, self: { nextPlus: 0, maxEnergyDelta: 0, energyNowDelta: 0, cleanse: false } }, 
+    scaling: {}, 
+    ai: { role: 'sustain', pri: 50 } 
   }
 ];

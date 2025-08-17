@@ -692,6 +692,39 @@ export const Game = {
         }
       }
     }
+    if (effects.ferriglobin && !simulate) {
+      // Ferriglobin effect: convert all shield to health
+      const isPlayer = (state.me === this.you);
+      const shieldAmount = state.me.shield;
+      
+      if (shieldAmount > 0) {
+        // Remove all shield
+        state.me.shield = 0;
+        
+        // Convert to healing
+        state.me.hp = this.applyHeal(state.me, shieldAmount);
+        
+        if (isPlayer) {
+          logYou(`converts ${shieldAmount} shield to ${shieldAmount} health`);
+          // Record healing for telemetry
+          recordCombat({
+            healingReceived: shieldAmount
+          });
+        } else {
+          logOpp(`converts ${shieldAmount} shield to ${shieldAmount} health`);
+        }
+        
+        // FX: Healing effect
+        if (window.fxHeal) window.fxHeal(state.me);
+      } else {
+        // No shield to convert
+        if (isPlayer) {
+          logYou('has no shield to convert');
+        } else {
+          logOpp('has no shield to convert');
+        }
+      }
+    }
     
     // 3) statuses
     if (burnObj && !simulate) { 
