@@ -696,6 +696,57 @@ export function runSelfTests(Game, log, showStart) {
     assertEqual('No error with out-of-bounds splice', unsafeError, false, log);
   }
 
+  // Test Ferriglobin card mechanics
+  {
+    log('Testing Ferriglobin card mechanics...');
+    const me = createPlayer(false);
+    const foe = createPlayer(true);
+    const ferriglobinCard = CARDS.find(c => c.id === 'ferriglobin');
+    
+    if (ferriglobinCard) {
+      const testGame = Object.create(Game);
+      testGame.you = me;
+      testGame.opp = foe;
+      testGame.turn = 'you';
+      testGame.over = false;
+      
+      // Test 1: Convert shield to health
+      me.hp = 15;
+      me.maxHP = 20;
+      me.shield = 5;
+      
+      const originalHP = me.hp;
+      const originalShield = me.shield;
+      
+      // Mock log function to avoid errors
+      const originalSetLog = Game.setLogFunction;
+      Game.setLogFunction(() => {});
+      
+      testGame.applyCard(ferriglobinCard, me, foe, false);
+      
+      Game.setLogFunction(originalSetLog);
+      
+      // Verify shield was converted to health
+      assertEqual('Ferriglobin converts shield to health', me.hp, originalHP + originalShield, log);
+      assertEqual('Ferriglobin removes all shield', me.shield, 0, log);
+      
+      // Test 2: No shield to convert
+      me.hp = 18;
+      me.shield = 0;
+      const noShieldHP = me.hp;
+      
+      Game.setLogFunction(() => {});
+      testGame.applyCard(ferriglobinCard, me, foe, false);
+      Game.setLogFunction(originalSetLog);
+      
+      // Verify no change when no shield
+      assertEqual('Ferriglobin does nothing with no shield', me.hp, noShieldHP, log);
+      assertEqual('Ferriglobin maintains zero shield', me.shield, 0, log);
+    } else {
+      log('SKIP: Ferriglobin card not found for testing');
+    }
+  }
+
   log('Stress tests complete - all new additions tested for emergent errors.');
   log('Self-tests complete.');
 }
