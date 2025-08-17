@@ -53,13 +53,21 @@ const EASTER_EGG_FACES = [
 // Easter egg chance (5% for any special face)
 const EASTER_EGG_CHANCE = 0.05;
 
+// Dedicated ghost chance (separate from easter eggs, higher frequency)
+const GHOST_CHANCE = 0.12; // 12% chance for ghosts specifically
+
 export function drawOppFace() {
   if (!faceCanvas || !fctx) {
     console.error('Face generator not initialized');
     return { persona: 'Bruiser', features: {} };
   }
 
-  // Check for Cat generation first (9% chance)
+  // Check for Ghost generation first (12% chance)
+  if (Math.random() < GHOST_CHANCE) {
+    return buildGhostFace();
+  }
+
+  // Check for Cat generation (9% chance)
   if (Math.random() < 0.09) {
     return buildCatFace();
   }
@@ -69,9 +77,10 @@ export function drawOppFace() {
     return buildRobotFace();
   }
 
-  // Check for easter egg generation (5% chance)
+  // Check for easter egg generation (5% chance, excluding ghosts since they have their own frequency)
   if (Math.random() < EASTER_EGG_CHANCE) {
-    const easterEgg = EASTER_EGG_FACES[rngInt(EASTER_EGG_FACES.length)];
+    const nonGhostEasterEggs = EASTER_EGG_FACES.filter(e => e.name !== 'Ghost');
+    const easterEgg = nonGhostEasterEggs[rngInt(nonGhostEasterEggs.length)];
     return drawEasterEggFace(easterEgg);
   }
 
@@ -332,6 +341,188 @@ export function buildRobotFace() {
       chassis: chassisType,
       eyeLeds: ledColor,
       antenna,
+      accessory,
+      isEasterEgg: false
+    }
+  };
+}
+
+// Build Ghost face with variants
+export function buildGhostFace() {
+  const S = 6;
+  fctx.clearRect(0, 0, faceCanvas.width, faceCanvas.height);
+  const px = (x, y, c) => { fctx.fillStyle = c; fctx.fillRect(x * S, y * S, S, S); };
+
+  // Ghost variants
+  const spectralTypes = ['wisp', 'shade', 'phantom', 'spirit', 'wraith'];
+  const eyeGlows = ['blue', 'green', 'red', 'purple', 'white'];
+  const manifestations = ['translucent', 'ethereal', 'misty', 'solid'];
+  const accessories = [null, 'chains', 'crown', 'aura', 'ectoplasm'];
+  
+  const spectralType = spectralTypes[rngInt(spectralTypes.length)];
+  const eyeGlow = eyeGlows[rngInt(eyeGlows.length)];
+  const manifestation = manifestations[rngInt(manifestations.length)];
+  const accessory = Math.random() < 0.15 ? accessories[1 + rngInt(accessories.length - 1)] : null;
+
+  // Ghost color mapping
+  const spectralColors = {
+    wisp: '#f8f8ff',     // Ghost white
+    shade: '#d3d3d3',    // Light gray
+    phantom: '#e6e6fa',  // Lavender
+    spirit: '#f0f8ff',   // Alice blue
+    wraith: '#dcdcdc'    // Gainsboro
+  };
+
+  const eyeGlowColors = {
+    blue: '#4169e1',
+    green: '#32cd32',
+    red: '#ff4500',
+    purple: '#8a2be2',
+    white: '#ffffff'
+  };
+
+  const mainColor = spectralColors[spectralType];
+  const eyeColor = eyeGlowColors[eyeGlow];
+  const black = '#000000';
+  const darkGray = '#404040';
+  const lightGray = '#d0d0d0';
+
+  // background
+  for (let y = 0; y < 16; y++) {
+    for (let x = 0; x < 16; x++) {
+      px(x, y, black);
+    }
+  }
+
+  // Ghost body based on manifestation
+  if (manifestation === 'translucent') {
+    // Translucent ghost with scattered pixels
+    for (let y = 4; y <= 10; y++) { 
+      for (let x = 5; x <= 10; x++) {
+        if (Math.random() < 0.8) px(x, y, mainColor); 
+      } 
+    }
+  } else {
+    // Solid manifestation
+    for (let y = 4; y <= 10; y++) { 
+      for (let x = 5; x <= 10; x++) {
+        px(x, y, mainColor); 
+      } 
+    }
+  }
+  
+  // Wavy bottom edge (characteristic ghost shape)
+  if (manifestation !== 'misty') {
+    px(5, 11, mainColor);
+    px(7, 11, mainColor);
+    px(9, 11, mainColor);
+    if (manifestation === 'solid') {
+      px(6, 12, mainColor);
+      px(8, 12, mainColor);
+    }
+  }
+
+  // Eyes based on type
+  if (spectralType === 'wisp') {
+    // Small glowing orbs
+    px(6, 6, eyeColor);
+    px(9, 6, eyeColor);
+  } else {
+    // Larger hollow eyes with glow
+    px(6, 6, black);
+    px(7, 6, black);
+    px(9, 6, black);
+    px(10, 6, black);
+    px(6, 7, eyeColor);
+    px(9, 7, eyeColor);
+  }
+  
+  // Mouth based on type
+  if (spectralType === 'wraith') {
+    // Menacing grin
+    for (let x = 6; x <= 9; x++) {
+      px(x, 9, black);
+    }
+    px(6, 8, black);
+    px(9, 8, black);
+  } else {
+    // Standard hollow mouth
+    px(7, 9, black);
+    px(8, 9, black);
+    if (manifestation === 'solid') {
+      px(7, 10, black);
+      px(8, 10, black);
+    }
+  }
+
+  // Accessories
+  if (accessory === 'chains') {
+    // Spectral chains
+    px(4, 7, darkGray);
+    px(11, 8, darkGray);
+    px(5, 12, darkGray);
+    px(10, 12, darkGray);
+  } else if (accessory === 'crown') {
+    // Ethereal crown
+    for (let x = 5; x <= 10; x++) {
+      px(x, 3, eyeColor);
+    }
+    px(6, 2, eyeColor);
+    px(8, 2, eyeColor);
+  } else if (accessory === 'aura') {
+    // Glowing aura
+    px(4, 5, eyeColor);
+    px(11, 6, eyeColor);
+    px(4, 9, eyeColor);
+    px(11, 10, eyeColor);
+  } else if (accessory === 'ectoplasm') {
+    // Dripping ectoplasm
+    px(6, 13, lightGray);
+    px(8, 13, lightGray);
+    px(7, 14, lightGray);
+  }
+
+  // Transparency effects for ethereal/misty types
+  if (manifestation === 'ethereal' || manifestation === 'misty') {
+    // Add some transparency pixels
+    px(6, 5, lightGray);
+    px(9, 8, lightGray);
+    px(7, 10, lightGray);
+  }
+  
+  // Border (partial for ethereal effect)
+  if (manifestation === 'solid') {
+    for (let x = 5; x <= 10; x++) { 
+      px(x, 4, black); 
+      px(x, 11, black); 
+    }
+    for (let y = 4; y <= 11; y++) { 
+      px(5, y, black); 
+      px(10, y, black); 
+    }
+  } else {
+    // Partial border for ethereal effect
+    for (let x = 6; x <= 9; x++) { 
+      px(x, 4, black); 
+    }
+    px(5, 5, black); 
+    px(10, 5, black);
+  }
+
+  // Log appearance
+  let logMessage = `A Ghost appears (${spectralType} / ${eyeGlow} glow).`;
+  if (accessory) {
+    logMessage = `✨ A Fancy Ghost appears (${accessory}).`;
+  }
+  if (window.log) window.log(logMessage);
+
+  return { 
+    persona: 'ghost',
+    features: { 
+      isGhost: true,
+      spectralType,
+      eyeGlow,
+      manifestation,
       accessory,
       isEasterEgg: false
     }

@@ -177,8 +177,8 @@ export const CARDS = [
     id: 'reconsider', 
     sym: icons.reconsider, 
     name: 'Reconsider', 
-    description: 'Costs ALL your energy. Shuffle hand and draw new cards.',
-    cost: 0, 
+    description: 'Costs 3 energy. Shuffle hand and draw new cards.',
+    cost: 3, 
     type: 'skill', 
     tags: ['utility'],
     effects: { damage: 0, pierce: false, heal: 0, shield: 0, draw: 0, reconsider: true }, 
@@ -250,5 +250,18 @@ export const CARDS = [
     status: { target: { burn: null, freezeEnergy: 0 }, self: { nextPlus: 0, maxEnergyDelta: 0, energyNowDelta: 0, cleanse: false, imperviousNext: true } }, 
     scaling: {}, 
     ai: { role: 'defend', pri: 85 } 
+  },
+  { 
+    id: 'reap', 
+    sym: icons.reap, 
+    name: 'Reap', 
+    description: 'Deal damage equal to half your current health to opponent. Take the same damage yourself.',
+    cost: 3, 
+    type: 'attack', 
+    tags: ['reap', 'life-cost'],
+    effects: { damage: 0, pierce: false, heal: 0, shield: 0, draw: 0, reap: true }, 
+    status: { target: { burn: null, freezeEnergy: 0 }, self: { nextPlus: 0, maxEnergyDelta: 0, energyNowDelta: 0, cleanse: false } }, 
+    scaling: {}, 
+    ai: { role: 'finisher', pri: 45 } 
   }
 ];

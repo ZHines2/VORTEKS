@@ -173,6 +173,13 @@ const UNLOCK_META = [
     }
   },
   {
+    id: 'reap',
+    kind: 'persona',
+    description: 'Defeat any Ghost opponent.',
+    progressHint: () => 'Find and defeat any Ghost opponent.',
+    check: () => false // Handled by persona defeat system
+  },
+  {
     id: 'impervious',
     kind: 'achievement',
     description: 'Access the debug menu.',
@@ -337,7 +344,10 @@ const PERSONA_UNLOCKS = {
   // Bruiser persona unlocks Wallop card
   'bruiser': 'wallop',
   // Trickster persona unlocks Presto card
-  'trickster': 'presto'
+  'trickster': 'presto',
+  // Ghost persona unlocks Reap card
+  'ghost': 'reap',
+  'specter': 'reap'
   // Example future entries:
   // 'Glacier': 'snow',  // would unlock Freeze card
   // 'Assassin': 'dagger'  // would unlock Pierce card

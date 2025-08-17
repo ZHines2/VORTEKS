@@ -770,6 +770,40 @@ export const Game = {
         }
       }
     }
+    if (effects.reap && !simulate) {
+      // Reap effect: deal damage equal to half current health to opponent, take same damage yourself
+      const isPlayer = (state.me === this.you);
+      const reapDamage = Math.floor(state.me.hp / 2);
+      
+      if (reapDamage > 0) {
+        // Deal damage to opponent
+        const actualDamageToOpp = this.applyDamage(state.them, reapDamage, pierce, false);
+        
+        // Deal damage to self (ignores shields and armor since it's self-inflicted)
+        state.me.hp = Math.max(1, state.me.hp - reapDamage); // Prevent suicide, leave at 1 HP minimum
+        
+        if (isPlayer) {
+          logYou(`reaps souls for ${reapDamage} damage to both players`);
+          // Record both damage dealt and received for telemetry
+          recordCombat({
+            damageDealt: actualDamageToOpp,
+            damageReceived: reapDamage
+          });
+        } else {
+          logOpp(`reaps souls for ${reapDamage} damage to both players`);
+        }
+        
+        // FX: Dark magic effect
+        if (window.fxReap) window.fxReap(state.me);
+      } else {
+        // Not enough HP to reap (at 1 HP)
+        if (isPlayer) {
+          logYou('cannot reap with so little life force');
+        } else {
+          logOpp('cannot reap with so little life force');
+        }
+      }
+    }
     
     // 3) statuses
     if (burnObj && !simulate) { 

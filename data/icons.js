@@ -16,5 +16,6 @@ export const icons = {
   presto: '🎩',
   ferriglobin: '🩸',
   impervious: '🗿',
-  overload: '📿'
+  overload: '📿',
+  reap: '💀'
 };

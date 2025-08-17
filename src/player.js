@@ -56,10 +56,6 @@ export function createPlayer(isAI = false) {
     },
     
     canAfford(card) { 
-      // Reconsider card can always be played (costs "ALL" energy)
-      if (card.id === 'reconsider') {
-        return true;
-      }
       // Check both energy cost and life cost
       const hasEnergyForCard = this.energy >= card.cost;
       const hasLifeForCard = !card.effects?.lifeCost || this.hp > card.effects.lifeCost; // Must have more life than cost (can't suicide)
@@ -67,12 +63,6 @@ export function createPlayer(isAI = false) {
     },
     
     spend(cost, card) { 
-      // For reconsider card, spend all remaining energy
-      if (card && card.id === 'reconsider') {
-        const spent = this.energy;
-        this.energy = 0;
-        return spent;
-      }
       const spent = Math.min(cost, this.energy);
       this.energy = Math.max(0, this.energy - cost);
       return spent;

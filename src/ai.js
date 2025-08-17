@@ -79,6 +79,16 @@ export function makePersonaDeck(kind, unlockedCards = null, campaignBooster = 0)
     counts.loop -= 1;    // Fewer expensive ramp
     counts.fire -= 1;    // Less attrition
   }
+  if (kind === 'ghost' || kind === 'Ghost' || kind === 'Specter') {
+    // Ghost deck: 2 copies of Reap + spectral theme
+    counts.reap = 2;
+    counts.snow += 2;    // Freezing presence
+    counts.purge += 1;   // Spiritual cleansing
+    counts.dagger += 1;  // Ethereal strikes
+    counts.fire -= 1;    // Less fire (opposing element)
+    counts.heart -= 1;   // Less healing (undead)
+    counts.shield -= 1;  // Less physical defense
+  }
   
   const deck = []; 
   for (const id in counts) { 
@@ -145,6 +155,13 @@ export function createAIPlayer(game) {
       const setupCard = playable.find(x => x.c.id === 'curiosity' || x.c.id === 'droid');
       if (setupCard) {
         game.playCard(ai, setupCard.i);
+        return this.aiPlay();
+      }
+      
+      // Desperate Reap play: only when losing badly (opponent has more than double our HP)
+      const reapCard = playable.find(x => x.c.id === 'reap');
+      if (reapCard && game.you.hp > ai.hp * 2) {
+        game.playCard(ai, reapCard.i);
         return this.aiPlay();
       }
       
