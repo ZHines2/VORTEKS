@@ -243,6 +243,19 @@ function setupDefeatedOpponents() {
   const generateLoreBtn = document.getElementById('generateLoreBtn');
   const refreshLoreBtn = document.getElementById('refreshLoreBtn');
   const favoriteChronicleBtn = document.getElementById('favoriteChronicleBtn');
+  
+  // TTS elements
+  const ttsToggleBtn = document.getElementById('ttsToggleBtn');
+  const ttsControls = document.getElementById('ttsControls');
+  const ttsPlayBtn = document.getElementById('ttsPlayBtn');
+  const ttsPauseBtn = document.getElementById('ttsPauseBtn');
+  const ttsStopBtn = document.getElementById('ttsStopBtn');
+  const ttsStatusText = document.getElementById('ttsStatusText');
+  
+  // TTS state
+  let ttsEnabled = localStorage.getItem('vorteks-tts-enabled') === 'true';
+  let currentSpeech = null;
+  let ttsIsPlaying = false;
 
   // Lore button click handler
   loreBtn.addEventListener('click', () => {
@@ -252,6 +265,7 @@ function setupDefeatedOpponents() {
 
   // Lore close button handler
   loreCloseBtn.addEventListener('click', () => {
+    stopChronicle(); // Stop any ongoing speech when closing modal
     loreModal.hidden = true;
   });
 
@@ -270,6 +284,26 @@ function setupDefeatedOpponents() {
     // TODO: Implement favorite system
     alert('Chronicle favoriting will be available in a future update!');
   });
+
+  // TTS event handlers
+  ttsToggleBtn.addEventListener('click', () => {
+    toggleTTS();
+  });
+  
+  ttsPlayBtn.addEventListener('click', () => {
+    playChronicle();
+  });
+  
+  ttsPauseBtn.addEventListener('click', () => {
+    pauseChronicle();
+  });
+  
+  ttsStopBtn.addEventListener('click', () => {
+    stopChronicle();
+  });
+  
+  // Initialize TTS UI state
+  updateTTSButtonState();
 
   // Leaderboard modal setup
   const leaderboardModal = document.getElementById('leaderboardModal');
@@ -955,6 +989,9 @@ function setupDefeatedOpponents() {
     const insightsEl = document.getElementById('chronicleInsights');
     const statsEl = document.getElementById('chronicleStats');
 
+    // Stop any ongoing speech when new chronicle is displayed
+    stopChronicle();
+
     titleEl.textContent = chronicle.title;
     textEl.innerHTML = formatChronicleText(chronicle.content);
     
@@ -965,12 +1002,20 @@ function setupDefeatedOpponents() {
     // Show favorite button
     const favoriteBtn = document.getElementById('favoriteChronicleBtn');
     favoriteBtn.hidden = false;
+    
+    // Update TTS controls for new content
+    if (ttsEnabled) {
+      updateTTSControlsState();
+    }
   }
 
   function displayWelcomeMessage() {
     const titleEl = document.getElementById('chronicleTitle');
     const textEl = document.getElementById('chronicleText');
     const insightsEl = document.getElementById('chronicleInsights');
+
+    // Stop any ongoing speech
+    stopChronicle();
 
     titleEl.textContent = 'Welcome to the VORTEKS Chronicles';
     textEl.innerHTML = `
@@ -985,6 +1030,11 @@ function setupDefeatedOpponents() {
     // Hide favorite button
     const favoriteBtn = document.getElementById('favoriteChronicleBtn');
     favoriteBtn.hidden = true;
+    
+    // Reset TTS controls
+    if (ttsEnabled) {
+      updateTTSControlsState();
+    }
   }
 
   function displayErrorMessage() {
@@ -1007,6 +1057,153 @@ function setupDefeatedOpponents() {
       .split('\n\n')
       .map(paragraph => `<p style="margin-bottom:16px;">${paragraph}</p>`)
       .join('');
+  }
+
+  // TTS Functions
+  function toggleTTS() {
+    ttsEnabled = !ttsEnabled;
+    localStorage.setItem('vorteks-tts-enabled', ttsEnabled.toString());
+    updateTTSButtonState();
+    
+    if (!ttsEnabled && currentSpeech) {
+      stopChronicle();
+    }
+  }
+  
+  function updateTTSButtonState() {
+    if (!window.speechSynthesis) {
+      ttsToggleBtn.disabled = true;
+      ttsToggleBtn.textContent = '🔇 TTS Not Available';
+      ttsToggleBtn.title = 'Text-to-speech is not supported in this browser';
+      return;
+    }
+    
+    ttsToggleBtn.textContent = ttsEnabled ? '🔊 Read Aloud (ON)' : '🔇 Read Aloud (OFF)';
+    ttsToggleBtn.title = ttsEnabled ? 'Disable text-to-speech' : 'Enable text-to-speech';
+    ttsControls.style.display = ttsEnabled ? 'flex' : 'none';
+    
+    if (ttsEnabled) {
+      updateTTSControlsState();
+    }
+  }
+  
+  function updateTTSControlsState() {
+    if (!currentSpeech || !ttsIsPlaying) {
+      ttsPlayBtn.disabled = false;
+      ttsPauseBtn.disabled = true;
+      ttsStopBtn.disabled = true;
+      ttsStatusText.textContent = 'Ready to read';
+    } else {
+      ttsPlayBtn.disabled = ttsIsPlaying && !window.speechSynthesis.paused;
+      ttsPauseBtn.disabled = !ttsIsPlaying || window.speechSynthesis.paused;
+      ttsStopBtn.disabled = false;
+      
+      if (window.speechSynthesis.paused) {
+        ttsStatusText.textContent = 'Paused';
+      } else if (ttsIsPlaying) {
+        ttsStatusText.textContent = 'Reading...';
+      }
+    }
+  }
+  
+  function cleanTextForSpeech(text) {
+    // Remove HTML tags and clean up text for speech
+    return text
+      .replace(/<[^>]*>/g, '') // Remove HTML tags
+      .replace(/\n\n+/g, '. ') // Replace paragraph breaks with pauses
+      .replace(/\n/g, ' ') // Replace line breaks with spaces
+      .replace(/\s+/g, ' ') // Normalize whitespace
+      .trim();
+  }
+  
+  function playChronicle() {
+    if (!window.speechSynthesis || !ttsEnabled) return;
+    
+    // If paused, resume
+    if (currentSpeech && window.speechSynthesis.paused) {
+      window.speechSynthesis.resume();
+      updateTTSControlsState();
+      return;
+    }
+    
+    // Stop any existing speech
+    if (currentSpeech) {
+      stopChronicle();
+    }
+    
+    // Get the chronicle text
+    const titleEl = document.getElementById('chronicleTitle');
+    const textEl = document.getElementById('chronicleText');
+    
+    if (!titleEl || !textEl) return;
+    
+    const title = titleEl.textContent;
+    const content = cleanTextForSpeech(textEl.textContent);
+    
+    if (!content.trim()) {
+      ttsStatusText.textContent = 'No text to read';
+      return;
+    }
+    
+    // Create speech with title and content
+    const speechText = `${title}. ${content}`;
+    currentSpeech = new SpeechSynthesisUtterance(speechText);
+    
+    // Configure speech settings
+    currentSpeech.rate = 0.9; // Slightly slower for better comprehension
+    currentSpeech.pitch = 1.0;
+    currentSpeech.volume = 0.8;
+    
+    // Set event handlers
+    currentSpeech.onstart = () => {
+      ttsIsPlaying = true;
+      updateTTSControlsState();
+    };
+    
+    currentSpeech.onend = () => {
+      ttsIsPlaying = false;
+      currentSpeech = null;
+      ttsStatusText.textContent = 'Reading complete';
+      updateTTSControlsState();
+    };
+    
+    currentSpeech.onerror = (event) => {
+      console.error('Speech synthesis error:', event.error);
+      ttsIsPlaying = false;
+      currentSpeech = null;
+      ttsStatusText.textContent = 'Error occurred';
+      updateTTSControlsState();
+    };
+    
+    currentSpeech.onpause = () => {
+      updateTTSControlsState();
+    };
+    
+    currentSpeech.onresume = () => {
+      updateTTSControlsState();
+    };
+    
+    // Start speaking
+    window.speechSynthesis.speak(currentSpeech);
+    ttsStatusText.textContent = 'Starting...';
+    updateTTSControlsState();
+  }
+  
+  function pauseChronicle() {
+    if (!window.speechSynthesis || !currentSpeech || !ttsIsPlaying) return;
+    
+    window.speechSynthesis.pause();
+    updateTTSControlsState();
+  }
+  
+  function stopChronicle() {
+    if (!window.speechSynthesis) return;
+    
+    window.speechSynthesis.cancel();
+    ttsIsPlaying = false;
+    currentSpeech = null;
+    ttsStatusText.textContent = 'Stopped';
+    updateTTSControlsState();
   }
 
   // Leaderboard rendering functions

@@ -707,6 +707,17 @@
         <button id="generateLoreBtn" class="btn" style="background:var(--magic); color:white; font-weight:bold;" title="Generate a new tale based on your journey">🌌 Generate New Chronicle</button>
         <button id="refreshLoreBtn" class="btn" title="Refresh the current chronicle">🔄 Refresh Tale</button>
         <button id="favoriteChronicleBtn" class="btn" title="Save this chronicle to favorites" hidden>⭐ Favorite</button>
+        <button id="ttsToggleBtn" class="btn" title="Toggle text-to-speech for chronicles">🔊 Read Aloud</button>
+      </div>
+      
+      <!-- TTS Controls (hidden by default) -->
+      <div id="ttsControls" style="display:none; gap:8px; justify-content:center; margin-bottom:16px; flex-wrap:wrap;">
+        <button id="ttsPlayBtn" class="btn" style="background:var(--good); color:white;" title="Play/Resume reading">▶️ Play</button>
+        <button id="ttsPauseBtn" class="btn" style="background:var(--warning); color:white;" title="Pause reading">⏸️ Pause</button>
+        <button id="ttsStopBtn" class="btn" style="background:var(--bad); color:white;" title="Stop reading">⏹️ Stop</button>
+        <div id="ttsStatus" style="display:flex; align-items:center; color:var(--accent); font-size:12px; padding:0 8px;">
+          <span id="ttsStatusText">Ready to read</span>
+        </div>
       </div>
       
       <!-- Chronicle Display Area -->
