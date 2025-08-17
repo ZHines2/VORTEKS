@@ -29,3 +29,14 @@ export function sanitizeNickname(nickname) {
 
 // DOM helper
 export const $ = (selector) => document.querySelector(selector);
+
+// Modal management utilities
+export function showModal(modal) {
+  modal.hidden = false;
+  document.body.classList.add('modal-open');
+}
+
+export function hideModal(modal) {
+  modal.hidden = true;
+  document.body.classList.remove('modal-open');
+}
