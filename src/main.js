@@ -318,8 +318,8 @@ function setupDefeatedOpponents() {
     companionModal.hidden = true;
   });
 
-  // Name editing functionality
-  nameEditBtn.addEventListener('click', () => {
+  // Name editing functionality (reusable function)
+  function startNameEdit() {
     const currentName = document.getElementById('companionName').textContent;
     const nameElement = document.getElementById('companionName');
     
@@ -329,6 +329,13 @@ function setupDefeatedOpponents() {
     input.id = 'nameEditInput';
     input.value = currentName;
     input.maxLength = 20;
+    input.style.cssText = nameElement.style.cssText;
+    input.style.background = 'var(--panel)';
+    input.style.border = '1px solid var(--border)';
+    input.style.borderRadius = '4px';
+    input.style.padding = '2px 4px';
+    input.style.width = 'auto';
+    input.style.minWidth = '120px';
     
     // Replace name display with input
     nameElement.style.display = 'none';
@@ -355,6 +362,16 @@ function setupDefeatedOpponents() {
         nameElement.style.display = 'block';
       }
     });
+  }
+
+  // Name edit button handler
+  nameEditBtn.addEventListener('click', startNameEdit);
+
+  // Make companion name itself clickable
+  document.addEventListener('click', (e) => {
+    if (e.target.id === 'companionName') {
+      startNameEdit();
+    }
   });
 
   // Room interaction handlers with mystical flavor
