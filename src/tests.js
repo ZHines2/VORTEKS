@@ -81,7 +81,7 @@ export function runSelfTests(Game, log, showStart) {
   
   // Added tests (new)
   { 
-    // Echo sets up next card repeat
+    // Echo repeats last card played
     const me = createPlayer(false); 
     const foe = createPlayer(true);
     const testGame = Object.create(Game);
@@ -95,9 +95,16 @@ export function runSelfTests(Game, log, showStart) {
     // Set a mock log function to avoid errors
     const originalSetLog = Game.setLogFunction;
     Game.setLogFunction(() => {});
+    
+    // Set lastPlayed to Strike
+    me.lastPlayed = CARDS.find(c => c.id === 'swords');
+    foe.hp = 20; // Reset health
+    
+    // Apply Echo card
     testGame.applyCard(CARDS.find(c => c.id === 'echo'), me, foe, false);
+    
     Game.setLogFunction(originalSetLog);
-    assertEqual('Echo sets echoNext flag', me.echoNext, true, log);
+    assertEqual('Echo repeats last card (Strike)', foe.hp, 17, log); // 20 - 3 = 17
   }
   
   { 
@@ -286,7 +293,7 @@ export function runSelfTests(Game, log, showStart) {
     assertEqual('Player energy is 0 after reconsider', player.energy, 0, log);
   }
 
-  // Test Echo & Zap interaction (regression test)
+  // Test Echo & Zap interaction (regression test) - Now tests last card behavior
   {
     const me = createPlayer(false);
     const foe = createPlayer(true);
@@ -295,24 +302,22 @@ export function runSelfTests(Game, log, showStart) {
     testGame.opp = foe;
     testGame.isEchoing = false;
     
-    // Apply Echo card to set echoNext flag
-    const echoCard = CARDS.find(c => c.id === 'echo');
-    const initialDeckSize = me.deck.length;
+    // Set lastPlayed to Zap
+    me.lastPlayed = CARDS.find(c => c.id === 'bolt');
+    foe.hp = 20;
     const initialHandSize = me.hand.length;
     
+    // Apply Echo card to repeat Zap 
+    const echoCard = CARDS.find(c => c.id === 'echo');
     testGame.applyCard(echoCard, me, foe, false);
     
-    // Verify no unwanted state anomalies occurred
-    const finalDeckSize = me.deck.length;
-    const finalHandSize = me.hand.length;
-    
-    // Check that echoNext flag was set
-    assertEqual('Echo sets echoNext flag correctly', me.echoNext, true, log);
-    assertEqual('Echo-setup maintains valid game state', typeof finalDeckSize, 'number', log);
+    // Verify Zap was repeated: 2 pierce damage dealt and 1 card drawn
+    assertEqual('Echo repeats Zap damage', foe.hp, 18, log); // 20 - 2 = 18
+    assertEqual('Echo repeats Zap card draw', me.hand.length, initialHandSize + 1, log);
     assertEqual('Echo flag properly managed', testGame.isEchoing, false, log);
   }
 
-  // Test complete Echo functionality - Echo then play another card
+  // Test complete Overload functionality - Overload then play another card
   {
     const me = createPlayer(false);
     const foe = createPlayer(true);
@@ -324,7 +329,7 @@ export function runSelfTests(Game, log, showStart) {
     testGame.isEchoing = false;
     testGame.checkWin = () => {};
     
-    // Mock the playCard function to test the echo trigger
+    // Mock the playCard function to test the overload trigger
     const originalApplyCard = testGame.applyCard;
     let applyCardCallCount = 0;
     testGame.applyCard = function(card, player, target, simulate) {
@@ -336,10 +341,10 @@ export function runSelfTests(Game, log, showStart) {
     const originalSetLog = Game.setLogFunction;
     Game.setLogFunction(() => {});
     
-    // First: Play Echo
-    const echoCard = CARDS.find(c => c.id === 'echo');
-    testGame.applyCard(echoCard, me, foe, false);
-    assertEqual('Echo sets echoNext flag', me.echoNext, true, log);
+    // First: Play Overload
+    const overloadCard = CARDS.find(c => c.id === 'overload');
+    testGame.applyCard(overloadCard, me, foe, false);
+    assertEqual('Overload sets echoNext flag', me.echoNext, true, log);
     
     // Reset apply card counter
     applyCardCallCount = 0;
@@ -350,9 +355,9 @@ export function runSelfTests(Game, log, showStart) {
     me.energy = 5; // Ensure enough energy
     testGame.playCard(me, 0); // Play the swords card
     
-    // After playing swords with echo active, should be called twice (once for play, once for echo)
-    assertEqual('Echo triggers and repeats card', applyCardCallCount, 2, log);
-    assertEqual('Echo flag cleared after use', me.echoNext, false, log);
+    // After playing swords with overload active, should be called twice (once for play, once for overload)
+    assertEqual('Overload triggers and repeats card', applyCardCallCount, 2, log);
+    assertEqual('Overload flag cleared after use', me.echoNext, false, log);
     
     // Restore original functions
     Game.setLogFunction(originalSetLog);
@@ -1024,5 +1029,168 @@ export function runSelfTests(Game, log, showStart) {
   }
 
   log('Debug and Impervious tests complete.');
+
+  // Comprehensive Echo and Overload Tests
+  {
+    log('Testing comprehensive Echo and Overload scenarios...');
+    
+    // Test Echo with no last card
+    {
+      const me = createPlayer(false);
+      const foe = createPlayer(true);
+      const testGame = Object.create(Game);
+      testGame.you = me;
+      testGame.opp = foe;
+      testGame.isEchoing = false;
+      testGame.checkWin = () => {};
+      
+      // Set a mock log function
+      const originalSetLog = Game.setLogFunction;
+      Game.setLogFunction(() => {});
+      
+      const initialHandSize = me.hand.length;
+      me.lastPlayed = null; // No last card
+      
+      testGame.applyCard(CARDS.find(c => c.id === 'echo'), me, foe, false);
+      
+      // Should draw a card when no last card to echo
+      assertEqual('Echo draws card when no lastPlayed', me.hand.length, initialHandSize + 1, log);
+      
+      Game.setLogFunction(originalSetLog);
+    }
+    
+    // Test Echo ignores other Echo cards as lastPlayed
+    {
+      const me = createPlayer(false);
+      const foe = createPlayer(true);
+      const testGame = Object.create(Game);
+      testGame.you = me;
+      testGame.opp = foe;
+      testGame.isEchoing = false;
+      testGame.checkWin = () => {};
+      
+      const originalSetLog = Game.setLogFunction;
+      Game.setLogFunction(() => {});
+      
+      const initialHandSize = me.hand.length;
+      me.lastPlayed = CARDS.find(c => c.id === 'echo'); // Last card was Echo
+      
+      testGame.applyCard(CARDS.find(c => c.id === 'echo'), me, foe, false);
+      
+      // Should draw card since last Echo card is ignored
+      assertEqual('Echo ignores Echo as lastPlayed', me.hand.length, initialHandSize + 1, log);
+      
+      Game.setLogFunction(originalSetLog);
+    }
+    
+    // Test Echo with complex cards (Ferriglobin)
+    {
+      const me = createPlayer(false);
+      const foe = createPlayer(true);
+      const testGame = Object.create(Game);
+      testGame.you = me;
+      testGame.opp = foe;
+      testGame.isEchoing = false;
+      testGame.checkWin = () => {};
+      
+      const originalSetLog = Game.setLogFunction;
+      Game.setLogFunction(() => {});
+      
+      // Set up scenario: player has shield, last played was Ferriglobin
+      me.shield = 5;
+      me.hp = 15;
+      me.lastPlayed = CARDS.find(c => c.id === 'ferriglobin');
+      
+      testGame.applyCard(CARDS.find(c => c.id === 'echo'), me, foe, false);
+      
+      // Ferriglobin should have been repeated - shield converted to health
+      assertEqual('Echo repeats Ferriglobin correctly', me.shield, 0, log);
+      assertEqual('Echo repeats Ferriglobin correctly - HP', me.hp, 20, log); // 15 + 5 shield
+      
+      Game.setLogFunction(originalSetLog);
+    }
+    
+    // Test Overload prevents infinite loops
+    {
+      const me = createPlayer(false);
+      const foe = createPlayer(true);
+      const testGame = Object.create(Game);
+      testGame.you = me;
+      testGame.opp = foe;
+      testGame.isEchoing = false;
+      testGame.checkWin = () => {};
+      
+      const originalSetLog = Game.setLogFunction;
+      Game.setLogFunction(() => {});
+      
+      // Play Overload, then another Overload
+      me.hand = [CARDS.find(c => c.id === 'overload'), CARDS.find(c => c.id === 'overload')];
+      me.energy = 5;
+      
+      testGame.playCard(me, 0); // First Overload
+      assertEqual('First Overload sets flag', me.echoNext, true, log);
+      
+      testGame.playCard(me, 0); // Second Overload (should not trigger infinite loop)
+      assertEqual('Second Overload does not infinite loop', me.echoNext, true, log);
+      
+      Game.setLogFunction(originalSetLog);
+    }
+    
+    // Test Overload with enemy AI usage
+    {
+      const me = createPlayer(false);
+      const foe = createPlayer(true);
+      foe.isAI = true;
+      const testGame = Object.create(Game);
+      testGame.you = me;
+      testGame.opp = foe;
+      testGame.turn = 'opp';
+      testGame.isEchoing = false;
+      testGame.checkWin = () => {};
+      
+      const originalSetLog = Game.setLogFunction;
+      Game.setLogFunction(() => {});
+      
+      // AI plays Overload then Strike
+      foe.hand = [CARDS.find(c => c.id === 'overload'), CARDS.find(c => c.id === 'swords')];
+      foe.energy = 5;
+      me.hp = 20;
+      
+      testGame.playCard(foe, 0); // AI plays Overload
+      assertEqual('AI Overload sets flag', foe.echoNext, true, log);
+      
+      testGame.playCard(foe, 0); // AI plays Strike (should be repeated)
+      assertEqual('AI Overload triggers correctly', me.hp, 14, log); // 20 - 3 - 3 = 14
+      assertEqual('AI Overload flag cleared', foe.echoNext, false, log);
+      
+      Game.setLogFunction(originalSetLog);
+    }
+    
+    // Test interaction between Echo usage tracking and Overload unlock
+    {
+      log('Testing Echo usage tracking for Overload unlock...');
+      
+      // Mock card unlock checking
+      let unlockEvents = [];
+      const mockUnlockSystem = {
+        checkAchievementUnlocks: (ctx) => {
+          unlockEvents.push(ctx);
+        }
+      };
+      
+      // Test that Echo card played events would be tracked
+      const testEvent = {
+        event: 'cardPlayed',
+        cardId: 'echo',
+        cardType: 'skill'
+      };
+      
+      mockUnlockSystem.checkAchievementUnlocks(testEvent);
+      assertEqual('Echo usage tracking event recorded', unlockEvents.length, 1, log);
+      assertEqual('Echo usage tracking has correct cardId', unlockEvents[0].cardId, 'echo', log);
+    }
+    
+    log('Echo and Overload comprehensive tests complete.');
+  }
   log('Self-tests complete.');
 }

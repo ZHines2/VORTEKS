@@ -183,6 +183,19 @@ const UNLOCK_META = [
       }
       return false;
     }
+  },
+  {
+    id: 'overload',
+    kind: 'achievement', 
+    description: 'Use Echo card 10 times cumulatively.',
+    progressHint: s => `Echo uses: ${s.progress.echoUseCount || 0}/10`,
+    check: (ctx, state) => {
+      if (ctx.event === 'cardPlayed' && ctx.cardId === 'echo') {
+        state.progress.echoUseCount = (state.progress.echoUseCount || 0) + 1;
+        return state.progress.echoUseCount >= 10;
+      }
+      return false;
+    }
   }
 ];
 

@@ -330,7 +330,7 @@ export const Game = {
   endTurn() {
     const me = this.turn === 'you' ? this.you : this.opp;
     
-    // Clear echo flag when turn ends
+    // Clear overload flag when turn ends
     me.echoNext = false;
     
     // Log end turn
@@ -426,17 +426,17 @@ export const Game = {
     // apply via interpreter
     this.applyCard(card, p, (p === this.you ? this.opp : this.you), false);
     
-    // Check if this card should be echoed (and it's not Echo itself to prevent infinite loops)
-    if (p.echoNext && card.id !== 'echo' && !this.isEchoing) {
+    // Check if this card should be echoed by Overload (and it's not Overload itself to prevent infinite loops)
+    if (p.echoNext && card.id !== 'overload' && !this.isEchoing) {
       // Clear the echo flag first to prevent infinite loops
       p.echoNext = false;
       // Set echoing flag and repeat the card without cost
       const wasEchoing = this.isEchoing;
       this.isEchoing = true;
       if (isPlayer) {
-        logYou(`Echo triggers - repeating ${cardName}`);
+        logYou(`Overload triggers - repeating ${cardName}`);
       } else {
-        logOpp(`Echo triggers - repeating ${cardName}`);
+        logOpp(`Overload triggers - repeating ${cardName}`);
       }
       this.applyCard(card, p, (p === this.you ? this.opp : this.you), false);
       this.isEchoing = wasEchoing;
@@ -855,19 +855,52 @@ export const Game = {
       }
     }
     
-    // 4) special: Echo
+    // 4) special: Echo (repeat last card)
     if (card.id === 'echo') {
-      // Echo sets a flag to repeat the next non-Echo card played
+      const last = me.lastPlayed && me.lastPlayed.id !== 'echo' ? me.lastPlayed : null;
+      if (last) {
+        // Echo repeats last card without paying its cost
+        // Add a flag to prevent recursive echoes and ensure clean state
+        const wasEchoing = this.isEchoing;
+        this.isEchoing = true;
+        this.applyCard(last, me, them, simulate);
+        this.isEchoing = wasEchoing;
+        if (!simulate) {
+          const isPlayer = (me === this.you);
+          if (isPlayer) {
+            logYou(`repeats ${last.name}`);
+          } else {
+            logOpp(`repeats ${last.name}`);
+          }
+        }
+      } else {
+        if (!simulate) { 
+          me.draw(1); 
+          const isPlayer = (me === this.you);
+          if (isPlayer) {
+            logYou('has no valid card to echo, draws 1 card instead');
+          } else {
+            logOpp('has no valid card to echo, draws 1 card instead');
+          }
+        }
+      }
+      // FX: Echo effect
+      if (!simulate && window.fxEcho) window.fxEcho(state.me);
+    }
+    
+    // 5) special: Overload (prepare to repeat next card)
+    if (card.id === 'overload') {
+      // Overload sets a flag to repeat the next non-Overload card played
       if (!simulate) {
         me.echoNext = true;
         const isPlayer = (me === this.you);
         if (isPlayer) {
-          logYou('prepares to echo the next card played');
+          logYou('prepares to overload the next card played');
         } else {
-          logOpp('prepares to echo the next card played');
+          logOpp('prepares to overload the next card played');
         }
       }
-      // FX: Echo effect
+      // FX: Overload effect (reuse echo effect for now)
       if (!simulate && window.fxEcho) window.fxEcho(state.me);
     }
     
