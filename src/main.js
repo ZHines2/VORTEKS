@@ -22,7 +22,19 @@ import {
   debugUnlock,
   checkPersonaDefeatUnlocks,
   checkAchievementUnlocks,
-  recordBattleResult
+  recordBattleResult,
+  // Flavor functions
+  isFlavorUnlocked,
+  getUnlockedFlavors,
+  unlockFlavor,
+  getUnlockableFlavorsInfo,
+  getFlavorUnlockInfo,
+  getCurrentFlavor,
+  setCurrentFlavor,
+  applyFlavor,
+  checkFlavorUnlocks,
+  resetFlavors,
+  debugUnlockFlavor
 } from './card-unlock.js';
 import {
   loadTelemetry,
@@ -318,8 +330,8 @@ function setupDefeatedOpponents() {
     companionModal.hidden = true;
   });
 
-  // Name editing functionality
-  nameEditBtn.addEventListener('click', () => {
+  // Name editing functionality (reusable function)
+  function startNameEdit() {
     const currentName = document.getElementById('companionName').textContent;
     const nameElement = document.getElementById('companionName');
     
@@ -329,6 +341,13 @@ function setupDefeatedOpponents() {
     input.id = 'nameEditInput';
     input.value = currentName;
     input.maxLength = 20;
+    input.style.cssText = nameElement.style.cssText;
+    input.style.background = 'var(--panel)';
+    input.style.border = '1px solid var(--border)';
+    input.style.borderRadius = '4px';
+    input.style.padding = '2px 4px';
+    input.style.width = 'auto';
+    input.style.minWidth = '120px';
     
     // Replace name display with input
     nameElement.style.display = 'none';
@@ -355,6 +374,16 @@ function setupDefeatedOpponents() {
         nameElement.style.display = 'block';
       }
     });
+  }
+
+  // Name edit button handler
+  nameEditBtn.addEventListener('click', startNameEdit);
+
+  // Make companion name itself clickable
+  document.addEventListener('click', (e) => {
+    if (e.target.id === 'companionName') {
+      startNameEdit();
+    }
   });
 
   // Room interaction handlers with mystical flavor
@@ -1283,6 +1312,93 @@ function setupGlossary() {
   }
 }
 
+function setupFlavors() {
+  const flavorsBtn = document.getElementById('flavorsBtn');
+  const flavorsModal = document.getElementById('flavorsModal');
+  const flavorsCloseBtn = document.getElementById('flavorsCloseBtn');
+  const flavorsGrid = document.getElementById('flavorsGrid');
+
+  // If buttons don't exist yet, we'll add them to the UI later
+  if (!flavorsBtn || !flavorsModal || !flavorsCloseBtn || !flavorsGrid) {
+    console.log('Flavor UI elements not found, flavor system will be added to debug panel');
+    return;
+  }
+
+  // Flavors button click handler
+  flavorsBtn.addEventListener('click', () => {
+    renderFlavors();
+    flavorsModal.hidden = false;
+  });
+
+  // Close button handler
+  flavorsCloseBtn.addEventListener('click', () => {
+    flavorsModal.hidden = true;
+  });
+
+  function renderFlavors() {
+    const flavorsInfo = getUnlockableFlavorsInfo();
+    const unlockInfo = getFlavorUnlockInfo();
+    const currentFlavor = getCurrentFlavor();
+    
+    flavorsGrid.innerHTML = '';
+    
+    flavorsInfo.forEach(flavor => {
+      const unlockData = unlockInfo.find(u => u.id === flavor.id);
+      const isSelected = flavor.id === currentFlavor;
+      
+      const div = document.createElement('div');
+      div.className = 'flavor-card';
+      if (!flavor.unlocked) {
+        div.style.opacity = '0.5';
+        div.style.filter = 'grayscale(1)';
+      }
+      if (isSelected) {
+        div.style.border = '3px solid var(--accent)';
+        div.style.background = 'var(--panel)';
+      }
+      
+      // Create color preview
+      const preview = document.createElement('div');
+      preview.className = 'color-preview';
+      preview.style.cssText = `
+        display: flex; 
+        height: 20px; 
+        margin: 4px 0; 
+        border-radius: 4px; 
+        overflow: hidden;
+      `;
+      
+      // Show main colors as stripes
+      const colors = [flavor.colors.bg, flavor.colors.panel, flavor.colors.border, flavor.colors.accent];
+      colors.forEach(color => {
+        const stripe = document.createElement('div');
+        stripe.style.cssText = `flex: 1; background: ${color};`;
+        preview.appendChild(stripe);
+      });
+      
+      const statusText = flavor.unlocked ? 
+        (isSelected ? '(ACTIVE)' : '(UNLOCKED)') : 
+        (unlockData ? `(${unlockData.progress || 'LOCKED'})` : '(LOCKED)');
+      
+      div.innerHTML = `
+        <strong>${flavor.name} ${statusText}</strong><br/>
+        <small>${flavor.description}</small>
+      `;
+      div.appendChild(preview);
+      
+      if (flavor.unlocked) {
+        div.style.cursor = 'pointer';
+        div.addEventListener('click', () => {
+          setCurrentFlavor(flavor.id);
+          renderFlavors(); // Refresh to show new selection
+        });
+      }
+      
+      flavorsGrid.appendChild(div);
+    });
+  }
+}
+
 // --- Attach to window for modularity (if needed) ---
 window.bump = bump;
 window.bumpHP = bumpHP;
@@ -1314,7 +1430,19 @@ window.CardUnlock = {
   debugUnlock,
   checkPersonaDefeatUnlocks,
   checkAchievementUnlocks,
-  recordBattleResult
+  recordBattleResult,
+  // Flavor functions
+  isFlavorUnlocked,
+  getUnlockedFlavors,
+  unlockFlavor,
+  getUnlockableFlavorsInfo,
+  getFlavorUnlockInfo,
+  getCurrentFlavor,
+  setCurrentFlavor,
+  applyFlavor,
+  checkFlavorUnlocks,
+  resetFlavors,
+  debugUnlockFlavor
 };
 
 // --- Expose Game Stats for debugging ---
@@ -1631,6 +1759,47 @@ function setupDebugScreen() {
     });
   };
 
+  // Flavor Testing Section
+  document.getElementById('debugUnlockAllFlavors').onclick = () => {
+    const flavors = getUnlockableFlavorsInfo();
+    let unlocked = 0;
+    flavors.forEach(flavor => {
+      if (unlockFlavor(flavor.id, 'debug')) unlocked++;
+    });
+    debugLog(`Unlocked ${unlocked} flavors`);
+  };
+
+  document.getElementById('debugResetFlavors').onclick = () => {
+    resetFlavors();
+    debugLog('All flavors reset to defaults');
+  };
+
+  document.getElementById('debugShowFlavors').onclick = () => {
+    const flavors = getUnlockableFlavorsInfo();
+    const unlockInfo = getFlavorUnlockInfo();
+    debugLog('Flavor Status:');
+    flavors.forEach(flavor => {
+      const status = flavor.unlocked ? '✓' : '✗';
+      const unlockData = unlockInfo.find(u => u.id === flavor.id);
+      const progress = unlockData ? unlockData.progress : '';
+      debugLog(`  ${status} ${flavor.name}: ${flavor.description} ${progress ? '(' + progress + ')' : ''}`);
+    });
+  };
+
+  document.getElementById('debugUnlockFlavor').onclick = () => {
+    const flavorId = document.getElementById('debugFlavorId').value.trim();
+    if (!flavorId) {
+      debugLog('Please enter a flavor ID');
+      return;
+    }
+    if (unlockFlavor(flavorId, 'debug')) {
+      debugLog(`Flavor '${flavorId}' unlocked!`);
+    } else {
+      debugLog(`Flavor '${flavorId}' was already unlocked or doesn't exist`);
+    }
+    document.getElementById('debugFlavorId').value = '';
+  };
+
   debugLog('Debug screen initialized successfully');
 }
 
@@ -1659,6 +1828,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Setup Debug Screen
   setupDebugScreen();
+  
+  // Setup Flavor system
+  setupFlavors();
+
+  // Apply current flavor on page load
+  applyFlavor(getCurrentFlavor());
 
   // Usual game boot
   const logFunction = function log(entry){

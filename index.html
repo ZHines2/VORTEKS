@@ -16,6 +16,7 @@
       <button id="telemetryBtn" aria-label="Telemetry" title="View your gameplay stats and analytics">📊</button>
       <button id="unlocksBtn" aria-label="Unlocks" title="View unlocked cards and achievements">🏆</button>
       <button id="glossaryBtn" aria-label="Glossary" title="View card glossary">📖</button>
+      <button id="flavorsBtn" aria-label="Flavors" title="Change color theme">🎨</button>
       <button id="defeatedBtn" aria-label="Defeated Opponents" title="View defeated opponents history">🏴</button>
       <button id="leaderboardBtn" aria-label="Leaderboards" title="View global player rankings">🏅</button>
       <button id="companionBtn" aria-label="VORTEK Companion" title="Check on your VORTEK companion">🌟</button>
@@ -367,6 +368,16 @@
       </div>
     </div>
   </div>
+  <!-- Flavors Modal -->
+  <div class="modal" id="flavorsModal" hidden>
+    <div class="box" style="width:min(96vw, 700px)">
+      <div style="font-size:18px; color:var(--accent); margin:8px 0 16px; text-align:center"><strong>Color Flavors</strong></div>
+      <div id="flavorsGrid" class="flavor-grid" style="max-height:500px; overflow-y:auto; display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:12px;"></div>
+      <div style="display:flex; justify-content:center; margin-top:16px">
+        <button id="flavorsCloseBtn" class="btn">CLOSE</button>
+      </div>
+    </div>
+  </div>
   <!-- Defeated Opponents Modal -->
   <div class="modal" id="defeatedModal" hidden>
     <div class="box" style="width:min(96vw, 500px)">
@@ -572,7 +583,7 @@
           <div id="companionPixelArt" style="margin-bottom:8px; display: flex; justify-content: center; align-items: center;">
             <canvas id="vortekCanvas" width="96" height="96" style="width: 64px; height: 64px; image-rendering: pixelated; filter: drop-shadow(0 0 8px rgba(119, 255, 221, 0.3));"></canvas>
           </div>
-          <div id="companionName" style="font-size:16px; color:var(--accent); font-weight:bold;">VORTEK</div>
+          <div id="companionName" style="font-size:16px; color:var(--accent); font-weight:bold; cursor:pointer; text-decoration:underline; text-decoration-style:dotted;" title="Click to rename your VORTEK">VORTEK</div>
           <div id="companionStage" style="font-size:12px; color:var(--ink); opacity:0.8;">Egg</div>
           <div id="companionSound" style="font-size:10px; color:var(--accent); opacity:0.6; margin-top:4px; cursor:pointer;" title="Click to hear VORTEK's unique sound">🔊 Click to hear</div>
         </div>
@@ -773,6 +784,20 @@
             <button id="debugUnlockAllQuirks" class="debug-btn">Unlock All Quirks</button>
             <button id="debugResetQuirks" class="debug-btn">Reset Quirks</button>
             <button id="debugShowQuirks" class="debug-btn">Show Quirk Status</button>
+          </div>
+        </div>
+
+        <!-- Flavor Testing Section -->
+        <div class="debug-section">
+          <h3>🎨 Flavor Testing</h3>
+          <div class="debug-grid">
+            <button id="debugUnlockAllFlavors" class="debug-btn">Unlock All Flavors</button>
+            <button id="debugResetFlavors" class="debug-btn">Reset Flavors</button>
+            <button id="debugShowFlavors" class="debug-btn">Show Flavor Status</button>
+            <div style="display:flex; gap:4px;">
+              <input type="text" id="debugFlavorId" placeholder="flavor ID" style="flex:1; padding:4px; font-size:10px;">
+              <button id="debugUnlockFlavor" class="debug-btn">Unlock</button>
+            </div>
           </div>
         </div>
       </div>

@@ -26,6 +26,10 @@ html,body {
   top: 0;
   z-index: 1002;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  /* Mobile safe area support */
+  padding-top: max(12px, env(safe-area-inset-top));
+  padding-left: max(18px, env(safe-area-inset-left));
+  padding-right: max(18px, env(safe-area-inset-right));
 }
 
 .button-container {
@@ -60,6 +64,10 @@ html,body {
   margin:0 auto;
   padding:18px;
   position: relative;
+  /* Mobile safe area support */
+  padding-left: max(18px, env(safe-area-inset-left));
+  padding-right: max(18px, env(safe-area-inset-right));
+  padding-bottom: max(18px, env(safe-area-inset-bottom));
 }
 
 /* --- Header buttons shared styles --- */
@@ -370,6 +378,11 @@ button.card:disabled {
   justify-content:center; 
   background:#000a;
   z-index: 100; /* Higher than top menu buttons (z-index: 50) */
+  /* Mobile safe area support */
+  padding-top: max(20px, env(safe-area-inset-top));
+  padding-bottom: max(20px, env(safe-area-inset-bottom));
+  padding-left: max(8px, env(safe-area-inset-left));
+  padding-right: max(8px, env(safe-area-inset-right));
 }
 
 .modal[hidden]{ 
@@ -383,6 +396,9 @@ button.card:disabled {
   max-width:640px;
   max-height:90vh;
   overflow-y:auto;
+  /* Improved mobile handling */
+  max-height: min(90vh, calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 40px));
+  width: min(96vw, 640px);
 }
 
 /* Help Modal Tab System */
@@ -940,6 +956,66 @@ button.card:disabled {
   color: var(--ink);
 }
 
+/* Mobile-optimized companion modal */
+@media (max-width: 768px) {
+  /* Convert companion modal to full screen on mobile */
+  #companionModal {
+    padding: 0;
+  }
+  
+  #companionModal .box {
+    width: 100vw;
+    height: 100vh;
+    max-height: none;
+    max-width: none;
+    margin: 0;
+    border-radius: 0;
+    border: none;
+    border-top: 3px solid var(--border);
+    overflow-y: auto;
+    /* Account for mobile safe areas */
+    padding-top: max(12px, env(safe-area-inset-top));
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+  }
+  
+  /* Improve readability on mobile */
+  #companionModal [style*="grid-template-columns"] {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+  
+  /* Better touch targets for mobile */
+  #companionName {
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px dashed var(--accent);
+  }
+  
+  #nameEditInput {
+    font-family: 'Press Start 2P', monospace !important;
+    font-size: 16px !important; /* Prevent zoom on iOS */
+    text-align: center;
+  }
+  
+  /* Larger room for mobile interaction */
+  #vortekRoom {
+    min-height: 250px !important;
+  }
+  
+  /* Bigger buttons for mobile */
+  #companionModal button {
+    min-height: 36px;
+    padding: 8px 12px;
+    font-size: 10px;
+  }
+}
+
 #companionEmoji {
   text-shadow: 0 0 10px rgba(119, 255, 221, 0.3);
   animation: gentle-pulse 3s ease-in-out infinite;
@@ -1352,5 +1428,52 @@ button.card:disabled {
   
   .debug-header h2 {
     font-size: 14px;
+  }
+}
+
+/* Flavor system styles */
+.flavor-card {
+  padding: 12px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  background: rgba(75, 35, 102, 0.3);
+  transition: all 0.2s;
+  position: relative;
+}
+
+.flavor-card:hover {
+  background: rgba(75, 35, 102, 0.5);
+  transform: translateY(-2px);
+}
+
+.flavor-card.selected {
+  border-color: var(--accent);
+  background: var(--panel);
+}
+
+.color-preview {
+  display: flex;
+  height: 20px;
+  margin: 6px 0;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.flavor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 12px;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+  .flavor-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .flavor-card {
+    padding: 8px;
   }
 }

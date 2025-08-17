@@ -15,6 +15,7 @@ export const icons = {
   wallop: '👊',
   presto: '🎩',
   ferriglobin: '🩸',
-  impervious: '🛡️',
-  overload: '📿'
+  impervious: '🗿',
+  overload: '📿',
+  reap: '💀'
 };
