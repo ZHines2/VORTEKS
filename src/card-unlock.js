@@ -417,7 +417,7 @@ let _quirksState = loadQuirksState();
 
 // Flavors state management
 function freshFlavorsState() {
-  const base = { version: STORAGE_VERSION, unlocked: {} };
+  const base = { version: STORAGE_VERSION, unlocked: {}, progress: {} };
   // Origin flavor is always unlocked
   base.unlocked['origin'] = true;
   return base;
