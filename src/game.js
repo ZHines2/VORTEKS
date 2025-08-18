@@ -315,6 +315,9 @@ export const Game = {
       this.stats.maxHandSizeTurn = Math.max(this.stats.maxHandSizeTurn, p.hand.length);
     }
     
+    // Reset last played card for this turn (for Echo functionality)
+    p.lastPlayedThisTurn = null;
+    
     // Log turn start and draw
     const isPlayer = (p === this.you);
     if (isPlayer) {
@@ -421,6 +424,10 @@ export const Game = {
     // spend cost first (returns actual amount spent for reconsider)
     const actualCost = p.spend(card.cost, card);
     p.lastPlayed = card;
+    // Track last played card this turn for Echo functionality - but don't track Echo itself
+    if (card.id !== 'echo') {
+      p.lastPlayedThisTurn = card;
+    }
     // remove from hand but don't discard yet - wait until after effects resolve
     const playedCard = p.removeFromHand(idx);
     // apply via interpreter
@@ -776,8 +783,8 @@ export const Game = {
       const reapDamage = Math.floor(state.me.hp / 2);
       
       if (reapDamage > 0) {
-        // Deal damage to opponent
-        const actualDamageToOpp = this.applyDamage(state.them, reapDamage, pierce, false);
+        // Deal damage to opponent using the correct hit function
+        this.hit(state.them, reapDamage, pierce, false);
         
         // Deal damage to self (ignores shields and armor since it's self-inflicted)
         state.me.hp = Math.max(1, state.me.hp - reapDamage); // Prevent suicide, leave at 1 HP minimum
@@ -786,7 +793,7 @@ export const Game = {
           logYou(`reaps souls for ${reapDamage} damage to both players`);
           // Record both damage dealt and received for telemetry
           recordCombat({
-            damageDealt: actualDamageToOpp,
+            damageDealt: reapDamage, // Use reapDamage instead of actualDamageToOpp since hit doesn't return damage
             damageReceived: reapDamage
           });
         } else {
@@ -891,7 +898,7 @@ export const Game = {
     
     // 4) special: Echo (repeat last card)
     if (card.id === 'echo') {
-      const last = me.lastPlayed && me.lastPlayed.id !== 'echo' ? me.lastPlayed : null;
+      const last = me.lastPlayedThisTurn && me.lastPlayedThisTurn.id !== 'echo' ? me.lastPlayedThisTurn : null;
       if (last) {
         // Echo repeats last card without paying its cost
         // Add a flag to prevent recursive echoes and ensure clean state

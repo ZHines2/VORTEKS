@@ -1192,5 +1192,114 @@ export function runSelfTests(Game, log, showStart) {
     
     log('Echo and Overload comprehensive tests complete.');
   }
+  
+  // Test Echo with Focus to ensure it duplicates the previously selected card this turn
+  {
+    log('Testing Echo with Focus scenario...');
+    const me = createPlayer(false);
+    const foe = createPlayer(true);
+    const testGame = Object.create(Game);
+    testGame.you = me;
+    testGame.opp = foe;
+    testGame.isEchoing = false;
+    testGame.checkWin = () => {};
+    testGame.stats = { maxBurnAmount: 0 };
+    
+    const originalSetLog = Game.setLogFunction;
+    Game.setLogFunction(() => {});
+    
+    // Start turn to reset lastPlayedThisTurn
+    testGame.startTurn(me);
+    
+    // Set up scenario: Play Focus first, then Echo
+    me.hand = [CARDS.find(c => c.id === 'star'), CARDS.find(c => c.id === 'echo')];
+    me.energy = 5;
+    me.status.nextPlus = 0;
+    
+    // Play Focus first
+    testGame.playCard(me, 0); // Focus
+    assertEqual('Focus gives +2 next attack', me.status.nextPlus, 2, log);
+    assertEqual('lastPlayedThisTurn is Focus', me.lastPlayedThisTurn.id, 'star', log);
+    
+    // Play Echo second
+    testGame.playCard(me, 0); // Echo (now index 0 since Focus was removed)
+    assertEqual('Echo repeats Focus +2', me.status.nextPlus, 4, log); // Should be 2 + 2 = 4
+    
+    Game.setLogFunction(originalSetLog);
+  }
+  
+  // Test Echo with no previous card this turn
+  {
+    log('Testing Echo with no previous card this turn...');
+    const me = createPlayer(false);
+    const foe = createPlayer(true);
+    const testGame = Object.create(Game);
+    testGame.you = me;
+    testGame.opp = foe;
+    testGame.isEchoing = false;
+    testGame.checkWin = () => {};
+    
+    const originalSetLog = Game.setLogFunction;
+    Game.setLogFunction(() => {});
+    
+    // Start turn to reset lastPlayedThisTurn
+    testGame.startTurn(me);
+    
+    // Play Echo as first card of turn
+    me.hand = [CARDS.find(c => c.id === 'echo')];
+    me.energy = 3;
+    const initialHandSize = me.hand.length + me.deck.length; // Total cards available
+    
+    testGame.playCard(me, 0); // Echo with no previous card
+    assertEqual('Echo draws 1 when no previous card', me.hand.length + me.deck.length, initialHandSize, log); // Should be same total (drew 1 to replace played card)
+    
+    Game.setLogFunction(originalSetLog);
+  }
+  
+  // Test Reap card functionality and edge cases
+  {
+    log('Testing Reap card edge cases...');
+    const me = createPlayer(false);
+    const foe = createPlayer(true);
+    const testGame = Object.create(Game);
+    testGame.you = me;
+    testGame.opp = foe;
+    testGame.isEchoing = false;
+    testGame.checkWin = () => {};
+    testGame.stats = { maxBurnAmount: 0 };
+    testGame.turn = 'you';
+    
+    const originalSetLog = Game.setLogFunction;
+    Game.setLogFunction(() => {});
+    
+    // Test Reap with sufficient HP
+    me.hp = 10;
+    foe.hp = 20;
+    foe.shield = 0;
+    
+    testGame.applyCard(CARDS.find(c => c.id === 'reap'), me, foe, false);
+    
+    assertEqual('Reap deals half player HP to opponent', foe.hp, 15, log); // 20 - 5 = 15
+    assertEqual('Reap deals damage to self', me.hp, 5, log); // 10 - 5 = 5
+    
+    // Test Reap at 1 HP (should not work)
+    me.hp = 1;
+    foe.hp = 20;
+    
+    testGame.applyCard(CARDS.find(c => c.id === 'reap'), me, foe, false);
+    assertEqual('Reap at 1 HP does no damage to opponent', foe.hp, 20, log);
+    assertEqual('Reap at 1 HP does no damage to self', me.hp, 1, log);
+    
+    // Test Reap with odd HP (should round down)
+    me.hp = 9;
+    foe.hp = 20;
+    
+    testGame.applyCard(CARDS.find(c => c.id === 'reap'), me, foe, false);
+    assertEqual('Reap with odd HP rounds down', foe.hp, 16, log); // 20 - 4 = 16 (9/2 = 4.5 rounded down to 4)
+    assertEqual('Reap with odd HP rounds down for self', me.hp, 5, log); // 9 - 4 = 5
+    
+    Game.setLogFunction(originalSetLog);
+  }
+  
   log('Self-tests complete.');
 }

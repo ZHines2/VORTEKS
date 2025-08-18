@@ -89,6 +89,7 @@ import {
 } from './idle-game.js';
 import { initVortekGenerator, generateVortekAppearance, playVortekSound } from './vortek-generator.js';
 import { generateChronicle, getCurrentChronicle, saveCurrentChronicle, clearCurrentChronicle } from './lore.js';
+import { initializeAnalysisUI } from './analysis-ui.js';
 
 const MUSIC_FILE = 'VORTEKS.mp3';
 const LS_KEY = 'vorteks-muted';
@@ -142,6 +143,7 @@ const glossaryBtn = document.getElementById('glossaryBtn');
 const defeatedBtn = document.getElementById('defeatedBtn');
 const leaderboardBtn = document.getElementById('leaderboardBtn');
 const telemetryBtn = document.getElementById('telemetryBtn');
+const analysisBtn = document.getElementById('analysisBtn');
 const companionBtn = document.getElementById('companionBtn');
 const loreBtn = document.getElementById('loreBtn');
 
@@ -230,6 +232,13 @@ function setupDefeatedOpponents() {
   telemetryBtn.addEventListener('click', () => {
     renderTelemetryData();
     telemetryModal.hidden = false;
+  });
+
+  // Analysis button click handler
+  analysisBtn.addEventListener('click', () => {
+    if (window.analysisUI) {
+      window.analysisUI.show();
+    }
   });
 
   // Telemetry close button handler
@@ -2175,6 +2184,9 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Setup Flavor system
   setupFlavors();
+
+  // Initialize Analysis UI
+  initializeAnalysisUI();
 
   // Apply current flavor on page load
   applyFlavor(getCurrentFlavor());
