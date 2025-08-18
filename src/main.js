@@ -215,8 +215,12 @@ function setupDefeatedOpponents() {
 
   // Defeated button click handler
   defeatedBtn.addEventListener('click', () => {
-    renderDefeatedOpponents();
-    defeatedModal.hidden = false;
+    if (defeatedModal.hidden) {
+      renderDefeatedOpponents();
+      defeatedModal.hidden = false;
+    } else {
+      defeatedModal.hidden = true;
+    }
   });
 
   // Close button handler
@@ -230,8 +234,12 @@ function setupDefeatedOpponents() {
 
   // Telemetry button click handler
   telemetryBtn.addEventListener('click', () => {
-    renderTelemetryData();
-    telemetryModal.hidden = false;
+    if (telemetryModal.hidden) {
+      renderTelemetryData();
+      telemetryModal.hidden = false;
+    } else {
+      telemetryModal.hidden = true;
+    }
   });
 
   // Analysis button click handler
@@ -268,8 +276,12 @@ function setupDefeatedOpponents() {
 
   // Lore button click handler
   loreBtn.addEventListener('click', () => {
-    renderLoreModal();
-    loreModal.hidden = false;
+    if (loreModal.hidden) {
+      renderLoreModal();
+      loreModal.hidden = false;
+    } else {
+      loreModal.hidden = true;
+    }
   });
 
   // Lore close button handler
@@ -396,13 +408,17 @@ function setupDefeatedOpponents() {
 
   // VORTEK button click handler
   companionBtn.addEventListener('click', () => {
-    // Update VORTEK from current telemetry before showing
-    const creature = getCreature();
-    if (creature) {
-      updateCreatureFromTelemetry(); // Refresh from latest telemetry
+    if (companionModal.hidden) {
+      // Update VORTEK from current telemetry before showing
+      const creature = getCreature();
+      if (creature) {
+        updateCreatureFromTelemetry(); // Refresh from latest telemetry
+      }
+      renderCompanionData();
+      companionModal.hidden = false;
+    } else {
+      companionModal.hidden = true;
     }
-    renderCompanionData();
-    companionModal.hidden = false;
   });
 
   // Companion close button handler
@@ -1584,11 +1600,17 @@ function setupHelp() {
 
   // Help button click handler
   helpBtn.addEventListener('click', () => {
-    helpModal.hidden = false;
-    // Initialize tabs if not already done
-    if (!helpModal.dataset.tabsInitialized) {
-      setupHelpTabs();
-      helpModal.dataset.tabsInitialized = 'true';
+    if (helpModal.hidden) {
+      helpModal.hidden = false;
+      // Initialize tabs if not already done
+      if (!helpModal.dataset.tabsInitialized) {
+        setupHelpTabs();
+        helpModal.dataset.tabsInitialized = 'true';
+      }
+    } else {
+      helpModal.hidden = true;
+      // Mark help as shown for future visits
+      localStorage.setItem(HELP_SHOWN_KEY, '1');
     }
   });
 
@@ -1664,8 +1686,12 @@ function setupGlossary() {
 
   // Glossary button click handler
   glossaryBtn.addEventListener('click', () => {
-    renderGlossary();
-    glossaryModal.hidden = false;
+    if (glossaryModal.hidden) {
+      renderGlossary();
+      glossaryModal.hidden = false;
+    } else {
+      glossaryModal.hidden = true;
+    }
   });
 
   // Close button handler
@@ -1737,8 +1763,12 @@ function setupFlavors() {
 
   // Flavors button click handler
   flavorsBtn.addEventListener('click', () => {
-    renderFlavors();
-    flavorsModal.hidden = false;
+    if (flavorsModal.hidden) {
+      renderFlavors();
+      flavorsModal.hidden = false;
+    } else {
+      flavorsModal.hidden = true;
+    }
   });
 
   // Close button handler
@@ -2362,8 +2392,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Unlocks modal event handlers
   document.getElementById('unlocksBtn').onclick = () => {
-    renderUnlocksModal();
-    document.getElementById('unlocksModal').hidden = false;
+    const unlocksModal = document.getElementById('unlocksModal');
+    if (unlocksModal.hidden) {
+      renderUnlocksModal();
+      unlocksModal.hidden = false;
+    } else {
+      unlocksModal.hidden = true;
+    }
   };
   document.getElementById('unlocksCloseBtn').onclick = () => {
     document.getElementById('unlocksModal').hidden = true;
