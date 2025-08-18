@@ -21,15 +21,15 @@ html,body {
 .button-header {
   background: var(--panel);
   border-bottom: 2px solid var(--border);
-  padding: 12px 18px;
+  padding: 8px 12px;
   position: sticky;
   top: 0;
   z-index: 1002;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   /* Mobile safe area support */
-  padding-top: max(12px, env(safe-area-inset-top));
-  padding-left: max(18px, env(safe-area-inset-left));
-  padding-right: max(18px, env(safe-area-inset-right));
+  padding-top: max(8px, env(safe-area-inset-top));
+  padding-left: max(12px, env(safe-area-inset-left));
+  padding-right: max(12px, env(safe-area-inset-right));
 }
 
 .button-container {
@@ -37,7 +37,7 @@ html,body {
   margin: 0 auto;
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
@@ -70,10 +70,10 @@ html,body {
 /* Responsive adjustments for button header */
 @media (max-width: 768px) {
   .button-header {
-    padding: 10px 16px;
+    padding: 8px 12px;
     display: flex;
     align-items: center;
-    min-height: 48px; /* Ensure adequate touch target height */
+    min-height: 40px;
   }
   
   .menu-toggle {
@@ -82,18 +82,21 @@ html,body {
   
   .button-container {
     position: fixed;
-    top: 58px; /* Below the header - adjusted for better spacing */
+    top: 48px;
     left: 0;
     right: 0;
     background: var(--panel);
     border-bottom: 2px solid var(--border);
-    padding: 0 16px;
-    gap: 12px; /* Increased gap for better touch targets */
+    padding: 0 8px;
+    gap: 4px;
     justify-content: center;
-    flex-direction: column;
+    flex-direction: row;
+    flex-wrap: wrap;
     max-height: 0;
     overflow: hidden;
-    transition: max-height 0.3s ease-in-out, padding 0.3s ease-in-out;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateY(-10px);
+    opacity: 0;
     z-index: 1001;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
     width: 100vw;
@@ -102,15 +105,23 @@ html,body {
   }
   
   .button-container.menu-open {
-    max-height: 600px; /* Increased height for better spacing */
-    padding: 16px; /* More padding for easier touch interaction */
+    max-height: 80px;
+    padding: 8px;
+    transform: translateY(0);
+    opacity: 1;
   }
   
   .button-container button {
-    width: 44px; /* Larger touch targets */
-    height: 44px;
-    font-size: 18px;
-    margin: 4px 0; /* More space between buttons */
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+    margin: 2px;
+    transform: scale(0.8);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .button-container.menu-open button {
+    transform: scale(1);
   }
 }
 
@@ -131,9 +142,9 @@ html,body {
   color: var(--accent);
   border: 2px solid var(--border);
   border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  font-size: 20px;
+  width: 32px;
+  height: 32px;
+  font-size: 16px;
   font-weight: bold;
   cursor: pointer;
   opacity: 0.85;
