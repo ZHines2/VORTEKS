@@ -70,9 +70,10 @@ html,body {
 /* Responsive adjustments for button header */
 @media (max-width: 768px) {
   .button-header {
-    padding: 8px 12px;
+    padding: 10px 16px;
     display: flex;
     align-items: center;
+    min-height: 48px; /* Ensure adequate touch target height */
   }
   
   .menu-toggle {
@@ -81,13 +82,13 @@ html,body {
   
   .button-container {
     position: fixed;
-    top: 56px; /* Below the header - adjusted for actual header height */
+    top: 58px; /* Below the header - adjusted for better spacing */
     left: 0;
     right: 0;
     background: var(--panel);
     border-bottom: 2px solid var(--border);
-    padding: 0 12px;
-    gap: 8px;
+    padding: 0 16px;
+    gap: 12px; /* Increased gap for better touch targets */
     justify-content: center;
     flex-direction: column;
     max-height: 0;
@@ -101,15 +102,15 @@ html,body {
   }
   
   .button-container.menu-open {
-    max-height: 500px; /* Enough for all 12 buttons with padding */
-    padding: 12px;
+    max-height: 600px; /* Increased height for better spacing */
+    padding: 16px; /* More padding for easier touch interaction */
   }
   
   .button-container button {
-    width: 32px;
-    height: 32px;
-    font-size: 16px;
-    margin: 2px 0;
+    width: 44px; /* Larger touch targets */
+    height: 44px;
+    font-size: 18px;
+    margin: 4px 0; /* More space between buttons */
   }
 }
 
