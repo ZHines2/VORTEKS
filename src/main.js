@@ -1497,6 +1497,64 @@ window.playUnlockSound = function() {
   }
 };
 
+function setupMobileMenu() {
+  const menuToggle = document.getElementById('menuToggle');
+  const buttonContainer = document.querySelector('.button-container');
+  
+  if (!menuToggle || !buttonContainer) return;
+  
+  // Toggle menu visibility on mobile
+  menuToggle.addEventListener('click', () => {
+    buttonContainer.classList.toggle('menu-open');
+    const isOpen = buttonContainer.classList.contains('menu-open');
+    menuToggle.setAttribute('aria-expanded', isOpen);
+    menuToggle.textContent = isOpen ? '✕' : '☰';
+  });
+  
+  // Close menu when clicking outside (on mobile)
+  document.addEventListener('click', (e) => {
+    const isClickOutside = !menuToggle.contains(e.target) && !buttonContainer.contains(e.target);
+    if (isClickOutside && buttonContainer.classList.contains('menu-open')) {
+      buttonContainer.classList.remove('menu-open');
+      menuToggle.setAttribute('aria-expanded', 'false');
+      menuToggle.textContent = '☰';
+    }
+  });
+  
+  // Close menu when a button inside is clicked (on mobile)
+  buttonContainer.addEventListener('click', (e) => {
+    if (e.target.tagName === 'BUTTON' && window.innerWidth <= 768) {
+      buttonContainer.classList.remove('menu-open');
+      menuToggle.setAttribute('aria-expanded', 'false');
+      menuToggle.textContent = '☰';
+    }
+  });
+  
+  // Close menu on escape key (but only if no modals are open)
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && buttonContainer.classList.contains('menu-open')) {
+      // Check if any modals are open first
+      const modals = [
+        'helpModal', 'deckModal', 'quirkModal', 'unlocksModal', 
+        'glossaryModal', 'victoryModal', 'defeatedModal', 'companionModal',
+        'telemetryModal', 'flavorsModal', 'loreModal'
+      ];
+      
+      const hasOpenModal = modals.some(modalId => {
+        const modal = document.getElementById(modalId);
+        return modal && !modal.hidden;
+      });
+      
+      // Only close mobile menu if no modals are open
+      if (!hasOpenModal) {
+        buttonContainer.classList.remove('menu-open');
+        menuToggle.setAttribute('aria-expanded', 'false');
+        menuToggle.textContent = '☰';
+      }
+    }
+  });
+}
+
 function setupHelp() {
   const helpModal = document.getElementById('helpModal');
   const helpCloseBtn = document.getElementById('helpCloseBtn');
@@ -2163,6 +2221,7 @@ function clearSelectedQuirk() {
 // --- Game boot logic ---
 document.addEventListener('DOMContentLoaded', () => {
   setupMusic();
+  setupMobileMenu();
   setupHelp();
   setupGlossary();
   setupDefeatedOpponents();
