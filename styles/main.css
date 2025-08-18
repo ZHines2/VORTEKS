@@ -41,21 +41,75 @@ html,body {
   flex-wrap: wrap;
 }
 
+/* Mobile hamburger menu toggle button */
+.menu-toggle {
+  display: none;
+  background: var(--panel);
+  color: var(--accent);
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  width: 40px;
+  height: 32px;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  opacity: 0.9;
+  transition: opacity 0.2s;
+  font-family: 'Press Start 2P', monospace;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+}
+
+.menu-toggle:hover,
+.menu-toggle:focus {
+  opacity: 1;
+  outline: 2px solid var(--accent);
+}
+
 /* Responsive adjustments for button header */
 @media (max-width: 768px) {
   .button-header {
     padding: 8px 12px;
+    display: flex;
+    align-items: center;
+  }
+  
+  .menu-toggle {
+    display: flex;
   }
   
   .button-container {
+    position: fixed;
+    top: 56px; /* Below the header - adjusted for actual header height */
+    left: 0;
+    right: 0;
+    background: var(--panel);
+    border-bottom: 2px solid var(--border);
+    padding: 0 12px;
     gap: 8px;
     justify-content: center;
+    flex-direction: column;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-in-out, padding 0.3s ease-in-out;
+    z-index: 1001;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+    width: 100vw;
+    max-width: none;
+    margin: 0;
+  }
+  
+  .button-container.menu-open {
+    max-height: 500px; /* Enough for all 12 buttons with padding */
+    padding: 12px;
   }
   
   .button-container button {
     width: 32px;
     height: 32px;
     font-size: 16px;
+    margin: 2px 0;
   }
 }
 
