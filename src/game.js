@@ -424,8 +424,10 @@ export const Game = {
     // spend cost first (returns actual amount spent for reconsider)
     const actualCost = p.spend(card.cost, card);
     p.lastPlayed = card;
-    // Track last played card this turn for Echo functionality
-    p.lastPlayedThisTurn = card;
+    // Track last played card this turn for Echo functionality - but don't track Echo itself
+    if (card.id !== 'echo') {
+      p.lastPlayedThisTurn = card;
+    }
     // remove from hand but don't discard yet - wait until after effects resolve
     const playedCard = p.removeFromHand(idx);
     // apply via interpreter
