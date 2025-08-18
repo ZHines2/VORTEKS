@@ -206,7 +206,7 @@ export function predictCard(card, me, them, Game) {
       out.push('no shield');
     }
   }
-  if (card.id === 'echo' && (!me.lastPlayed || me.lastPlayed.id === 'echo')) {
+  if (card.id === 'echo' && (!me.lastPlayedThisTurn || me.lastPlayedThisTurn.id === 'echo')) {
     out = ['draw 1'];
   }
   return '→ ' + (out.join(', ') || '');
