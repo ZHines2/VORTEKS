@@ -276,5 +276,76 @@ export const CARDS = [
     status: { target: { burn: null, freezeEnergy: 0 }, self: { nextPlus: 0, maxEnergyDelta: 0, energyNowDelta: 0, cleanse: false, hopeStatus: true } }, 
     scaling: {}, 
     ai: { role: 'sustain', pri: 55 } 
+  },
+  // Dream Expansion Cards (Debug Only)
+  { 
+    id: 'reactiveArmor', 
+    sym: icons.reactiveArmor, 
+    name: 'Reactive Armor', 
+    description: 'Gain 2 Shield whenever you take pierce damage this turn.',
+    cost: 2, 
+    type: 'power', 
+    tags: ['reactive', 'defense', 'pierce-counter'],
+    effects: { damage: 0, pierce: false, heal: 0, shield: 0, draw: 0 }, 
+    status: { target: { burn: null, freezeEnergy: 0 }, self: { nextPlus: 0, maxEnergyDelta: 0, energyNowDelta: 0, cleanse: false, reactiveArmor: true } }, 
+    scaling: {}, 
+    ai: { role: 'defend', pri: 75 },
+    debug: true
+  },
+  { 
+    id: 'pressure', 
+    sym: icons.pressure, 
+    name: 'Pressure', 
+    description: 'Deal 1 damage +1 for each Shield opponent gained last turn (max +5).',
+    cost: 2, 
+    type: 'attack', 
+    tags: ['pressure', 'anti-shield'],
+    effects: { damage: 1, pierce: false, heal: 0, shield: 0, draw: 0, pressure: true }, 
+    status: { target: { burn: null, freezeEnergy: 0 }, self: { nextPlus: 0, maxEnergyDelta: 0, energyNowDelta: 0, cleanse: false } }, 
+    scaling: {}, 
+    ai: { role: 'tempo', pri: 70 },
+    debug: true
+  },
+  { 
+    id: 'equilibrium', 
+    sym: icons.equilibrium, 
+    name: 'Equilibrium', 
+    description: 'If opponent has 2+ more total resources, gain the difference in energy.',
+    cost: 1, 
+    type: 'skill', 
+    tags: ['catchup', 'resource'],
+    effects: { damage: 0, pierce: false, heal: 0, shield: 0, draw: 0, equilibrium: true }, 
+    status: { target: { burn: null, freezeEnergy: 0 }, self: { nextPlus: 0, maxEnergyDelta: 0, energyNowDelta: 0, cleanse: false } }, 
+    scaling: {}, 
+    ai: { role: 'ramp', pri: 50 },
+    debug: true
+  },
+  { 
+    id: 'sabotage', 
+    sym: icons.sabotage, 
+    name: 'Sabotage', 
+    description: 'Choose: opponent discards 1 card OR loses 1 energy next turn.',
+    cost: 2, 
+    type: 'skill', 
+    tags: ['disruption', 'choice'],
+    effects: { damage: 0, pierce: false, heal: 0, shield: 0, draw: 0, sabotage: true }, 
+    status: { target: { burn: null, freezeEnergy: 0 }, self: { nextPlus: 0, maxEnergyDelta: 0, energyNowDelta: 0, cleanse: false } }, 
+    scaling: {}, 
+    ai: { role: 'control', pri: 65 },
+    debug: true
+  },
+  { 
+    id: 'adaptation', 
+    sym: icons.adaptation, 
+    name: 'Adaptation', 
+    description: 'Gain bonus based on opponent\'s last card type: +2 damage vs Shield, +1 draw vs Draw, +1 energy vs Energy.',
+    cost: 1, 
+    type: 'skill', 
+    tags: ['adaptive', 'reactive'],
+    effects: { damage: 0, pierce: false, heal: 0, shield: 0, draw: 0, adaptation: true }, 
+    status: { target: { burn: null, freezeEnergy: 0 }, self: { nextPlus: 0, maxEnergyDelta: 0, energyNowDelta: 0, cleanse: false } }, 
+    scaling: {}, 
+    ai: { role: 'tempo', pri: 60 },
+    debug: true
   }
 ];

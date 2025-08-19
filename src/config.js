@@ -34,6 +34,7 @@ export const DECK_BUILDER = {
 export const DEBUG = {
   EXPOSE_GAME_STATS: true, // Expose window.GameStats for QA
   LOG_MIGRATIONS: true, // Log storage migrations
+  ENABLE_DREAM_CARDS: false, // Enable dream expansion cards for testing
 };
 
 // Campaign Configuration

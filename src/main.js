@@ -8,6 +8,7 @@ import { createPlayer } from './player.js';
 import { MOTTOS } from './mottos.js';
 import { CARDS } from '../data/cards.js';
 import { Campaign } from './campaign.js';
+import { DEBUG } from './config.js';
 import { 
   getUnlockedCards, 
   isCardUnlocked, 
@@ -156,6 +157,19 @@ const loreBtn = document.getElementById('loreBtn');
 
 // Initialize idle game system
 loadIdleGame();
+
+// Debug Cards Helper Function
+function getDebugEnabledCards() {
+  const unlocked = getUnlockedCards();
+  
+  // Add debug cards if enabled
+  if (DEBUG.ENABLE_DREAM_CARDS) {
+    const debugCards = CARDS.filter(card => card.debug).map(card => card.id);
+    return [...unlocked, ...debugCards];
+  }
+  
+  return unlocked;
+}
 
 // Defeated opponents helper functions
 function loadDefeatedOpponents() {
@@ -1970,9 +1984,9 @@ function simulateScrimmage(ai1Persona, ai2Persona, ai1Level, ai2Level) {
   ai1.level = ai1Level;
   ai2.level = ai2Level;
   
-  // Build decks
-  ai1.deck = makePersonaDeck(ai1Persona, getUnlockedCards(), ai1Level);
-  ai2.deck = makePersonaDeck(ai2Persona, getUnlockedCards(), ai2Level);
+  // Build decks (using debug cards if enabled)
+  ai1.deck = makePersonaDeck(ai1Persona, getDebugEnabledCards(), ai1Level);
+  ai2.deck = makePersonaDeck(ai2Persona, getDebugEnabledCards(), ai2Level);
   
   // Shuffle and draw hands
   ai1.deck = shuffle([...ai1.deck]); // Create copy to avoid mutation
@@ -2573,6 +2587,17 @@ function setupDebugScreen() {
     const exportData = exportFindings();
     downloadFile(exportData, 'vorteks_scrimmage_findings.json');
     debugLog('Findings exported to download');
+  };
+
+  // Dream Expansion Cards Toggle
+  document.getElementById('debugDreamCards').onchange = (e) => {
+    DEBUG.ENABLE_DREAM_CARDS = e.target.checked;
+    const status = DEBUG.ENABLE_DREAM_CARDS ? 'enabled' : 'disabled';
+    debugLog(`Dream Expansion Cards ${status} for scrimmage testing`);
+    
+    if (DEBUG.ENABLE_DREAM_CARDS) {
+      debugLog('Available: Reactive Armor, Pressure, Equilibrium, Sabotage, Adaptation');
+    }
   };
 
   // Flavor Testing Section

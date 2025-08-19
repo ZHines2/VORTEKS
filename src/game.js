@@ -265,6 +265,10 @@ export const Game = {
 
   startTurn(p) {
     p.status.firstAttackUsed = false;
+    
+    // Reset Dream Expansion turn tracking
+    p.status.lastTurnShieldGained = 0;
+    
     if (p.status.frozenNext) { 
       p.energyPenaltyNext = 1; 
       p.status.frozenNext = 0; 
@@ -465,6 +469,11 @@ export const Game = {
     // spend cost first (returns actual amount spent for reconsider)
     const actualCost = p.spend(card.cost, card);
     p.lastPlayed = card;
+    
+    // Track card for Dream Expansion mechanics
+    p.status.lastCardPlayed = card.id;
+    p.status.lastCardType = card.type;
+    
     // Track last played card this turn for Echo functionality - but don't track Echo itself
     if (card.id !== 'echo') {
       // Store a clean copy without stolen markers to prevent Echo issues
@@ -571,6 +580,19 @@ export const Game = {
       // Total damage is pierced amount + unblocked remainder
       dmg = pierceAmount + remainingDmg;
     }
+    
+    // Reactive Armor effect: Gain 2 Shield when taking pierce damage
+    if (pierce && target.status && target.status.reactiveArmor && !simulate) {
+      target.shield += 2;
+      const targetName = target === this.you ? 'You' : 'Opponent';
+      if (target === this.you) {
+        logYou('reactive armor activates (+2 Shield vs pierce)');
+      } else {
+        logOpp('reactive armor activates (+2 Shield vs pierce)');
+      }
+      if (window.bumpShield) window.bumpShield(target);
+    }
+    
     if (dmg > 0) { 
       target.hp = Math.max(0, target.hp - dmg); 
       if (!simulate && window.bumpHP) window.bumpHP(target); 
@@ -711,7 +733,14 @@ export const Game = {
       } else {
         logOpp(`gains ${effects.shield} shield`);
       }
-      state.me.shield += effects.shield; 
+      state.me.shield += effects.shield;
+      
+      // Track shield gained this turn for Dream Expansion mechanics
+      if (!state.me.status.lastTurnShieldGained) {
+        state.me.status.lastTurnShieldGained = 0;
+      }
+      state.me.status.lastTurnShieldGained += effects.shield;
+      
       // FX: Shield effect
       if (window.fxGuard) window.fxGuard(state.me);
     }
@@ -864,6 +893,134 @@ export const Game = {
           logYou('cannot reap with so little life force');
         } else {
           logOpp('cannot reap with so little life force');
+        }
+      }
+    }
+    
+    // Dream Expansion Card Effects
+    if (effects.pressure && !simulate) {
+      // Pressure: Deal 1 damage +1 for each Shield opponent gained last turn (max +5)
+      const isPlayer = (state.me === this.you);
+      const bonusDamage = Math.min(state.them.status.lastTurnShieldGained || 0, 5);
+      const totalDamage = 1 + bonusDamage;
+      
+      if (totalDamage > 1) {
+        if (isPlayer) {
+          logYou(`applies pressure for ${totalDamage} damage (${bonusDamage} bonus from opponent's shields)`);
+        } else {
+          logOpp(`applies pressure for ${totalDamage} damage (${bonusDamage} bonus from your shields)`);
+        }
+      } else {
+        if (isPlayer) {
+          logYou(`applies pressure for ${totalDamage} damage`);
+        } else {
+          logOpp(`applies pressure for ${totalDamage} damage`);
+        }
+      }
+      
+      this.hit(state.them, totalDamage, false, false);
+    }
+    
+    if (effects.equilibrium && !simulate) {
+      // Equilibrium: If opponent has 2+ more total resources, gain the difference in energy
+      const isPlayer = (state.me === this.you);
+      const myResources = state.me.energy + state.me.hand.length;
+      const theirResources = state.them.energy + state.them.hand.length;
+      const resourceDiff = theirResources - myResources;
+      
+      if (resourceDiff >= 2) {
+        const energyGain = Math.min(resourceDiff, 3); // Cap at 3 energy gain
+        state.me.energy = Math.min(state.me.energy + energyGain, state.me.maxEnergy);
+        
+        if (isPlayer) {
+          logYou(`restores equilibrium, gaining ${energyGain} energy`);
+        } else {
+          logOpp(`restores equilibrium, gaining ${energyGain} energy`);
+        }
+      } else {
+        if (isPlayer) {
+          logYou(`seeks equilibrium but finds balance`);
+        } else {
+          logOpp(`seeks equilibrium but finds balance`);
+        }
+      }
+    }
+    
+    if (effects.sabotage && !simulate) {
+      // Sabotage: AI chooses between opponent discards 1 card OR loses 1 energy next turn
+      const isPlayer = (state.me === this.you);
+      const hasCards = state.them.hand.length > 0;
+      const hasEnergy = state.them.energy > 0;
+      
+      // AI decision logic: prefer energy drain if opponent has high energy, otherwise discard
+      const chooseEnergyDrain = hasEnergy && (state.them.energy >= 2 || !hasCards);
+      
+      if (chooseEnergyDrain && hasEnergy) {
+        state.them.energy = Math.max(0, state.them.energy - 1);
+        if (isPlayer) {
+          logYou(`sabotages opponent's energy reserves`);
+        } else {
+          logOpp(`sabotages your energy reserves`);
+        }
+      } else if (hasCards) {
+        const discardedCard = state.them.hand.splice(Math.floor(Math.random() * state.them.hand.length), 1)[0];
+        state.them.discard.push(discardedCard);
+        if (isPlayer) {
+          logYou(`sabotages opponent's hand`);
+        } else {
+          logOpp(`sabotages your hand`);
+        }
+      } else {
+        if (isPlayer) {
+          logYou(`attempts sabotage but finds no target`);
+        } else {
+          logOpp(`attempts sabotage but finds no target`);
+        }
+      }
+    }
+    
+    if (effects.adaptation && !simulate) {
+      // Adaptation: Gain bonus based on opponent's last card type
+      const isPlayer = (state.me === this.you);
+      const oppLastCardType = state.them.status.lastCardType;
+      
+      if (oppLastCardType) {
+        if (oppLastCardType === 'defense' || oppLastCardType === 'skill') {
+          // +2 damage vs Shield/defensive cards
+          dmg += 2;
+          if (isPlayer) {
+            logYou(`adapts to opponent's defenses (+2 damage)`);
+          } else {
+            logOpp(`adapts to your defenses (+2 damage)`);
+          }
+        } else if (oppLastCardType === 'card-draw') {
+          // +1 draw vs Draw cards
+          state.me.draw(1);
+          if (isPlayer) {
+            logYou(`adapts to opponent's card play (draw 1)`);
+          } else {
+            logOpp(`adapts to your card play (draw 1)`);
+          }
+        } else if (oppLastCardType === 'energy' || oppLastCardType === 'power') {
+          // +1 energy vs Energy/power cards
+          state.me.energy = Math.min(state.me.energy + 1, state.me.maxEnergy);
+          if (isPlayer) {
+            logYou(`adapts to opponent's power (gain 1 energy)`);
+          } else {
+            logOpp(`adapts to your power (gain 1 energy)`);
+          }
+        } else {
+          if (isPlayer) {
+            logYou(`adapts but finds no advantage`);
+          } else {
+            logOpp(`adapts but finds no advantage`);
+          }
+        }
+      } else {
+        if (isPlayer) {
+          logYou(`seeks adaptation but finds no pattern`);
+        } else {
+          logOpp(`seeks adaptation but finds no pattern`);
         }
       }
     }

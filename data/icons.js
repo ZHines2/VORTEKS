@@ -18,5 +18,11 @@ export const icons = {
   impervious: '🗿',
   overload: '📿',
   reap: '💀',
-  hope: '🕊'
+  hope: '🕊',
+  // Dream Expansion Icons
+  reactiveArmor: '🔷',
+  pressure: '🌀',
+  equilibrium: '⚖️',
+  sabotage: '🔧',
+  adaptation: '🧬'
 };

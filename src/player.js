@@ -22,7 +22,12 @@ export function createPlayer(isAI = false) {
       nextPlus: 0, 
       firstAttackUsed: false,
       impervious: false,
-      imperviousNext: false
+      imperviousNext: false,
+      // Dream card status tracking
+      reactiveArmor: false,
+      lastTurnShieldGained: 0,
+      lastCardPlayed: null,
+      lastCardType: null
     },
     quirk: null,
     
