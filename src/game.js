@@ -213,12 +213,15 @@ export const Game = {
   applyHeal(player, amount) {
     if (amount <= 0) return player.hp;
     
+    const oldHP = player.hp;
+    
     // Check if player should get overheal (player always, AI based on config)
     const allowOverheal = !player.isAI || AI_ALLOW_OVERHEAL;
     
+    let newHP;
     if (allowOverheal) {
       const overhealLimit = Math.floor(player.maxHP * OVERHEAL_LIMIT_MULT);
-      const newHP = Math.min(player.hp + amount, overhealLimit);
+      newHP = Math.min(player.hp + amount, overhealLimit);
       
       // Track overheal stats for player
       if (!player.isAI && newHP > player.maxHP) {
@@ -226,12 +229,22 @@ export const Game = {
         this.stats.totalOverhealGained += overhealAmount;
         this.stats.peakOverheal = Math.max(this.stats.peakOverheal, overhealAmount);
       }
-      
-      return newHP;
     } else {
       // Traditional healing capped at maxHP
-      return Math.min(player.hp + amount, player.maxHP);
+      newHP = Math.min(player.hp + amount, player.maxHP);
     }
+    
+    // Track healing events for achievement unlocks (only for player)
+    if (!player.isAI && newHP > oldHP) {
+      checkAchievementUnlocks({
+        event: 'heal',
+        amount: newHP - oldHP,
+        newHP: newHP,
+        source: 'healing'
+      });
+    }
+    
+    return newHP;
   },
 
   // Helper method for applying energy with uncapping support
@@ -1017,6 +1030,10 @@ export const Game = {
           p.draw(1);
           logYou('Scholar: drew +1 card (25% chance)');
         }
+        break;
+      case 'saint':
+        p.hp = this.applyHeal(p, 1);
+        logYou('Saint: healed +1 HP');
         break;
       // MY FIRST QUIRK and other quirks don't have turn start effects
     }
