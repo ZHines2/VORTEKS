@@ -265,10 +265,6 @@ export const Game = {
 
   startTurn(p) {
     p.status.firstAttackUsed = false;
-    
-    // Reset Dream Expansion turn tracking
-    p.status.lastTurnShieldGained = 0;
-    
     if (p.status.frozenNext) { 
       p.energyPenaltyNext = 1; 
       p.status.frozenNext = 0; 
@@ -369,14 +365,7 @@ export const Game = {
       logOpp('draws 1');
     }
     
-    // Check for silence effect before drawing
-    if (p.status.silencedNext) {
-      const actorName = p === this.you ? '[YOU]' : '[OPPONENT]';
-      logMessage(`${actorName} is silenced - no card draw this turn.`);
-      p.status.silencedNext = false; // Clear the effect
-    } else {
-      p.draw(1);
-    }
+    p.draw(1);
     if (window.render) window.render();
   },
   
@@ -476,11 +465,6 @@ export const Game = {
     // spend cost first (returns actual amount spent for reconsider)
     const actualCost = p.spend(card.cost, card);
     p.lastPlayed = card;
-    
-    // Track card for Dream Expansion mechanics
-    p.status.lastCardPlayed = card.id;
-    p.status.lastCardType = card.type;
-    
     // Track last played card this turn for Echo functionality - but don't track Echo itself
     if (card.id !== 'echo') {
       // Store a clean copy without stolen markers to prevent Echo issues
@@ -587,19 +571,6 @@ export const Game = {
       // Total damage is pierced amount + unblocked remainder
       dmg = pierceAmount + remainingDmg;
     }
-    
-    // Reactive Armor effect: Gain 2 Shield when taking pierce damage
-    if (pierce && target.status && target.status.reactiveArmor && !simulate) {
-      target.shield += 2;
-      const targetName = target === this.you ? 'You' : 'Opponent';
-      if (target === this.you) {
-        logYou('reactive armor activates (+2 Shield vs pierce)');
-      } else {
-        logOpp('reactive armor activates (+2 Shield vs pierce)');
-      }
-      if (window.bumpShield) window.bumpShield(target);
-    }
-    
     if (dmg > 0) { 
       target.hp = Math.max(0, target.hp - dmg); 
       if (!simulate && window.bumpHP) window.bumpHP(target); 
@@ -740,14 +711,7 @@ export const Game = {
       } else {
         logOpp(`gains ${effects.shield} shield`);
       }
-      state.me.shield += effects.shield;
-      
-      // Track shield gained this turn for Dream Expansion mechanics
-      if (!state.me.status.lastTurnShieldGained) {
-        state.me.status.lastTurnShieldGained = 0;
-      }
-      state.me.status.lastTurnShieldGained += effects.shield;
-      
+      state.me.shield += effects.shield; 
       // FX: Shield effect
       if (window.fxGuard) window.fxGuard(state.me);
     }
@@ -901,239 +865,6 @@ export const Game = {
         } else {
           logOpp('cannot reap with so little life force');
         }
-      }
-    }
-    
-    // Dream Expansion Card Effects
-    if (effects.pressure && !simulate) {
-      // Pressure: Deal 1 damage +1 for each Shield opponent gained last turn (max +5)
-      const isPlayer = (state.me === this.you);
-      const bonusDamage = Math.min(state.them.status.lastTurnShieldGained || 0, 5);
-      const totalDamage = 1 + bonusDamage;
-      
-      if (totalDamage > 1) {
-        if (isPlayer) {
-          logYou(`applies pressure for ${totalDamage} damage (${bonusDamage} bonus from opponent's shields)`);
-        } else {
-          logOpp(`applies pressure for ${totalDamage} damage (${bonusDamage} bonus from your shields)`);
-        }
-      } else {
-        if (isPlayer) {
-          logYou(`applies pressure for ${totalDamage} damage`);
-        } else {
-          logOpp(`applies pressure for ${totalDamage} damage`);
-        }
-      }
-      
-      this.hit(state.them, totalDamage, false, false);
-    }
-    
-    if (effects.equilibrium && !simulate) {
-      // Equilibrium: If opponent has 2+ more total resources, gain the difference in energy
-      const isPlayer = (state.me === this.you);
-      const myResources = state.me.energy + state.me.hand.length;
-      const theirResources = state.them.energy + state.them.hand.length;
-      const resourceDiff = theirResources - myResources;
-      
-      if (resourceDiff >= 2) {
-        const energyGain = Math.min(resourceDiff, 3); // Cap at 3 energy gain
-        state.me.energy = Math.min(state.me.energy + energyGain, state.me.maxEnergy);
-        
-        if (isPlayer) {
-          logYou(`restores equilibrium, gaining ${energyGain} energy`);
-        } else {
-          logOpp(`restores equilibrium, gaining ${energyGain} energy`);
-        }
-      } else {
-        if (isPlayer) {
-          logYou(`seeks equilibrium but finds balance`);
-        } else {
-          logOpp(`seeks equilibrium but finds balance`);
-        }
-      }
-    }
-    
-    if (effects.sabotage && !simulate) {
-      // Sabotage: AI chooses between opponent discards 1 card OR loses 1 energy next turn
-      const isPlayer = (state.me === this.you);
-      const hasCards = state.them.hand.length > 0;
-      const hasEnergy = state.them.energy > 0;
-      
-      // AI decision logic: prefer energy drain if opponent has high energy, otherwise discard
-      const chooseEnergyDrain = hasEnergy && (state.them.energy >= 2 || !hasCards);
-      
-      if (chooseEnergyDrain && hasEnergy) {
-        state.them.energy = Math.max(0, state.them.energy - 1);
-        if (isPlayer) {
-          logYou(`sabotages opponent's energy reserves`);
-        } else {
-          logOpp(`sabotages your energy reserves`);
-        }
-      } else if (hasCards) {
-        const discardedCard = state.them.hand.splice(Math.floor(Math.random() * state.them.hand.length), 1)[0];
-        state.them.discard.push(discardedCard);
-        if (isPlayer) {
-          logYou(`sabotages opponent's hand`);
-        } else {
-          logOpp(`sabotages your hand`);
-        }
-      } else {
-        if (isPlayer) {
-          logYou(`attempts sabotage but finds no target`);
-        } else {
-          logOpp(`attempts sabotage but finds no target`);
-        }
-      }
-    }
-    
-    if (effects.adaptation && !simulate) {
-      // Adaptation: Gain bonus based on opponent's last card type
-      const isPlayer = (state.me === this.you);
-      const oppLastCardType = state.them.status.lastCardType;
-      
-      if (oppLastCardType) {
-        if (oppLastCardType === 'defense' || oppLastCardType === 'skill') {
-          // +2 damage vs Shield/defensive cards
-          dmg += 2;
-          if (isPlayer) {
-            logYou(`adapts to opponent's defenses (+2 damage)`);
-          } else {
-            logOpp(`adapts to your defenses (+2 damage)`);
-          }
-        } else if (oppLastCardType === 'card-draw') {
-          // +1 draw vs Draw cards
-          state.me.draw(1);
-          if (isPlayer) {
-            logYou(`adapts to opponent's card play (draw 1)`);
-          } else {
-            logOpp(`adapts to your card play (draw 1)`);
-          }
-        } else if (oppLastCardType === 'energy' || oppLastCardType === 'power') {
-          // +1 energy vs Energy/power cards
-          state.me.energy = Math.min(state.me.energy + 1, state.me.maxEnergy);
-          if (isPlayer) {
-            logYou(`adapts to opponent's power (gain 1 energy)`);
-          } else {
-            logOpp(`adapts to your power (gain 1 energy)`);
-          }
-        } else {
-          if (isPlayer) {
-            logYou(`adapts but finds no advantage`);
-          } else {
-            logOpp(`adapts but finds no advantage`);
-          }
-        }
-      } else {
-        if (isPlayer) {
-          logYou(`seeks adaptation but finds no pattern`);
-        } else {
-          logOpp(`seeks adaptation but finds no pattern`);
-        }
-      }
-    }
-    
-    // Dream Expansion Vol 2 Card Effects
-    if (effects.decay && !simulate) {
-      // Decay: Deal damage, steal Hope stacks if target has them
-      const isPlayer = (state.me === this.you);
-      
-      // Check if target has Hope status and steal it
-      if (state.them.status && state.them.status.hopeStacks > 0) {
-        // Steal 1 Hope stack
-        state.them.status.hopeStacks = Math.max(0, state.them.status.hopeStacks - 1);
-        if (!state.me.status.hopeStacks) state.me.status.hopeStacks = 0;
-        state.me.status.hopeStacks += 1;
-        
-        if (isPlayer) {
-          logYou(`decays life force, stealing Hope from opponent`);
-        } else {
-          logOpp(`decays life force, stealing Hope from you`);
-        }
-      } else {
-        if (isPlayer) {
-          logYou(`decays life force for ${dmg} damage`);
-        } else {
-          logOpp(`decays life force for ${dmg} damage`);
-        }
-      }
-    }
-    
-    if (effects.inflame && !simulate) {
-      // Inflame: Apply burn, or deal damage if target is burn immune
-      const isPlayer = (state.me === this.you);
-      
-      // Check for burn immunity (this would need to be implemented)
-      const isBurnImmune = state.them.status && state.them.status.burnImmune;
-      
-      if (isBurnImmune) {
-        // Deal damage instead of applying burn
-        this.hit(state.them, 3, false, false);
-        if (isPlayer) {
-          logYou(`inflames target immune to burn for 3 damage`);
-        } else {
-          logOpp(`inflames you immune to burn for 3 damage`);
-        }
-      } else {
-        // Apply burn normally
-        this.applyBurn(state.them, 2, 3);
-        if (isPlayer) {
-          logYou(`inflames target with 2 Burn`);
-        } else {
-          logOpp(`inflames you with 2 Burn`);
-        }
-      }
-    }
-    
-    if (effects.silence && !simulate) {
-      // Silence: Prevent opponent card draw next turn
-      const isPlayer = (state.me === this.you);
-      state.them.status.silencedNext = true;
-      
-      if (isPlayer) {
-        logYou(`silences opponent's card draw`);
-      } else {
-        logOpp(`silences your card draw`);
-      }
-    }
-    
-    if (effects.drain && !simulate) {
-      // Drain: Permanently reduce opponent max energy
-      const isPlayer = (state.me === this.you);
-      state.them.maxEnergy = Math.max(1, state.them.maxEnergy - 1); // Minimum 1 energy
-      
-      if (isPlayer) {
-        logYou(`drains opponent's energy reserves permanently`);
-      } else {
-        logOpp(`drains your energy reserves permanently`);
-      }
-    }
-    
-    if (effects.purify && !simulate) {
-      // Purify: Remove all status effects from both players
-      const isPlayer = (state.me === this.you);
-      
-      // Clear status effects for both players
-      const resetStatus = (player) => {
-        player.status.burn = 0;
-        player.status.burnTurns = 0;
-        player.status.nextPlus = 0;
-        player.status.impervious = false;
-        player.status.imperviousNext = false;
-        player.status.reactiveArmor = false;
-        player.status.hopeStacks = 0;
-        player.status.silencedNext = false;
-        // Keep some tracking status for dream cards
-        // player.status.lastTurnShieldGained = 0; // Keep for mechanics
-        // player.status.lastCardPlayed = null; // Keep for mechanics
-      };
-      
-      resetStatus(state.me);
-      resetStatus(state.them);
-      
-      if (isPlayer) {
-        logYou(`purifies the battlefield, cleansing all effects`);
-      } else {
-        logOpp(`purifies the battlefield, cleansing all effects`);
       }
     }
     
