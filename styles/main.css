@@ -67,6 +67,36 @@ html,body {
   outline: 2px solid var(--accent);
 }
 
+/* Help button styles */
+.help-button {
+  background: var(--panel);
+  color: var(--accent);
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  width: 40px;
+  height: 32px;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  opacity: 0.9;
+  transition: opacity 0.2s;
+  font-family: 'Press Start 2P', monospace;
+  align-items: center;
+  justify-content: center;
+  display: none; /* Hidden on desktop by default */
+}
+
+.help-button:hover,
+.help-button:focus {
+  opacity: 1;
+  outline: 2px solid var(--accent);
+}
+
+/* Desktop help button (inside button-container) */
+.help-button-desktop {
+  /* Inherits button container styles - no special styling needed for desktop */
+}
+
 /* Responsive adjustments for button header */
 @media (max-width: 768px) {
   .button-header {
@@ -78,6 +108,15 @@ html,body {
   
   .menu-toggle {
     display: flex;
+  }
+  
+  .help-button {
+    display: flex;
+    margin-left: 8px;
+  }
+  
+  .help-button-desktop {
+    display: none; /* Hide desktop help button on mobile */
   }
   
   .button-container {

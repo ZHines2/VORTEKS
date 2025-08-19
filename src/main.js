@@ -137,6 +137,7 @@ let music;
 window.music = null; // Make music accessible globally for sound functions
 const muteBtn = document.getElementById('muteBtn');
 const helpBtn = document.getElementById('helpBtn');
+const helpBtnDesktop = document.getElementById('helpBtnDesktop');
 const debugBtn = document.getElementById('debugBtn');
 const unlocksBtn = document.getElementById('unlocksBtn');
 const glossaryBtn = document.getElementById('glossaryBtn');
@@ -1599,7 +1600,7 @@ function setupHelp() {
   }
 
   // Help button click handler
-  helpBtn.addEventListener('click', () => {
+  const handleHelpClick = () => {
     if (helpModal.hidden) {
       helpModal.hidden = false;
       // Initialize tabs if not already done
@@ -1612,7 +1613,13 @@ function setupHelp() {
       // Mark help as shown for future visits
       localStorage.setItem(HELP_SHOWN_KEY, '1');
     }
-  });
+  };
+
+  // Add event listeners to both help buttons
+  helpBtn.addEventListener('click', handleHelpClick);
+  if (helpBtnDesktop) {
+    helpBtnDesktop.addEventListener('click', handleHelpClick);
+  }
 
   // Debug button click handler
   debugBtn.addEventListener('click', () => {
