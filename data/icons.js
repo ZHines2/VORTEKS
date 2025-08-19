@@ -24,5 +24,11 @@ export const icons = {
   pressure: '🌀',
   equilibrium: '⚖️',
   sabotage: '🔧',
-  adaptation: '🧬'
+  adaptation: '🧬',
+  // Dream Expansion Vol 2 Icons
+  decay: '🟢',
+  inflame: '🔸', 
+  silence: '🔻',
+  drain: '💧',
+  purify: '⭐'
 };

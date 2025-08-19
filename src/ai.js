@@ -1,5 +1,6 @@
 import { CARDS } from '../data/cards.js';
 import { shuffle } from './utils.js';
+import { DEBUG } from './config.js';
 
 // AI opponent logic and deck building
 export function makePersonaDeck(kind, unlockedCards = null, campaignBooster = 0) {
@@ -88,6 +89,34 @@ export function makePersonaDeck(kind, unlockedCards = null, campaignBooster = 0)
     counts.fire -= 1;    // Less fire (opposing element)
     counts.heart -= 1;   // Less healing (undead)
     counts.shield -= 1;  // Less physical defense
+  }
+  
+  // Add Dream Expansion Cards if debug enabled and available
+  if (DEBUG.ENABLE_DREAM_CARDS && unlockedCards) {
+    const dreamCards = ['reactiveArmor', 'pressure', 'equilibrium', 'sabotage', 'adaptation',
+                       'decay', 'inflame', 'silence', 'drain', 'purify'];
+    dreamCards.forEach(cardId => {
+      if (unlockedCards.includes(cardId)) {
+        // Add 1-2 copies of each dream card based on persona preferences
+        let dreamCount = 1;
+        
+        // Vol 1 adjustments
+        if (cardId === 'reactiveArmor' && (kind === 'Doctor' || kind === 'ghost')) dreamCount = 2; // Defensive personas
+        if (cardId === 'pressure' && (kind === 'Bruiser' || kind === 'cat')) dreamCount = 2; // Aggressive personas
+        if (cardId === 'equilibrium' && (kind === 'Trickster' || kind === 'robot')) dreamCount = 2; // Control personas
+        if (cardId === 'sabotage' && (kind === 'Trickster' || kind === 'ghost')) dreamCount = 2; // Disruptive personas
+        if (cardId === 'adaptation' && (kind === 'cat' || kind === 'robot')) dreamCount = 2; // Reactive personas
+        
+        // Vol 2 adjustments
+        if (cardId === 'decay' && (kind === 'ghost' || kind === 'Trickster')) dreamCount = 2; // Anti-sustain personas
+        if (cardId === 'inflame' && (kind === 'Bruiser' || kind === 'cat')) dreamCount = 2; // Aggressive personas
+        if (cardId === 'silence' && (kind === 'Trickster' || kind === 'robot')) dreamCount = 2; // Control personas
+        if (cardId === 'drain' && (kind === 'ghost' || kind === 'Trickster')) dreamCount = 2; // Control personas
+        if (cardId === 'purify' && (kind === 'Doctor' || kind === 'robot')) dreamCount = 2; // Support personas
+        
+        counts[cardId] = dreamCount;
+      }
+    });
   }
   
   const deck = []; 

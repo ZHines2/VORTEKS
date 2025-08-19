@@ -2596,7 +2596,8 @@ function setupDebugScreen() {
     debugLog(`Dream Expansion Cards ${status} for scrimmage testing`);
     
     if (DEBUG.ENABLE_DREAM_CARDS) {
-      debugLog('Available: Reactive Armor, Pressure, Equilibrium, Sabotage, Adaptation');
+      debugLog('Vol 1: Reactive Armor, Pressure, Equilibrium, Sabotage, Adaptation');
+      debugLog('Vol 2: Decay, Inflame, Silence, Drain, Purify');
     }
   };
 

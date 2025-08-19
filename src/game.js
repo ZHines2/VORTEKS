@@ -369,7 +369,14 @@ export const Game = {
       logOpp('draws 1');
     }
     
-    p.draw(1);
+    // Check for silence effect before drawing
+    if (p.status.silencedNext) {
+      const actorName = p === this.you ? '[YOU]' : '[OPPONENT]';
+      logMessage(`${actorName} is silenced - no card draw this turn.`);
+      p.status.silencedNext = false; // Clear the effect
+    } else {
+      p.draw(1);
+    }
     if (window.render) window.render();
   },
   
@@ -1022,6 +1029,111 @@ export const Game = {
         } else {
           logOpp(`seeks adaptation but finds no pattern`);
         }
+      }
+    }
+    
+    // Dream Expansion Vol 2 Card Effects
+    if (effects.decay && !simulate) {
+      // Decay: Deal damage, steal Hope stacks if target has them
+      const isPlayer = (state.me === this.you);
+      
+      // Check if target has Hope status and steal it
+      if (state.them.status && state.them.status.hopeStacks > 0) {
+        // Steal 1 Hope stack
+        state.them.status.hopeStacks = Math.max(0, state.them.status.hopeStacks - 1);
+        if (!state.me.status.hopeStacks) state.me.status.hopeStacks = 0;
+        state.me.status.hopeStacks += 1;
+        
+        if (isPlayer) {
+          logYou(`decays life force, stealing Hope from opponent`);
+        } else {
+          logOpp(`decays life force, stealing Hope from you`);
+        }
+      } else {
+        if (isPlayer) {
+          logYou(`decays life force for ${dmg} damage`);
+        } else {
+          logOpp(`decays life force for ${dmg} damage`);
+        }
+      }
+    }
+    
+    if (effects.inflame && !simulate) {
+      // Inflame: Apply burn, or deal damage if target is burn immune
+      const isPlayer = (state.me === this.you);
+      
+      // Check for burn immunity (this would need to be implemented)
+      const isBurnImmune = state.them.status && state.them.status.burnImmune;
+      
+      if (isBurnImmune) {
+        // Deal damage instead of applying burn
+        this.hit(state.them, 3, false, false);
+        if (isPlayer) {
+          logYou(`inflames target immune to burn for 3 damage`);
+        } else {
+          logOpp(`inflames you immune to burn for 3 damage`);
+        }
+      } else {
+        // Apply burn normally
+        this.applyBurn(state.them, 2, 3);
+        if (isPlayer) {
+          logYou(`inflames target with 2 Burn`);
+        } else {
+          logOpp(`inflames you with 2 Burn`);
+        }
+      }
+    }
+    
+    if (effects.silence && !simulate) {
+      // Silence: Prevent opponent card draw next turn
+      const isPlayer = (state.me === this.you);
+      state.them.status.silencedNext = true;
+      
+      if (isPlayer) {
+        logYou(`silences opponent's card draw`);
+      } else {
+        logOpp(`silences your card draw`);
+      }
+    }
+    
+    if (effects.drain && !simulate) {
+      // Drain: Permanently reduce opponent max energy
+      const isPlayer = (state.me === this.you);
+      state.them.maxEnergy = Math.max(1, state.them.maxEnergy - 1); // Minimum 1 energy
+      
+      if (isPlayer) {
+        logYou(`drains opponent's energy reserves permanently`);
+      } else {
+        logOpp(`drains your energy reserves permanently`);
+      }
+    }
+    
+    if (effects.purify && !simulate) {
+      // Purify: Remove all status effects from both players
+      const isPlayer = (state.me === this.you);
+      
+      // Clear status effects for both players
+      const resetStatus = (player) => {
+        player.status.burn = 0;
+        player.status.burnTurns = 0;
+        player.status.nextPlus = 0;
+        player.status.impervious = false;
+        player.status.imperviousNext = false;
+        player.status.reactiveArmor = false;
+        player.status.hopeStacks = 0;
+        player.status.silencedNext = false;
+        // Keep some tracking status for dream cards
+        // player.status.lastTurnShieldGained = 0; // Keep for mechanics
+        // player.status.lastCardPlayed = null; // Keep for mechanics
+      };
+      
+      resetStatus(state.me);
+      resetStatus(state.them);
+      
+      if (isPlayer) {
+        logYou(`purifies the battlefield, cleansing all effects`);
+      } else {
+        logOpp(`purifies the battlefield, cleansing all effects`);
       }
     }
     

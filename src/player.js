@@ -27,7 +27,11 @@ export function createPlayer(isAI = false) {
       reactiveArmor: false,
       lastTurnShieldGained: 0,
       lastCardPlayed: null,
-      lastCardType: null
+      lastCardType: null,
+      // Dream Vol 2 status tracking
+      hopeStacks: 0,
+      burnImmune: false,
+      silencedNext: false
     },
     quirk: null,
     

@@ -347,5 +347,76 @@ export const CARDS = [
     scaling: {}, 
     ai: { role: 'tempo', pri: 60 },
     debug: true
+  },
+  // Dream Expansion Vol 2 Cards (Debug Only)
+  { 
+    id: 'decay', 
+    sym: icons.decay, 
+    name: 'Decay', 
+    description: 'Deal 2 damage. If target has Hope status, steal 1 Hope stack and gain it yourself.',
+    cost: 2, 
+    type: 'attack', 
+    tags: ['decay', 'hope-counter', 'steal'],
+    effects: { damage: 2, pierce: false, heal: 0, shield: 0, draw: 0, decay: true }, 
+    status: { target: { burn: null, freezeEnergy: 0 }, self: { nextPlus: 0, maxEnergyDelta: 0, energyNowDelta: 0, cleanse: false } }, 
+    scaling: {}, 
+    ai: { role: 'tempo', pri: 75 },
+    debug: true
+  },
+  { 
+    id: 'inflame', 
+    sym: icons.inflame, 
+    name: 'Inflame', 
+    description: 'Apply 2 Burn. If target is immune to burn, deal 3 damage instead.',
+    cost: 1, 
+    type: 'skill', 
+    tags: ['burn', 'immunity-counter'],
+    effects: { damage: 0, pierce: false, heal: 0, shield: 0, draw: 0, inflame: true }, 
+    status: { target: { burn: null, freezeEnergy: 0 }, self: { nextPlus: 0, maxEnergyDelta: 0, energyNowDelta: 0, cleanse: false } }, 
+    scaling: {}, 
+    ai: { role: 'tempo', pri: 65 },
+    debug: true
+  },
+  { 
+    id: 'silence', 
+    sym: icons.silence, 
+    name: 'Silence', 
+    description: 'Opponent cannot draw cards next turn. Draw 1 card.',
+    cost: 2, 
+    type: 'skill', 
+    tags: ['disruption', 'draw-deny'],
+    effects: { damage: 0, pierce: false, heal: 0, shield: 0, draw: 1, silence: true }, 
+    status: { target: { burn: null, freezeEnergy: 0, silencedNext: true }, self: { nextPlus: 0, maxEnergyDelta: 0, energyNowDelta: 0, cleanse: false } }, 
+    scaling: {}, 
+    ai: { role: 'control', pri: 70 },
+    debug: true
+  },
+  { 
+    id: 'drain', 
+    sym: icons.drain, 
+    name: 'Drain', 
+    description: 'Reduce opponent max energy by 1 this battle. Gain 1 energy.',
+    cost: 1, 
+    type: 'skill', 
+    tags: ['drain', 'energy-reduction'],
+    effects: { damage: 0, pierce: false, heal: 0, shield: 0, draw: 0, drain: true }, 
+    status: { target: { burn: null, freezeEnergy: 0 }, self: { nextPlus: 0, maxEnergyDelta: 0, energyNowDelta: 1, cleanse: false } }, 
+    scaling: {}, 
+    ai: { role: 'control', pri: 80 },
+    debug: true
+  },
+  { 
+    id: 'purify', 
+    sym: icons.purify, 
+    name: 'Purify', 
+    description: 'Remove all status effects from both players. Heal 2 HP.',
+    cost: 1, 
+    type: 'skill', 
+    tags: ['purify', 'cleanse', 'heal'],
+    effects: { damage: 0, pierce: false, heal: 2, shield: 0, draw: 0, purify: true }, 
+    status: { target: { burn: null, freezeEnergy: 0 }, self: { nextPlus: 0, maxEnergyDelta: 0, energyNowDelta: 0, cleanse: false } }, 
+    scaling: {}, 
+    ai: { role: 'sustain', pri: 55 },
+    debug: true
   }
 ];
