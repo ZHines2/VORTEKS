@@ -69,7 +69,7 @@ import {
   saveLeaderboard,
   configureJSONBin
 } from './leaderboard.js';
-import { sanitizeNickname } from './utils.js';
+import { sanitizeNickname, shuffle } from './utils.js';
 import {
   loadIdleGame,
   saveIdleGame,
@@ -90,6 +90,13 @@ import {
 import { initVortekGenerator, generateVortekAppearance, playVortekSound } from './vortek-generator.js';
 import { generateChronicle, getCurrentChronicle, saveCurrentChronicle, clearCurrentChronicle } from './lore.js';
 import { initializeAnalysisUI } from './analysis-ui.js';
+import { 
+  recordBattle as recordScrimmage, 
+  detectEdgeCases, 
+  generateFindingsReport, 
+  clearFindings, 
+  exportFindings 
+} from './scrimmage-findings.js';
 
 const MUSIC_FILE = 'VORTEKS.mp3';
 const LS_KEY = 'vorteks-muted';
@@ -1907,6 +1914,321 @@ window.GameStats = {
 // --- Expose Campaign for debugging and unlock system ---
 window.Campaign = Campaign;
 
+// --- Scrimmage Functions ---
+function runScrimmage(battleCount = 1) {
+  let completedBattles = 0;
+  const startTime = Date.now();
+  
+  function runNextBattle() {
+    if (completedBattles >= battleCount) {
+      const duration = Date.now() - startTime;
+      debugLog(`Scrimmage complete: ${completedBattles} battles in ${(duration/1000).toFixed(1)}s`);
+      return;
+    }
+
+    const ai1Persona = getSelectedPersona('debugPersona1');
+    const ai2Persona = getSelectedPersona('debugPersona2');
+    const ai1Level = parseInt(document.getElementById('debugBoosterLevel1').value) || 0;
+    const ai2Level = parseInt(document.getElementById('debugBoosterLevel2').value) || 0;
+
+    debugLog(`Battle ${completedBattles + 1}/${battleCount}: ${ai1Persona} L${ai1Level} vs ${ai2Persona} L${ai2Level}`);
+    
+    const battleResult = simulateScrimmage(ai1Persona, ai2Persona, ai1Level, ai2Level);
+    
+    // Record findings
+    recordScrimmage(battleResult);
+    
+    completedBattles++;
+    
+    // Continue with next battle (async to prevent blocking)
+    setTimeout(runNextBattle, 10);
+  }
+
+  runNextBattle();
+}
+
+function getSelectedPersona(selectId) {
+  const select = document.getElementById(selectId);
+  const value = select ? select.value : 'random';
+  
+  if (value === 'random') {
+    const personas = ['Bruiser', 'Doctor', 'Trickster', 'Sicko', 'cat', 'robot', 'ghost'];
+    return personas[Math.floor(Math.random() * personas.length)];
+  }
+  
+  return value;
+}
+
+function simulateScrimmage(ai1Persona, ai2Persona, ai1Level, ai2Level) {
+  // Create AI players
+  const ai1 = createPlayer(false);
+  const ai2 = createPlayer(true);
+  
+  // Set personas and levels
+  ai1.persona = ai1Persona;
+  ai2.persona = ai2Persona;
+  ai1.level = ai1Level;
+  ai2.level = ai2Level;
+  
+  // Build decks
+  ai1.deck = makePersonaDeck(ai1Persona, getUnlockedCards(), ai1Level);
+  ai2.deck = makePersonaDeck(ai2Persona, getUnlockedCards(), ai2Level);
+  
+  // Shuffle and draw hands
+  ai1.deck = shuffle([...ai1.deck]); // Create copy to avoid mutation
+  ai2.deck = shuffle([...ai2.deck]);
+  ai1.hand = [];
+  ai2.hand = [];
+  ai1.discard = [];
+  ai2.discard = [];
+  
+  // Draw initial hands
+  for (let i = 0; i < 5; i++) {
+    if (ai1.deck.length > 0) ai1.hand.push(ai1.deck.pop());
+    if (ai2.deck.length > 0) ai2.hand.push(ai2.deck.pop());
+  }
+  
+  // Apply campaign boosts if needed
+  if (ai1Level > 0) {
+    ai1.hp += ai1Level * 2;
+    ai1.maxHP = ai1.hp;
+  }
+  if (ai2Level > 0) {
+    ai2.hp += ai2Level * 2;
+    ai2.maxHP = ai2.hp;
+  }
+  
+  // Battle data tracking
+  const battleData = {
+    ai1: {
+      persona: ai1Persona,
+      level: ai1Level,
+      maxHP: ai1.hp,
+      cardsPlayed: [],
+      damageDealt: 0,
+      damageTaken: 0
+    },
+    ai2: {
+      persona: ai2Persona,
+      level: ai2Level,
+      maxHP: ai2.hp,
+      cardsPlayed: [],
+      damageDealt: 0,
+      damageTaken: 0
+    },
+    turns: 0,
+    duration: 0,
+    notable: [],
+    edgeCases: []
+  };
+  
+  const startTime = Date.now();
+  let maxTurns = 100; // Prevent infinite battles
+  let currentTurn = 'ai1'; // Start with ai1
+  
+  // Simple AI logic for simulation (based on existing AI but simplified)
+  function simulateAITurn(activePlayer, opponent, battlePlayerData) {
+    const beforeOppHP = opponent.hp;
+    const beforeOppShield = opponent.shield;
+    
+    // Start turn
+    activePlayer.energy = Math.min(activePlayer.maxEnergy, 3 + (activePlayer.status?.nextPlus || 0));
+    if (activePlayer.status?.nextPlus) activePlayer.status.nextPlus = 0;
+    
+    // Apply freeze effect
+    if (activePlayer.status?.frozenNext) {
+      activePlayer.energy = Math.max(0, activePlayer.energy - activePlayer.status.frozenNext);
+      activePlayer.status.frozenNext = 0;
+    }
+    
+    // Draw card
+    if (activePlayer.deck.length > 0) {
+      activePlayer.hand.push(activePlayer.deck.pop());
+    } else if (activePlayer.discard.length > 0) {
+      // Reshuffle
+      activePlayer.deck = shuffle([...activePlayer.discard]);
+      activePlayer.discard = [];
+      if (activePlayer.deck.length > 0) {
+        activePlayer.hand.push(activePlayer.deck.pop());
+      }
+    }
+    
+    // AI plays cards (simplified logic)
+    let actionsThisTurn = 0;
+    const maxActions = 10; // Prevent infinite loops
+    
+    while (activePlayer.energy > 0 && actionsThisTurn < maxActions) {
+      // Find playable cards
+      const playable = activePlayer.hand.filter(card => card.cost <= activePlayer.energy);
+      
+      if (playable.length === 0) break;
+      
+      // Simple AI prioritization
+      let cardToPlay = null;
+      
+      // 1. Heal if low health
+      if (activePlayer.hp <= 8) {
+        cardToPlay = playable.find(c => c.id === 'heart');
+      }
+      
+      // 2. Play attacks if opponent has low health
+      if (!cardToPlay && opponent.hp <= 10) {
+        const attacks = playable.filter(c => c.type === 'attack');
+        if (attacks.length > 0) {
+          cardToPlay = attacks[0];
+        }
+      }
+      
+      // 3. Play any card
+      if (!cardToPlay) {
+        cardToPlay = playable[0];
+      }
+      
+      if (!cardToPlay) break;
+      
+      // Play the card
+      activePlayer.energy -= cardToPlay.cost;
+      activePlayer.hand = activePlayer.hand.filter(c => c !== cardToPlay);
+      activePlayer.discard.push(cardToPlay);
+      battlePlayerData.cardsPlayed.push(cardToPlay.id);
+      
+      // Apply card effects (simplified)
+      applySimpleCardEffects(cardToPlay, activePlayer, opponent);
+      
+      actionsThisTurn++;
+    }
+    
+    // Calculate damage dealt this turn
+    const afterOppHP = opponent.hp;
+    const afterOppShield = opponent.shield;
+    const damageThisTurn = Math.max(0, (beforeOppHP + beforeOppShield) - (afterOppHP + afterOppShield));
+    battlePlayerData.damageDealt += damageThisTurn;
+    
+    return damageThisTurn;
+  }
+  
+  // Battle loop
+  while (ai1.hp > 0 && ai2.hp > 0 && battleData.turns < maxTurns) {
+    battleData.turns++;
+    
+    const activePlayer = currentTurn === 'ai1' ? ai1 : ai2;
+    const opponent = currentTurn === 'ai1' ? ai2 : ai1;
+    const battlePlayerData = currentTurn === 'ai1' ? battleData.ai1 : battleData.ai2;
+    
+    const damageDealt = simulateAITurn(activePlayer, opponent, battlePlayerData);
+    
+    // Check for notable events
+    if (damageDealt >= 10) {
+      battleData.notable.push(`Turn ${battleData.turns}: ${damageDealt} damage dealt by ${activePlayer.persona}`);
+    }
+    
+    if (activePlayer.hp <= 5 && activePlayer.hp > 0) {
+      battleData.notable.push(`Turn ${battleData.turns}: ${activePlayer.persona} at critical health (${activePlayer.hp})`);
+    }
+    
+    // Detect edge cases
+    const edgeCases = detectEdgeCases({
+      turn: battleData.turns,
+      shield: activePlayer.shield,
+      hp: activePlayer.hp
+    }, {
+      damageDealt,
+      healAmount: 0,
+      cardsPlayed: battlePlayerData.cardsPlayed.slice(-5) // Last 5 cards
+    });
+    
+    battleData.edgeCases.push(...edgeCases);
+    
+    // Switch turns
+    currentTurn = currentTurn === 'ai1' ? 'ai2' : 'ai1';
+  }
+  
+  // Determine winner
+  battleData.duration = Date.now() - startTime;
+  battleData.ai1.finalHP = ai1.hp;
+  battleData.ai2.finalHP = ai2.hp;
+  battleData.ai1.damageTaken = battleData.ai1.maxHP - ai1.hp;
+  battleData.ai2.damageTaken = battleData.ai2.maxHP - ai2.hp;
+  
+  if (ai1.hp <= 0 && ai2.hp <= 0) {
+    battleData.winner = 'draw';
+  } else if (ai1.hp <= 0) {
+    battleData.winner = 'ai2';
+  } else if (ai2.hp <= 0) {
+    battleData.winner = 'ai1';
+  } else if (battleData.turns >= maxTurns) {
+    battleData.winner = ai1.hp > ai2.hp ? 'ai1' : ai2.hp > ai1.hp ? 'ai2' : 'draw';
+    battleData.notable.push(`Battle timed out after ${maxTurns} turns`);
+  }
+  
+  return battleData;
+}
+
+// Helper function to apply simplified card effects
+function applySimpleCardEffects(card, caster, target) {
+  const effects = card.effects || {};
+  
+  // Damage
+  if (effects.damage > 0) {
+    let damage = effects.damage;
+    if (effects.pierce) {
+      // Pierce damage goes through shields
+      target.hp = Math.max(0, target.hp - damage);
+    } else {
+      // Normal damage blocked by shields
+      if (target.shield >= damage) {
+        target.shield -= damage;
+      } else {
+        const remainingDamage = damage - target.shield;
+        target.shield = 0;
+        target.hp = Math.max(0, target.hp - remainingDamage);
+      }
+    }
+  }
+  
+  // Healing
+  if (effects.heal > 0) {
+    caster.hp += effects.heal;
+  }
+  
+  // Shield
+  if (effects.shield > 0) {
+    caster.shield = (caster.shield || 0) + effects.shield;
+  }
+  
+  // Status effects (simplified)
+  const status = card.status || {};
+  
+  // Next plus (energy boost)
+  if (status.self?.nextPlus > 0) {
+    caster.status = caster.status || {};
+    caster.status.nextPlus = (caster.status.nextPlus || 0) + status.self.nextPlus;
+  }
+  
+  // Freeze energy
+  if (status.target?.freezeEnergy > 0) {
+    target.status = target.status || {};
+    target.status.frozenNext = (target.status.frozenNext || 0) + status.target.freezeEnergy;
+  }
+  
+  // Burn (simplified - just deal immediate damage)
+  if (status.target?.burn?.amount > 0) {
+    target.hp = Math.max(0, target.hp - status.target.burn.amount);
+  }
+}
+
+function downloadFile(content, filename) {
+  const blob = new Blob([content], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 // --- Debug Screen Functions ---
 function debugLog(message) {
   const logEl = document.getElementById('debugLog');
@@ -2197,6 +2519,60 @@ function setupDebugScreen() {
       const status = quirk.unlocked ? '✓' : '✗';
       debugLog(`  ${status} ${quirk.name}: ${quirk.description}`);
     });
+  };
+
+  // Scrimmage Testing Section
+  document.getElementById('debugRunScrimmage').onclick = () => {
+    debugLog('Starting single AI vs AI scrimmage...');
+    runScrimmage(1);
+  };
+
+  document.getElementById('debugRunBatch').onclick = () => {
+    debugLog('Starting batch scrimmage (10 battles)...');
+    runScrimmage(10);
+  };
+
+  document.getElementById('debugRunMarathon').onclick = () => {
+    debugLog('Starting marathon scrimmage (100 battles)...');
+    runScrimmage(100);
+  };
+
+  document.getElementById('debugShowFindings').onclick = () => {
+    const report = generateFindingsReport();
+    debugLog('=== SCRIMMAGE FINDINGS REPORT ===');
+    debugLog(`Total Battles: ${report.summary.totalBattles}`);
+    debugLog(`Last Updated: ${report.summary.lastUpdated || 'Never'}`);
+    
+    debugLog('\n--- Top Performing Personas ---');
+    report.summary.topPerformingPersonas.forEach(p => {
+      debugLog(`${p.persona} L${p.level}: ${p.winRate} (${p.battles} battles, ${p.avgDamage} avg dmg)`);
+    });
+
+    debugLog('\n--- Most Played Cards ---');
+    report.summary.mostPlayedCards.slice(0, 5).forEach(c => {
+      debugLog(`${c.cardId}: ${c.timesPlayed} plays, ${c.winRate} win rate`);
+    });
+
+    debugLog('\n--- Critical Edge Cases ---');
+    report.summary.criticalEdgeCases.forEach(ec => {
+      debugLog(`${ec.type}: ${ec.description}`);
+    });
+
+    debugLog('\n--- Recommendations ---');
+    report.recommendations.forEach(rec => {
+      debugLog(`[${rec.priority.toUpperCase()}] ${rec.description}`);
+    });
+  };
+
+  document.getElementById('debugClearFindings').onclick = () => {
+    clearFindings();
+    debugLog('All scrimmage findings cleared');
+  };
+
+  document.getElementById('debugExportFindings').onclick = () => {
+    const exportData = exportFindings();
+    downloadFile(exportData, 'vorteks_scrimmage_findings.json');
+    debugLog('Findings exported to download');
   };
 
   // Flavor Testing Section

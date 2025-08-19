@@ -276,5 +276,18 @@ export const CARDS = [
     status: { target: { burn: null, freezeEnergy: 0 }, self: { nextPlus: 0, maxEnergyDelta: 0, energyNowDelta: 0, cleanse: false, hopeStatus: true } }, 
     scaling: {}, 
     ai: { role: 'sustain', pri: 55 } 
+  },
+  { 
+    id: 'infect', 
+    sym: icons.infect, 
+    name: 'Infect', 
+    description: 'Inflict Infect status: 50% chance to deal 1 damage each turn. 25% chance to naturally cure per turn.',
+    cost: 2, 
+    type: 'skill', 
+    tags: ['infect', 'debuff'],
+    effects: { damage: 0, pierce: false, heal: 0, shield: 0, draw: 0 }, 
+    status: { target: { burn: null, freezeEnergy: 0, infectStatus: true }, self: { nextPlus: 0, maxEnergyDelta: 0, energyNowDelta: 0, cleanse: false } }, 
+    scaling: {}, 
+    ai: { role: 'attrition', pri: 60 } 
   }
 ];

@@ -18,5 +18,6 @@ export const icons = {
   impervious: '🗿',
   overload: '📿',
   reap: '💀',
-  hope: '🕊'
+  hope: '🕊',
+  infect: '🦠'
 };

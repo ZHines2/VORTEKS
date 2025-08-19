@@ -58,6 +58,15 @@ export function makePersonaDeck(kind, unlockedCards = null, campaignBooster = 0)
     counts.snow += 1; 
     counts.swords -= 1; 
   }
+  if (kind === 'Sicko') {
+    // Sicko deck: focused on infect + attrition strategy
+    counts.infect = 3;   // Multiple infect cards for stacking
+    counts.fire += 1;    // Damage over time synergy  
+    counts.bolt += 1;    // Pierce to get through shields
+    counts.heart += 1;   // Some sustain for longer games
+    counts.shield += 1;  // Defense for attrition style
+    counts.swords -= 1;  // Less direct damage
+  }
   if (kind === 'cat') {
     // Cat deck: 3 copies of Curiosity + balanced mix of low-cost attacks/skills
     counts.curiosity = 3;

@@ -969,6 +969,11 @@ function drawRegularFace() {
   if (style === 2) persona = 'Trickster';
   if (hasHat && persona !== 'Trickster') persona = 'Trickster';
   if (hasStache && persona !== 'Doctor' && style !== 2) persona = 'Doctor';
+  
+  // Sicko persona: combination of mole + specific features for disease theme
+  if (hasMole && style === 0 && !hasHat && !hasStache) {
+    persona = 'Sicko';
+  }
 
   return { 
     persona, 

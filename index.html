@@ -846,6 +846,49 @@
           </div>
         </div>
 
+        <!-- Scrimmage Testing Section -->
+        <div class="debug-section">
+          <h3>⚔️ AI vs AI Scrimmage</h3>
+          <div class="debug-grid">
+            <button id="debugRunScrimmage" class="debug-btn">Run Single Scrimmage</button>
+            <button id="debugRunBatch" class="debug-btn">Run Batch (10x)</button>
+            <button id="debugRunMarathon" class="debug-btn">Run Marathon (100x)</button>
+            <button id="debugShowFindings" class="debug-btn">Show Findings</button>
+            <button id="debugClearFindings" class="debug-btn">Clear Findings</button>
+            <button id="debugExportFindings" class="debug-btn">Export Findings</button>
+          </div>
+          <div class="debug-input-group">
+            <label for="debugPersona1">AI 1 Persona:</label>
+            <select id="debugPersona1" class="debug-input">
+              <option value="random">Random</option>
+              <option value="Bruiser">Bruiser</option>
+              <option value="Doctor">Doctor</option>
+              <option value="Trickster">Trickster</option>
+              <option value="Sicko">Sicko</option>
+              <option value="cat">Cat</option>
+              <option value="robot">Robot</option>
+              <option value="ghost">Ghost</option>
+            </select>
+            <label for="debugPersona2">AI 2 Persona:</label>
+            <select id="debugPersona2" class="debug-input">
+              <option value="random">Random</option>
+              <option value="Bruiser">Bruiser</option>
+              <option value="Doctor">Doctor</option>
+              <option value="Trickster">Trickster</option>
+              <option value="Sicko">Sicko</option>
+              <option value="cat">Cat</option>
+              <option value="robot">Robot</option>
+              <option value="ghost">Ghost</option>
+            </select>
+          </div>
+          <div class="debug-input-group">
+            <label for="debugBoosterLevel1">AI 1 Level:</label>
+            <input type="number" id="debugBoosterLevel1" placeholder="0-10" min="0" max="10" value="0" class="debug-input">
+            <label for="debugBoosterLevel2">AI 2 Level:</label>
+            <input type="number" id="debugBoosterLevel2" placeholder="0-10" min="0" max="10" value="0" class="debug-input">
+          </div>
+        </div>
+
         <!-- Flavor Testing Section -->
         <div class="debug-section">
           <h3>🎨 Flavor Testing</h3>
