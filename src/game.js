@@ -209,6 +209,18 @@ export const Game = {
     }
   },
 
+  // Helper method for applying infect with stacking support
+  applyInfect(target, newInfectStacks) {
+    if (newInfectStacks <= 0) return;
+
+    // Initialize status if needed
+    if (!target.status) target.status = {};
+    
+    // Stack infect: add amounts (no turn limit like burn)
+    const existingInfect = target.status.infect || 0;
+    target.status.infect = existingInfect + newInfectStacks;
+  },
+
   // Helper method for applying heal with overheal support
   applyHeal(player, amount) {
     if (amount <= 0) return player.hp;
@@ -415,6 +427,35 @@ export const Game = {
       me.status.burnTurns--; 
     }
     if (me.status.burnTurns === 0) me.status.burn = 0;
+    
+    // Handle Infect status: 50% chance to deal 1 damage per stack, 25% chance to cure per turn
+    if (me.status.infect && me.status.infect > 0) {
+      const actorName = me === this.you ? '[YOU]' : '[OPPONENT]';
+      let damageDealt = 0;
+      
+      // Roll for damage on each stack
+      for (let i = 0; i < me.status.infect; i++) {
+        if (Math.random() < 0.5) { // 50% chance per stack
+          damageDealt++;
+        }
+      }
+      
+      // Apply damage if any procs occurred
+      if (damageDealt > 0) {
+        this.hit(me, damageDealt, true, false);
+        logMessage(`${actorName} Infect deals ${damageDealt} damage (${damageDealt}/${me.status.infect} stacks proc).`);
+      }
+      
+      // Roll for natural cure (25% chance to remove 1 stack)
+      if (Math.random() < 0.25) {
+        me.status.infect = Math.max(0, me.status.infect - 1);
+        if (me.status.infect === 0) {
+          logMessage(`${actorName} Infect is naturally cured.`);
+        } else {
+          logMessage(`${actorName} Infect partially cured (${me.status.infect} stacks remain).`);
+        }
+      }
+    }
     this.turn = this.turn === 'you' ? 'opp' : 'you';
     const now = this.turn === 'you' ? this.you : this.opp;
     this.startTurn(now);
@@ -880,6 +921,17 @@ export const Game = {
       // FX: Burn effect
       if (window.fxBurn) window.fxBurn(state.them);
     }
+    if (status.target && status.target.infectStatus && !simulate) {
+      const isPlayer = (state.me === this.you);
+      if (isPlayer) {
+        logYou(`applies Infect (1 stack)`);
+      } else {
+        logOpp(`applies Infect (1 stack)`);
+      }
+      this.applyInfect(state.them, 1);
+      // FX: Infect effect
+      if (window.fxInfect) window.fxInfect(state.them);
+    }
     if (status.target && status.target.freezeEnergy && !simulate) { 
       const isPlayer = (state.me === this.you);
       if (isPlayer) {
@@ -947,6 +999,7 @@ export const Game = {
         state.me.status.burn = 0;
         state.me.status.burnTurns = 0;
         state.me.status.frozenNext = 0;
+        state.me.status.infect = 0; // Clear infect stacks
         
         // Clear buffs (this is a design choice - should cleanse remove buffs too?)
         state.me.status.nextPlus = 0;

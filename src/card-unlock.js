@@ -223,6 +223,28 @@ const UNLOCK_META = [
       }
       return false;
     }
+  },
+  {
+    id: 'infect',
+    kind: 'achievement',
+    description: 'Defeat 4 different personas including Doctor, Trickster, Bruiser, and Sicko.',
+    progressHint: s => {
+      const defeated = s.personaDefeats || {};
+      const required = ['doctor', 'trickster', 'bruiser', 'sicko'];
+      const defeatedCount = required.filter(persona => defeated[persona] > 0).length;
+      const defeatedList = required.filter(persona => defeated[persona] > 0).map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(', ');
+      return `Defeated: ${defeatedList} (${defeatedCount}/4)`;
+    },
+    check: (ctx, state) => {
+      if (ctx.event === 'battleEnd' && ctx.result === 'win' && ctx.persona) {
+        // Check if we've defeated all 4 required personas
+        const defeated = state.personaDefeats || {};
+        const required = ['doctor', 'trickster', 'bruiser', 'sicko'];
+        const defeatedCount = required.filter(persona => defeated[persona] > 0).length;
+        return defeatedCount >= 4;
+      }
+      return false;
+    }
   }
 ];
 
@@ -381,7 +403,9 @@ const PERSONA_UNLOCKS = {
   'trickster': 'presto',
   // Ghost persona unlocks Reap card
   'ghost': 'reap',
-  'specter': 'reap'
+  'specter': 'reap',
+  // Sicko persona (doesn't unlock anything itself, but is required for infect unlock)
+  'sicko': null
   // Example future entries:
   // 'Glacier': 'snow',  // would unlock Freeze card
   // 'Assassin': 'dagger'  // would unlock Pierce card
