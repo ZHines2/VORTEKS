@@ -340,6 +340,29 @@ function generateChronicleInsights(telemetry, creature) {
     insights.push(`Combat style derived from ${cardCount} unique card types mastered`);
   }
   
+  // Add strategic insights from analysis
+  try {
+    // Access global analysis function if available
+    if (typeof window !== 'undefined' && window.analyzeGameStates) {
+      const analysis = window.analyzeGameStates();
+      if (analysis && analysis.gameStateTransitions) {
+        const strategy = analysis.gameStateTransitions.winConditionPaths.dominantStrategy;
+        if (strategy && strategy !== 'Defensive') {
+          insights.push(`Strategic mastery: ${strategy.toLowerCase()} combat approach`);
+        }
+        
+        const comebackPotential = analysis.gameStateTransitions.comebackMechanics.comebackPotential;
+        if (comebackPotential === 'High') {
+          insights.push('Renowned for incredible comeback victories');
+        } else if (comebackPotential === 'Medium') {
+          insights.push('Shows resilience in challenging battles');
+        }
+      }
+    }
+  } catch (e) {
+    // Silently continue if analysis is not available
+  }
+  
   return insights.join(' • ');
 }
 

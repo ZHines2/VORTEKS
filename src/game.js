@@ -783,8 +783,8 @@ export const Game = {
       const reapDamage = Math.floor(state.me.hp / 2);
       
       if (reapDamage > 0) {
-        // Deal damage to opponent using the correct hit function
-        this.hit(state.them, reapDamage, pierce, false);
+        // Deal damage to opponent using the correct hit function (reap is not pierce damage)
+        this.hit(state.them, reapDamage, false, false);
         
         // Deal damage to self (ignores shields and armor since it's self-inflicted)
         state.me.hp = Math.max(1, state.me.hp - reapDamage); // Prevent suicide, leave at 1 HP minimum

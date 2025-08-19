@@ -278,60 +278,34 @@ export class AnalysisUI {
     
     return `
       <div class="design-insights">
-        <h3>🎨 Design Insights & Card Representation</h3>
+        <h3>🎨 Quick Strategic Insights</h3>
+        <p><em>Detailed insights have been integrated into your VORTEKS Chronicles and Telemetry data.</em></p>
         
-        <div class="insights-grid">
-          ${insights.map(insight => `
-            <div class="insight-card">
-              <h4>${insight.category}</h4>
-              <div class="insight-content">
-                <p class="insight-text">${insight.insight}</p>
-                <div class="evidence">
-                  <strong>Evidence:</strong> ${insight.evidence}
-                </div>
-                <div class="recommendation">
-                  <strong>Recommendation:</strong> ${insight.recommendation}
-                </div>
+        <div class="insights-summary">
+          <div class="insight-card">
+            <h4>🎯 Current Focus</h4>
+            <div class="insight-content">
+              <p class="insight-text">${insights.length > 0 ? insights[0].insight : 'Your playstyle is developing...'}</p>
+              <div class="recommendation">
+                <strong>Tip:</strong> ${insights.length > 0 ? insights[0].recommendation : 'Try different card combinations to discover new strategies!'}
               </div>
             </div>
-          `).join('')}
+          </div>
+          
+          <div class="insight-card">
+            <h4>🏆 Strategic Mastery</h4>
+            <div class="insight-content">
+              <p><strong>Dominant Strategy:</strong> ${analysis.gameStateTransitions.winConditionPaths.dominantStrategy}</p>
+              <p><strong>Comeback Potential:</strong> ${analysis.gameStateTransitions.comebackMechanics.comebackPotential}</p>
+            </div>
+          </div>
         </div>
         
-        <div class="game-state-analysis">
-          <h4>🎲 Game State Transitions</h4>
-          <div class="state-transition-card">
-            <h5>Game Phases</h5>
-            <div class="phase-list">
-              ${Object.entries(analysis.gameStateTransitions.gamePhases).map(([phase, description]) => 
-                `<div class="phase-item"><strong>${phase}:</strong> ${description}</div>`
-              ).join('')}
-            </div>
-          </div>
-          
-          <div class="comeback-analysis">
-            <h5>🔄 Comeback Mechanics</h5>
-            <p><strong>Comeback Potential:</strong> ${analysis.gameStateTransitions.comebackMechanics.comebackPotential}</p>
-            <p><strong>Defense/Offense Balance:</strong> ${analysis.gameStateTransitions.comebackMechanics.defenseToOffenseRatio.toFixed(2)}</p>
-            <p><strong>Healing Importance:</strong> ${analysis.gameStateTransitions.comebackMechanics.healingImportance.toFixed(2)}</p>
-          </div>
-          
-          <div class="win-conditions">
-            <h5>🏆 Win Condition Analysis</h5>
-            <div class="win-stats">
-              <div class="win-stat">
-                <span>Aggressive Wins:</span> 
-                <span>${analysis.gameStateTransitions.winConditionPaths.aggroWins}</span>
-              </div>
-              <div class="win-stat">
-                <span>Control Wins:</span> 
-                <span>${analysis.gameStateTransitions.winConditionPaths.controlWins}</span>
-              </div>
-              <div class="win-stat">
-                <span>Dominant Strategy:</span> 
-                <span>${analysis.gameStateTransitions.winConditionPaths.dominantStrategy}</span>
-              </div>
-            </div>
-          </div>
+        <div class="lore-integration-notice">
+          <h4>📜 More Insights Available</h4>
+          <p>Your complete strategic analysis is woven into your VORTEKS Chronicles. 
+          Visit the <strong>Chronicles</strong> tab to see how your gameplay shapes your legend!</p>
+          <p>Check <strong>Telemetry</strong> for detailed gameplay statistics and patterns.</p>
         </div>
       </div>
     `;
@@ -653,6 +627,9 @@ export function initializeAnalysisUI() {
   
   // Create global instance
   window.analysisUI = new AnalysisUI();
+  
+  // Make analysis function available globally for lore integration
+  window.analyzeGameStates = analyzeGameStates;
   
   // Add keyboard shortcut to open analysis (Ctrl+A)
   document.addEventListener('keydown', (e) => {
