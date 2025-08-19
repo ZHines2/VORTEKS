@@ -3,6 +3,7 @@
 
 import { getTelemetry } from './telemetry.js';
 import { getCreature, getCreatureInfo } from './idle-game.js';
+import { CARDS } from '../data/cards.js';
 
 // Chronicle themes based on player progression
 const CHRONICLE_THEMES = {
@@ -276,7 +277,11 @@ function generateCardInsight(telemetry) {
   if (favoriteCard && totalPlayed > 0) {
     const favoriteCount = cardData.played[favoriteCard] || 0;
     const favoritePercentage = Math.round((favoriteCount / totalPlayed) * 100);
-    return `Their signature card, ${favoriteCard}, had become an extension of their will, used in ${favoritePercentage}% of their strategic decisions.`;
+    
+    // Get the actual card name instead of using the ID
+    const cardName = CARDS.find(card => card.id === favoriteCard)?.name || favoriteCard;
+    
+    return `Their signature card, ${cardName}, had become an extension of their will, used in ${favoritePercentage}% of their strategic decisions.`;
   } else if (totalPlayed > 50) {
     return `Through ${totalPlayed} card plays, they had woven a complex tapestry of tactical knowledge.`;
   } else {

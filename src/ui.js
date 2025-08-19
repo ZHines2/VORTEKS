@@ -13,10 +13,6 @@ export function getCardTypeIcon(type) {
 
 // Cost rendering helper function
 export function renderCost(card) {
-  if (card.id === 'reconsider') {
-    return 'ALL';
-  }
-  
   let costStr = '';
   
   // Add energy cost if card has one
