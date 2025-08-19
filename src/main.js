@@ -144,7 +144,6 @@ const glossaryBtn = document.getElementById('glossaryBtn');
 const defeatedBtn = document.getElementById('defeatedBtn');
 const leaderboardBtn = document.getElementById('leaderboardBtn');
 const telemetryBtn = document.getElementById('telemetryBtn');
-const analysisBtn = document.getElementById('analysisBtn');
 const companionBtn = document.getElementById('companionBtn');
 const loreBtn = document.getElementById('loreBtn');
 
@@ -240,13 +239,6 @@ function setupDefeatedOpponents() {
       telemetryModal.hidden = false;
     } else {
       telemetryModal.hidden = true;
-    }
-  });
-
-  // Analysis button click handler
-  analysisBtn.addEventListener('click', () => {
-    if (window.analysisUI) {
-      window.analysisUI.show();
     }
   });
 

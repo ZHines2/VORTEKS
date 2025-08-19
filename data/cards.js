@@ -263,5 +263,18 @@ export const CARDS = [
     status: { target: { burn: null, freezeEnergy: 0 }, self: { nextPlus: 0, maxEnergyDelta: 0, energyNowDelta: 0, cleanse: false } }, 
     scaling: {}, 
     ai: { role: 'finisher', pri: 45 } 
+  },
+  { 
+    id: 'hope', 
+    sym: icons.hope, 
+    name: 'Hope', 
+    description: 'Gain Hope status: heal 1-5 HP each turn for 3 turns. Effect stacks.',
+    cost: 2, 
+    type: 'power', 
+    tags: ['hope', 'heal'],
+    effects: { damage: 0, pierce: false, heal: 0, shield: 0, draw: 0 }, 
+    status: { target: { burn: null, freezeEnergy: 0 }, self: { nextPlus: 0, maxEnergyDelta: 0, energyNowDelta: 0, cleanse: false, hopeStatus: true } }, 
+    scaling: {}, 
+    ai: { role: 'sustain', pri: 55 } 
   }
 ];

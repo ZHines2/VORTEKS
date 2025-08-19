@@ -17,5 +17,6 @@ export const icons = {
   ferriglobin: '🩸',
   impervious: '🗿',
   overload: '📿',
-  reap: '💀'
+  reap: '💀',
+  hope: '🕊'
 };

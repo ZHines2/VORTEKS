@@ -1,6 +1,8 @@
 // telemetry.js
 // VORTEKS Player Analytics and Telemetry System
 
+import { checkAchievementUnlocks } from './card-unlock.js';
+
 const TELEMETRY_KEY = 'vorteks-telemetry';
 const TELEMETRY_VERSION = 1;
 
@@ -294,6 +296,12 @@ export function getAnalytics() {
   const sessionTime = Date.now() - sessionStartTime;
   telemetry.session.totalPlayTime += sessionTime;
   telemetry.session.longestSession = Math.max(telemetry.session.longestSession, sessionTime);
+  
+  // Check for play time unlocks
+  checkAchievementUnlocks({
+    event: 'playTimeUpdate',
+    totalPlayTime: telemetry.session.totalPlayTime
+  });
   
   // Calculate derived stats
   const winRate = telemetry.battles.total > 0 ? 
