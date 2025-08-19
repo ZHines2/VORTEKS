@@ -1737,7 +1737,7 @@ function setupGlossary() {
     if (card.effects.shield > 0) parts.push(`+${card.effects.shield} shield`);
     if (card.effects.draw > 0) parts.push(`Draw ${card.effects.draw}`);
     if (card.effects.pierce) parts.push('Pierce');
-    if (card.effects.reconsider) parts.push('Spend all energy. Reshuffle your deck.');
+    if (card.effects.reconsider) parts.push('Costs 3 energy. Spend all remaining energy and reshuffle deck.');
     if (card.status.target.burn) parts.push(`Burn ${card.status.target.burn.amount} for ${card.status.target.burn.turns} turns`);
     if (card.status.target.freezeEnergy > 0) parts.push(`Freeze ${card.status.target.freezeEnergy} energy`);
     if (card.status.self.nextPlus > 0) parts.push(`+${card.status.self.nextPlus} to next card`);
