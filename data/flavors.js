@@ -755,24 +755,26 @@ export const FLAVOR_UNLOCKS = [
     check: (ctx, state) => {
       if (ctx.event === 'cardPlayed' && ctx.card) {
         if (!state.progress.prismCardTypesThisBattle) {
-          state.progress.prismCardTypesThisBattle = new Set();
+          state.progress.prismCardTypesThisBattle = [];
         }
         
         let cardType = ctx.card.type;
         if (ctx.card.effects?.lifeCost > 0) cardType = 'life-cost';
         if (['echo', 'curiosity', 'droid', 'reap'].includes(ctx.card.id)) cardType = 'unique';
         
-        state.progress.prismCardTypesThisBattle.add(cardType);
+        if (!state.progress.prismCardTypesThisBattle.includes(cardType)) {
+          state.progress.prismCardTypesThisBattle.push(cardType);
+        }
       }
       if (ctx.event === 'battleEnd' && ctx.result === 'win') {
         const types = state.progress.prismCardTypesThisBattle;
-        return types && types.size >= 5;
+        return types && types.length >= 5;
       }
       return false;
     },
     progressHint: s => {
       const types = s.progress?.prismCardTypesThisBattle;
-      return `Card types this battle: ${types ? types.size : 0}/5`;
+      return `Card types this battle: ${types ? types.length : 0}/5`;
     },
     resetBattleFlags: (state) => {
       delete state.progress.prismCardTypesThisBattle;

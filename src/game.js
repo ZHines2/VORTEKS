@@ -467,7 +467,12 @@ export const Game = {
     p.lastPlayed = card;
     // Track last played card this turn for Echo functionality - but don't track Echo itself
     if (card.id !== 'echo') {
-      p.lastPlayedThisTurn = card;
+      // Store a clean copy without stolen markers to prevent Echo issues
+      p.lastPlayedThisTurn = {
+        ...card,
+        stolenFrom: undefined,
+        originalOwner: undefined
+      };
     }
     // remove from hand but don't discard yet - wait until after effects resolve
     const playedCard = p.removeFromHand(idx);
@@ -493,17 +498,23 @@ export const Game = {
     // now discard the card AFTER all effects are resolved (prevents infinite loops)
     // Check if this card was stolen via Presto and return to original owner
     if (playedCard.stolenFrom && playedCard.originalOwner && playedCard.originalOwner.discard) {
-      // Return stolen card to original owner's discard pile
-      playedCard.originalOwner.discard.push(playedCard);
-      // Clean up the stolen markers
-      delete playedCard.stolenFrom;
-      delete playedCard.originalOwner;
-      
-      const isPlayer = (p === this.you);
-      if (isPlayer) {
-        logYou(`returns ${playedCard.name || 'a card'} to opponent's discard`);
-      } else {
-        logOpp(`returns ${playedCard.name || 'a card'} to your discard`);
+      try {
+        // Return stolen card to original owner's discard pile
+        playedCard.originalOwner.discard.push(playedCard);
+        // Clean up the stolen markers
+        delete playedCard.stolenFrom;
+        delete playedCard.originalOwner;
+        
+        const isPlayer = (p === this.you);
+        if (isPlayer) {
+          logYou(`returns ${playedCard.name || 'a card'} to opponent's discard`);
+        } else {
+          logOpp(`returns ${playedCard.name || 'a card'} to your discard`);
+        }
+      } catch (error) {
+        console.error('Error returning stolen card:', error);
+        // Fallback: put in current player's discard
+        p.discard.push(playedCard);
       }
     } else {
       // Normal discard to current player's discard pile
@@ -756,6 +767,10 @@ export const Game = {
         if (stolenCards.length > 0 && stolenCards[0]) {
           const stolenCard = stolenCards[0];
           
+          // Clean any existing stolen markers to prevent conflicts
+          delete stolenCard.stolenFrom;
+          delete stolenCard.originalOwner;
+          
           // Mark the card as stolen for proper return mechanics
           stolenCard.stolenFrom = state.them.isAI ? 'opp' : 'you';
           stolenCard.originalOwner = state.them;
@@ -961,7 +976,32 @@ export const Game = {
         // Add a flag to prevent recursive echoes and ensure clean state
         const wasEchoing = this.isEchoing;
         this.isEchoing = true;
-        this.applyCard(last, me, them, simulate);
+        
+        // Create a clean copy of the card to avoid issues with stolen card markers
+        // This prevents crashes when echoing stolen cards that may have been modified
+        const cardCopy = {
+          ...last,
+          // Remove any stolen card markers to prevent conflicts
+          stolenFrom: undefined,
+          originalOwner: undefined
+        };
+        
+        try {
+          this.applyCard(cardCopy, me, them, simulate);
+        } catch (error) {
+          console.error('Error applying echoed card:', error);
+          // Fallback: just draw a card if echo fails
+          if (!simulate) {
+            me.draw(1);
+            const isPlayer = (me === this.you);
+            if (isPlayer) {
+              logYou(`echo failed, draws 1 card instead`);
+            } else {
+              logOpp(`echo failed, draws 1 card instead`);
+            }
+          }
+        }
+        
         this.isEchoing = wasEchoing;
         if (!simulate) {
           const isPlayer = (me === this.you);

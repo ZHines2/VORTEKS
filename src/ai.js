@@ -123,8 +123,16 @@ export function createCampaignOpponent(baseOpponent, campaignBooster = 0) {
 
 export function createAIPlayer(game) {
   return {
-    aiPlay() {
+    aiPlay(depth = 0) {
       if (game.over) return;
+      
+      // Prevent infinite recursion - limit AI to reasonable number of cards per turn
+      if (depth >= 20) {
+        console.warn('AI recursion limit reached, ending turn');
+        game.endTurn();
+        return;
+      }
+      
       const ai = game.opp; 
       const playable = ai.hand.map((c, i) => ({ c, i })).filter(x => ai.canAfford(x.c));
       if (!playable.length) { 
@@ -136,33 +144,33 @@ export function createAIPlayer(game) {
       const lethal = playable.find(x => game.simDamage(ai, game.you, x.c) >= game.you.hp);
       if (lethal) { 
         game.playCard(ai, lethal.i); 
-        return this.aiPlay(); 
+        return this.aiPlay(depth + 1); 
       }
       
       const healLow = ai.hp <= 8 && playable.find(x => x.c.id === 'heart'); 
       if (healLow) { 
         game.playCard(ai, healLow.i); 
-        return this.aiPlay(); 
+        return this.aiPlay(depth + 1); 
       }
       
       const surgeEarly = ai.maxEnergy < 5 && playable.find(x => x.c.id === 'loop'); 
       if (surgeEarly) { 
         game.playCard(ai, surgeEarly.i); 
-        return this.aiPlay(); 
+        return this.aiPlay(depth + 1); 
       }
       
       // Play curiosity or droid early to showcase the powers
       const setupCard = playable.find(x => x.c.id === 'curiosity' || x.c.id === 'droid');
       if (setupCard) {
         game.playCard(ai, setupCard.i);
-        return this.aiPlay();
+        return this.aiPlay(depth + 1);
       }
       
       // Desperate Reap play: only when losing badly (opponent has more than double our HP)
       const reapCard = playable.find(x => x.c.id === 'reap');
       if (reapCard && game.you.hp > ai.hp * 2) {
         game.playCard(ai, reapCard.i);
-        return this.aiPlay();
+        return this.aiPlay(depth + 1);
       }
       
       // prefer highest dmg attack first
@@ -171,7 +179,7 @@ export function createAIPlayer(game) {
         .sort((a, b) => game.simDamage(ai, game.you, b.c) - game.simDamage(ai, game.you, a.c));
       if (attacks[0]) { 
         game.playCard(ai, attacks[0].i); 
-        return this.aiPlay(); 
+        return this.aiPlay(depth + 1); 
       }
       
       const prio = ['fire', 'snow', 'star', 'shield', 'echo'];
@@ -179,12 +187,18 @@ export function createAIPlayer(game) {
         const pick = playable.find(x => x.c.id === id); 
         if (pick) { 
           game.playCard(ai, pick.i); 
-          return this.aiPlay(); 
+          return this.aiPlay(depth + 1); 
         } 
       }
       
-      game.playCard(ai, playable[0].i); 
-      return this.aiPlay();
+      // Fallback: play first affordable card, but be extra careful about infinite loops
+      if (playable.length > 0) {
+        game.playCard(ai, playable[0].i); 
+        return this.aiPlay(depth + 1);
+      }
+      
+      // If we somehow get here with no playable cards, end turn
+      game.endTurn();
     }
   };
 }
