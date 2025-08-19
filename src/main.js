@@ -1952,7 +1952,7 @@ function getSelectedPersona(selectId) {
   const value = select ? select.value : 'random';
   
   if (value === 'random') {
-    const personas = ['Bruiser', 'Doctor', 'Trickster', 'cat', 'robot', 'ghost'];
+    const personas = ['Bruiser', 'Doctor', 'Trickster', 'Sicko', 'cat', 'robot', 'ghost'];
     return personas[Math.floor(Math.random() * personas.length)];
   }
   
