@@ -302,6 +302,156 @@ export const FLAVORS = [
       good: '#bbccee',
       bad: '#ff6677'
     }
+  },
+  {
+    id: 'prism',
+    name: 'Prism',
+    description: 'Rainbow spectrum and crystal clarity. All colors bend to your will.',
+    unlocked: false,
+    colors: {
+      bg: '#1a1a1a',
+      panel: '#333333',
+      border: '#ffffff',
+      ink: '#ffffff',
+      accent: '#ff77ff',
+      good: '#77ff77',
+      bad: '#ff7777'
+    }
+  },
+  {
+    id: 'bone',
+    name: 'Bone',
+    description: 'Pale ivory and ash gray. Death is but another beginning.',
+    unlocked: false,
+    colors: {
+      bg: '#2a2520',
+      panel: '#4d453d',
+      border: '#e6dcc4',
+      ink: '#ffffff',
+      accent: '#f0e6d6',
+      good: '#d4c9b8',
+      bad: '#cc5555'
+    }
+  },
+  {
+    id: 'storm',
+    name: 'Storm',
+    description: 'Thunder gray and lightning white. Tempest power courses through you.',
+    unlocked: false,
+    colors: {
+      bg: '#1a1f2a',
+      panel: '#3d4455',
+      border: '#ccddff',
+      ink: '#ffffff',
+      accent: '#e6f0ff',
+      good: '#aaccee',
+      bad: '#ff6699'
+    }
+  },
+  {
+    id: 'molten',
+    name: 'Molten',
+    description: 'Lava red and molten gold. The earth\'s heart burns within you.',
+    unlocked: false,
+    colors: {
+      bg: '#2a1a0a',
+      panel: '#5c3311',
+      border: '#ff8833',
+      ink: '#ffffff',
+      accent: '#ffaa55',
+      good: '#ff9944',
+      bad: '#cc2211'
+    }
+  },
+  {
+    id: 'arctic',
+    name: 'Arctic',
+    description: 'Pure white and glacier blue. Cold as winter, sharp as ice.',
+    unlocked: false,
+    colors: {
+      bg: '#1a2a2a',
+      panel: '#335555',
+      border: '#aaffff',
+      ink: '#ffffff',
+      accent: '#ccffff',
+      good: '#88dddd',
+      bad: '#ff6688'
+    }
+  },
+  {
+    id: 'venom',
+    name: 'Venom',
+    description: 'Toxic green and acid yellow. Poison flows through your veins.',
+    unlocked: false,
+    colors: {
+      bg: '#1a2a1a',
+      panel: '#335533',
+      border: '#88ff44',
+      ink: '#ffffff',
+      accent: '#aaff66',
+      good: '#77dd33',
+      bad: '#ff4466'
+    }
+  },
+  {
+    id: 'royal',
+    name: 'Royal',
+    description: 'Deep purple and gold trim. Command with regal authority.',
+    unlocked: false,
+    colors: {
+      bg: '#2a1a2a',
+      panel: '#553355',
+      border: '#ffcc44',
+      ink: '#ffffff',
+      accent: '#ccaaff',
+      good: '#ddbb66',
+      bad: '#ff5577'
+    }
+  },
+  {
+    id: 'plasma',
+    name: 'Plasma',
+    description: 'Electric blue and fusion white. Pure energy made manifest.',
+    unlocked: false,
+    colors: {
+      bg: '#0a1a2a',
+      panel: '#224466',
+      border: '#44aaff',
+      ink: '#ffffff',
+      accent: '#77ccff',
+      good: '#55bbee',
+      bad: '#ff5599'
+    }
+  },
+  {
+    id: 'mystic',
+    name: 'Mystic',
+    description: 'Ethereal teal and spirit glow. Ancient magic flows through you.',
+    unlocked: false,
+    colors: {
+      bg: '#1a2a2a',
+      panel: '#225555',
+      border: '#55ffaa',
+      ink: '#ffffff',
+      accent: '#88ffcc',
+      good: '#66ddaa',
+      bad: '#ff6677'
+    }
+  },
+  {
+    id: 'cosmic',
+    name: 'Cosmic',
+    description: 'Deep space and starfire. The universe bends to your will.',
+    unlocked: false,
+    colors: {
+      bg: '#0f0f2a',
+      panel: '#2a2a55',
+      border: '#cc88ff',
+      ink: '#ffffff',
+      accent: '#ddaaff',
+      good: '#bb99ee',
+      bad: '#ff6699'
+    }
   }
 ];
 
@@ -598,5 +748,176 @@ export const FLAVOR_UNLOCKS = [
       return false;
     },
     progressHint: s => `Total wins: ${s.progress?.lunarTotalWins || 0}/25`
+  },
+  {
+    id: 'prism',
+    description: 'Use 5 different card types in a single battle (attack, skill, power, life-cost, unique).',
+    check: (ctx, state) => {
+      if (ctx.event === 'cardPlayed' && ctx.card) {
+        if (!state.progress.prismCardTypesThisBattle) {
+          state.progress.prismCardTypesThisBattle = [];
+        }
+        
+        let cardType = ctx.card.type;
+        if (ctx.card.effects?.lifeCost > 0) cardType = 'life-cost';
+        if (['echo', 'curiosity', 'droid', 'reap'].includes(ctx.card.id)) cardType = 'unique';
+        
+        if (!state.progress.prismCardTypesThisBattle.includes(cardType)) {
+          state.progress.prismCardTypesThisBattle.push(cardType);
+        }
+      }
+      if (ctx.event === 'battleEnd' && ctx.result === 'win') {
+        const types = state.progress.prismCardTypesThisBattle;
+        return types && types.length >= 5;
+      }
+      return false;
+    },
+    progressHint: s => {
+      const types = s.progress?.prismCardTypesThisBattle;
+      return `Card types this battle: ${types ? types.length : 0}/5`;
+    },
+    resetBattleFlags: (state) => {
+      delete state.progress.prismCardTypesThisBattle;
+    }
+  },
+  {
+    id: 'bone',
+    description: 'Win a battle at exactly 1 HP.',
+    check: (ctx, state) => {
+      if (ctx.event === 'battleEnd' && ctx.result === 'win' && ctx.youHP === 1) {
+        return true;
+      }
+      return false;
+    },
+    progressHint: () => 'Win a battle at exactly 1 HP.'
+  },
+  {
+    id: 'storm',
+    description: 'Deal 50+ damage in a single turn.',
+    check: (ctx, state) => {
+      if (ctx.event === 'damage' && ctx.source === 'you') {
+        state.progress.stormTurnDamage = (state.progress.stormTurnDamage || 0) + ctx.amount;
+      }
+      if (ctx.event === 'turnEnd') {
+        const damage = state.progress.stormTurnDamage || 0;
+        state.progress.stormTurnDamage = 0;
+        return damage >= 50;
+      }
+      return false;
+    },
+    progressHint: s => `Best single-turn damage: ${s.progress?.stormMaxTurnDamage || 0}/50`,
+    resetBattleFlags: (state) => {
+      if (state.progress.stormTurnDamage > (state.progress.stormMaxTurnDamage || 0)) {
+        state.progress.stormMaxTurnDamage = state.progress.stormTurnDamage;
+      }
+      state.progress.stormTurnDamage = 0;
+    }
+  },
+  {
+    id: 'molten',
+    description: 'Use burn effects to deal 35+ total damage in one battle.',
+    check: (ctx, state) => {
+      if (ctx.event === 'burnDamage' && ctx.target === 'opponent') {
+        state.progress.moltenBurnDamage = (state.progress.moltenBurnDamage || 0) + ctx.amount;
+      }
+      if (ctx.event === 'battleEnd') {
+        const damage = state.progress.moltenBurnDamage || 0;
+        if (ctx.result === 'win' && damage >= 35) {
+          return true;
+        }
+      }
+      return false;
+    },
+    progressHint: s => `Burn damage this battle: ${s.progress?.moltenBurnDamage || 0}/35`,
+    resetBattleFlags: (state) => {
+      state.progress.moltenBurnDamage = 0;
+    }
+  },
+  {
+    id: 'arctic',
+    description: 'Use Freeze 5 times in a single battle and win.',
+    check: (ctx, state) => {
+      if (ctx.event === 'cardPlayed' && ctx.card && ctx.card.id === 'snow') {
+        state.progress.arcticFreezeCount = (state.progress.arcticFreezeCount || 0) + 1;
+      }
+      if (ctx.event === 'battleEnd' && ctx.result === 'win') {
+        const count = state.progress.arcticFreezeCount || 0;
+        return count >= 5;
+      }
+      return false;
+    },
+    progressHint: s => `Freeze uses this battle: ${s.progress?.arcticFreezeCount || 0}/5`,
+    resetBattleFlags: (state) => {
+      state.progress.arcticFreezeCount = 0;
+    }
+  },
+  {
+    id: 'venom',
+    description: 'Win a battle with 20+ shield accumulated.',
+    check: (ctx, state) => {
+      if (ctx.event === 'turnEnd' && ctx.youShield >= 20) {
+        state.progress.venomHighShieldFlag = true;
+      }
+      if (ctx.event === 'battleEnd' && ctx.result === 'win') {
+        return !!state.progress.venomHighShieldFlag;
+      }
+      return false;
+    },
+    progressHint: () => 'Win with 20+ shield accumulated.',
+    resetBattleFlags: (state) => {
+      delete state.progress.venomHighShieldFlag;
+    }
+  },
+  {
+    id: 'royal',
+    description: 'Win 50 total battles.',
+    check: (ctx, state) => {
+      if (ctx.event === 'battleEnd' && ctx.result === 'win') {
+        state.progress.royalTotalWins = (state.progress.royalTotalWins || 0) + 1;
+        return state.progress.royalTotalWins >= 50;
+      }
+      return false;
+    },
+    progressHint: s => `Total wins: ${s.progress?.royalTotalWins || 0}/50`
+  },
+  {
+    id: 'plasma',
+    description: 'Have 20+ energy in a single turn.',
+    check: (ctx, state) => {
+      if (ctx.event === 'turnStart' && ctx.youEnergy >= 20) {
+        return true;
+      }
+      return false;
+    },
+    progressHint: () => 'Reach 20+ energy in one turn.'
+  },
+  {
+    id: 'mystic',
+    description: 'Use Echo 10 times in a single battle and win.',
+    check: (ctx, state) => {
+      if (ctx.event === 'cardPlayed' && ctx.card && ctx.card.id === 'echo') {
+        state.progress.mysticEchoCount = (state.progress.mysticEchoCount || 0) + 1;
+      }
+      if (ctx.event === 'battleEnd' && ctx.result === 'win') {
+        const count = state.progress.mysticEchoCount || 0;
+        return count >= 10;
+      }
+      return false;
+    },
+    progressHint: s => `Echo uses this battle: ${s.progress?.mysticEchoCount || 0}/10`,
+    resetBattleFlags: (state) => {
+      state.progress.mysticEchoCount = 0;
+    }
+  },
+  {
+    id: 'cosmic',
+    description: 'Win a 15-win streak.',
+    check: (ctx, state) => {
+      if (ctx.event === 'battleEnd' && ctx.result === 'win' && ctx.streak >= 15) {
+        return true;
+      }
+      return false;
+    },
+    progressHint: () => 'Reach a 15-win streak.'
   }
 ];

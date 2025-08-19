@@ -347,6 +347,20 @@ const QUIRKS_META = [
       }
       return false;
     }
+  },
+  {
+    id: 'saint',
+    name: 'SAINT',
+    description: 'Heal +1 HP at the start of each of your turns.',
+    unlockedByDefault: false,
+    hint: 'Heal to 30 HP or more.',
+    effect: 'turn_start_heal',
+    check: (ctx, state) => {
+      if (ctx.event === 'heal' && ctx.newHP >= 30) {
+        return true;
+      }
+      return false;
+    }
   }
 ];
 
