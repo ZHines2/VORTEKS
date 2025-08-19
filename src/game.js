@@ -261,6 +261,14 @@ export const Game = {
     p.energy = p.maxEnergy - (p.energyPenaltyNext || 0);
     p.energyPenaltyNext = 0;
     
+    // Trigger turnStart achievement checks for player
+    if (p === this.you) {
+      checkAchievementUnlocks({
+        event: 'turnStart',
+        youEnergy: p.energy
+      });
+    }
+    
     // Handle Curiosity next-turn draw effect
     if (p.status.curiosityNextDraw) {
       const actorName = p === this.you ? '[YOU]' : '[CAT]';
@@ -283,6 +291,24 @@ export const Game = {
       const description = randomBonus();
       logMessage(`${actorName} Droid Protocol: ${description}`);
       p.status.droidProcNext = false;
+    }
+    
+    // Handle Hope status: heal random amount (1-5) each turn for 3 turns, stackable
+    if (p.status.hopeAmount && p.status.hopeTurns > 0) {
+      const hopeHeal = Math.floor(Math.random() * 5) + 1; // 1-5 random healing per stack
+      const totalHeal = hopeHeal * p.status.hopeAmount; // multiply by stacks
+      p.hp = this.applyHeal(p, totalHeal);
+      p.status.hopeTurns--;
+      
+      const actorName = p === this.you ? '[YOU]' : '[OPPONENT]';
+      logMessage(`${actorName} Hope heals for ${totalHeal} HP (${hopeHeal} × ${p.status.hopeAmount} stacks).`);
+      
+      // Clear hope when turns are done
+      if (p.status.hopeTurns <= 0) {
+        p.status.hopeAmount = 0;
+        p.status.hopeTurns = 0;
+        logMessage(`${actorName} Hope effect ends.`);
+      }
     }
     
     // Handle Impervious status transition
@@ -368,6 +394,7 @@ export const Game = {
         checkAchievementUnlocks({
           event: 'burnDamage',
           source: 'you',
+          target: 'opponent',
           amount: burnDamage
         });
       }
@@ -417,6 +444,7 @@ export const Game = {
         event: 'cardPlayed',
         cardId: card.id,
         cardType: card.type,
+        card: card, // Add full card object for flavor unlocks
         youEnergyAfter: card.id === 'reconsider' ? 0 : (p.energy - card.cost)
       });
     }
@@ -855,6 +883,18 @@ export const Game = {
       if (status.self.droidProcArm && !simulate) { 
         state.me.status.droidProcNext = true; 
       }
+      if (status.self.hopeStatus && !simulate) {
+        // Hope effect: grant healing over time (stacks)
+        if (!state.me.status) state.me.status = {};
+        state.me.status.hopeAmount = (state.me.status.hopeAmount || 0) + 1; // stack
+        state.me.status.hopeTurns = 3; // reset to 3 turns when new hope is applied
+        const isPlayer = (state.me === this.you);
+        if (isPlayer) {
+          logYou(`gains Hope (${state.me.status.hopeAmount} stacks, 3 turns)`);
+        } else {
+          logOpp(`gains Hope (${state.me.status.hopeAmount} stacks, 3 turns)`);
+        }
+      }
       if (status.self.imperviousNext && !simulate) {
         // Impervious effect: grant immunity next turn
         if (!state.me.status) state.me.status = {};
@@ -885,6 +925,10 @@ export const Game = {
         state.me.status.curiosityPower = false;
         state.me.status.droidProcNext = false;
         state.me.status.curiosityNextDraw = false;
+        
+        // Clear Hope effect
+        state.me.status.hopeAmount = 0;
+        state.me.status.hopeTurns = 0;
         
         // Clear immunity effects
         if (!state.me.status) state.me.status = {};
@@ -1050,7 +1094,8 @@ export const Game = {
         event: 'battleEnd',
         result: youWin ? 'win' : 'loss',
         streak: this.streak,
-        youHP: this.you.hp
+        youHP: this.you.hp,
+        oppPersona: this.persona // Add opponent persona for flavor unlocks
       });
       if (youWin) {
         checkPersonaDefeatUnlocks(this.persona, this.oppFeatures);

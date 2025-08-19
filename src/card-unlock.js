@@ -206,6 +206,23 @@ const UNLOCK_META = [
       }
       return false;
     }
+  },
+  {
+    id: 'hope',
+    kind: 'achievement',
+    description: 'Play VORTEKS for 5 minutes total.',
+    progressHint: s => {
+      const totalTime = s.progress.totalPlayTime || 0;
+      const minutes = Math.floor(totalTime / 60000);
+      return `Play time: ${minutes}/5 minutes`;
+    },
+    check: (ctx, state) => {
+      if (ctx.event === 'playTimeUpdate' && ctx.totalPlayTime != null) {
+        state.progress.totalPlayTime = ctx.totalPlayTime;
+        return ctx.totalPlayTime >= 300000; // 5 minutes in milliseconds
+      }
+      return false;
+    }
   }
 ];
 

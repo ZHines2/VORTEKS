@@ -40,6 +40,9 @@ export function renderStatuses(p, nodeId, Game = null) {
   if (p.status.burn && p.status.burnTurns > 0) {
     addTag(`🔥 ${p.status.burn} (${p.status.burnTurns})`);
   }
+  if (p.status.hopeAmount && p.status.hopeTurns > 0) {
+    addTag(`🕊 Hope ${p.status.hopeAmount} (${p.status.hopeTurns})`);
+  }
   if (p.status.nextPlus) addTag('✨ +' + p.status.nextPlus + ' atk');
   if (!p.isAI && p.quirk === 'piercer' && !p.status.firstAttackUsed) addTag('⟂ pierce 1 ready');
   
@@ -109,6 +112,9 @@ export function cardText(c) {
   }
   if (c.id === 'ferriglobin') {
     parts.push('Transform all your shield into health.');
+  }
+  if (c.id === 'hope') {
+    parts.push('Heal 1-5 HP per turn for 3 turns. Effect stacks.');
   }
   
   // Add stolen card indicator text
