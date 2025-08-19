@@ -1178,6 +1178,9 @@ export const Game = {
     this.you.energy = this.you.maxEnergy;
     this.you.status = { nextPlus: 0, firstAttackUsed: false };
     
+    // Return any stolen cards still in hand to their original owners before shuffling
+    this.cleanupStolenCards();
+    
     // Shuffle deck back together
     this.you.deck = shuffle([...this.you.hand, ...this.you.discard]);
     this.you.hand = [];
@@ -1198,6 +1201,41 @@ export const Game = {
     
     logAction('system', 'Next battle begins.');
     if (window.render) window.render();
+  },
+
+  // Clean up stolen cards from both players' hands and discard piles
+  cleanupStolenCards() {
+    // Helper function to return stolen cards from a card array
+    const returnStolenCardsFromArray = (cardArray, playerName) => {
+      for (let i = cardArray.length - 1; i >= 0; i--) {
+        const card = cardArray[i];
+        if (card.stolenFrom && card.originalOwner && card.originalOwner.discard) {
+          try {
+            // Remove from current array
+            const stolenCard = cardArray.splice(i, 1)[0];
+            // Return to original owner's discard pile
+            stolenCard.originalOwner.discard.push(stolenCard);
+            // Clean up markers
+            delete stolenCard.stolenFrom;
+            delete stolenCard.originalOwner;
+            
+            if (playerName === 'you') {
+              logYou(`returns ${stolenCard.name || 'a card'} to opponent at battle end`);
+            } else {
+              logOpp(`returns ${stolenCard.name || 'a card'} to you at battle end`);
+            }
+          } catch (error) {
+            console.error('Error returning stolen card during cleanup:', error);
+          }
+        }
+      }
+    };
+    
+    // Clean up stolen cards from both players
+    returnStolenCardsFromArray(this.you.hand, 'you');
+    returnStolenCardsFromArray(this.you.discard, 'you');
+    returnStolenCardsFromArray(this.opp.hand, 'opp');
+    returnStolenCardsFromArray(this.opp.discard, 'opp');
   },
 
   // Generate new opponent with different face and deck

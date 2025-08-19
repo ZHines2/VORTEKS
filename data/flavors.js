@@ -452,6 +452,156 @@ export const FLAVORS = [
       good: '#bb99ee',
       bad: '#ff6699'
     }
+  },
+  {
+    id: 'siphon',
+    name: 'Siphon',
+    description: 'Blood red and dark bronze. Power drawn from sacrifice and pain.',
+    unlocked: false,
+    colors: {
+      bg: '#2a0f0f',
+      panel: '#4d1a1a',
+      border: '#cc6644',
+      ink: '#ffffff',
+      accent: '#ff9977',
+      good: '#dd7766',
+      bad: '#aa1111'
+    }
+  },
+  {
+    id: 'echochamber',
+    name: 'Echo Chamber',
+    description: 'Resonant silver and harmonic blue. Your actions reverberate endlessly.',
+    unlocked: false,
+    colors: {
+      bg: '#1a1a2a',
+      panel: '#333355',
+      border: '#88aadd',
+      ink: '#ffffff',
+      accent: '#aaccff',
+      good: '#99bbee',
+      bad: '#ff6677'
+    }
+  },
+  {
+    id: 'inferno',
+    name: 'Inferno',
+    description: 'Blazing orange and molten core. Endless fire consumes all.',
+    unlocked: false,
+    colors: {
+      bg: '#2a1500',
+      panel: '#554400',
+      border: '#ffaa00',
+      ink: '#ffffff',
+      accent: '#ffcc33',
+      good: '#ffbb22',
+      bad: '#cc2211'
+    }
+  },
+  {
+    id: 'glacier',
+    name: 'Glacier',
+    description: 'Crystalline ice and arctic wind. Time itself freezes in your presence.',
+    unlocked: false,
+    colors: {
+      bg: '#0f2222',
+      panel: '#224444',
+      border: '#66ccdd',
+      ink: '#ffffff',
+      accent: '#aaeeff',
+      good: '#88ddee',
+      bad: '#ff5588'
+    }
+  },
+  {
+    id: 'fortress',
+    name: 'Fortress',
+    description: 'Granite gray and iron might. Impenetrable walls guard your domain.',
+    unlocked: false,
+    colors: {
+      bg: '#222222',
+      panel: '#444444',
+      border: '#999999',
+      ink: '#ffffff',
+      accent: '#bbbbbb',
+      good: '#aaaaaa',
+      bad: '#ff6666'
+    }
+  },
+  {
+    id: 'crescendo',
+    name: 'Crescendo',
+    description: 'Golden scales and harmonic progression. Power builds with each note.',
+    unlocked: false,
+    colors: {
+      bg: '#2a2200',
+      panel: '#554400',
+      border: '#ddcc00',
+      ink: '#ffffff',
+      accent: '#ffee33',
+      good: '#eedd22',
+      bad: '#cc4444'
+    }
+  },
+  {
+    id: 'flux',
+    name: 'Flux',
+    description: 'Electric purple and energy streams. Raw power flows at your command.',
+    unlocked: false,
+    colors: {
+      bg: '#1a1a2a',
+      panel: '#442266',
+      border: '#aa66ff',
+      ink: '#ffffff',
+      accent: '#cc88ff',
+      good: '#bb77ee',
+      bad: '#ff4488'
+    }
+  },
+  {
+    id: 'synthesis',
+    name: 'Synthesis',
+    description: 'Wisdom teal and knowledge gold. Cards flow like water, endless and pure.',
+    unlocked: false,
+    colors: {
+      bg: '#0f2a22',
+      panel: '#225544',
+      border: '#44ccaa',
+      ink: '#ffffff',
+      accent: '#66ffcc',
+      good: '#55eebb',
+      bad: '#ff5577'
+    }
+  },
+  {
+    id: 'vitality',
+    name: 'Vitality',
+    description: 'Life green and healing light. Renewal flows through every breath.',
+    unlocked: false,
+    colors: {
+      bg: '#1a2a0f',
+      panel: '#336622',
+      border: '#66dd44',
+      ink: '#ffffff',
+      accent: '#88ff66',
+      good: '#77ee55',
+      bad: '#dd4444'
+    }
+  },
+  {
+    id: 'chaos',
+    name: 'Chaos',
+    description: 'Shifting rainbow and wild energy. Order bends before infinite possibility.',
+    unlocked: false,
+    colors: {
+      bg: '#1a1a1a',
+      panel: '#333333',
+      border: '#ff88cc',
+      ink: '#ffffff',
+      accent: '#88ffcc',
+      good: '#ccff88',
+      bad: '#ff8888'
+    }
   }
 ];
 
@@ -919,5 +1069,173 @@ export const FLAVOR_UNLOCKS = [
       return false;
     },
     progressHint: () => 'Reach a 15-win streak.'
+  },
+  {
+    id: 'siphon',
+    description: 'Win 5 battles using only life-cost cards (Wallop/Presto).',
+    check: (ctx, state) => {
+      if (ctx.event === 'cardPlayed' && ctx.card) {
+        if (ctx.card.effects?.lifeCost > 0) {
+          state.progress.siphonUsedLifeCost = true;
+        } else {
+          state.progress.siphonUsedNonLifeCost = true;
+        }
+      }
+      if (ctx.event === 'battleEnd' && ctx.result === 'win') {
+        if (state.progress.siphonUsedLifeCost && !state.progress.siphonUsedNonLifeCost) {
+          state.progress.siphonLifeCostOnlyWins = (state.progress.siphonLifeCostOnlyWins || 0) + 1;
+          return state.progress.siphonLifeCostOnlyWins >= 5;
+        }
+      }
+      return false;
+    },
+    progressHint: s => `Life-cost only wins: ${s.progress?.siphonLifeCostOnlyWins || 0}/5`,
+    resetBattleFlags: (state) => {
+      delete state.progress.siphonUsedLifeCost;
+      delete state.progress.siphonUsedNonLifeCost;
+    }
+  },
+  {
+    id: 'echochamber',
+    description: 'Use Echo 20 times cumulatively.',
+    check: (ctx, state) => {
+      if (ctx.event === 'cardPlayed' && ctx.card && ctx.card.id === 'echo') {
+        state.progress.echochamberEchoCount = (state.progress.echochamberEchoCount || 0) + 1;
+        return state.progress.echochamberEchoCount >= 20;
+      }
+      return false;
+    },
+    progressHint: s => `Echo uses: ${s.progress?.echochamberEchoCount || 0}/20`
+  },
+  {
+    id: 'inferno',
+    description: 'Deal 50+ burn damage in a single battle.',
+    check: (ctx, state) => {
+      if (ctx.event === 'burnDamage' && ctx.target === 'opponent') {
+        state.progress.infernoBurnDamage = (state.progress.infernoBurnDamage || 0) + ctx.amount;
+      }
+      if (ctx.event === 'battleEnd') {
+        const damage = state.progress.infernoBurnDamage || 0;
+        if (ctx.result === 'win' && damage >= 50) {
+          return true;
+        }
+      }
+      return false;
+    },
+    progressHint: s => `Burn damage this battle: ${s.progress?.infernoBurnDamage || 0}/50`,
+    resetBattleFlags: (state) => {
+      state.progress.infernoBurnDamage = 0;
+    }
+  },
+  {
+    id: 'glacier',
+    description: 'Use Freeze 10 times in a single battle and win.',
+    check: (ctx, state) => {
+      if (ctx.event === 'cardPlayed' && ctx.card && ctx.card.id === 'snow') {
+        state.progress.glacierFreezeCount = (state.progress.glacierFreezeCount || 0) + 1;
+      }
+      if (ctx.event === 'battleEnd' && ctx.result === 'win') {
+        const count = state.progress.glacierFreezeCount || 0;
+        return count >= 10;
+      }
+      return false;
+    },
+    progressHint: s => `Freeze uses this battle: ${s.progress?.glacierFreezeCount || 0}/10`,
+    resetBattleFlags: (state) => {
+      state.progress.glacierFreezeCount = 0;
+    }
+  },
+  {
+    id: 'fortress',
+    description: 'Win a battle with 30+ shield accumulated.',
+    check: (ctx, state) => {
+      if (ctx.event === 'turnEnd' && ctx.youShield >= 30) {
+        state.progress.fortressHighShieldFlag = true;
+      }
+      if (ctx.event === 'battleEnd' && ctx.result === 'win') {
+        return !!state.progress.fortressHighShieldFlag;
+      }
+      return false;
+    },
+    progressHint: () => 'Win with 30+ shield accumulated.',
+    resetBattleFlags: (state) => {
+      delete state.progress.fortressHighShieldFlag;
+    }
+  },
+  {
+    id: 'crescendo',
+    description: 'Use Focus 15 times cumulatively.',
+    check: (ctx, state) => {
+      if (ctx.event === 'cardPlayed' && ctx.card && ctx.card.id === 'star') {
+        state.progress.crescendoFocusCount = (state.progress.crescendoFocusCount || 0) + 1;
+        return state.progress.crescendoFocusCount >= 15;
+      }
+      return false;
+    },
+    progressHint: s => `Focus uses: ${s.progress?.crescendoFocusCount || 0}/15`
+  },
+  {
+    id: 'flux',
+    description: 'Have 25+ energy in a single turn.',
+    check: (ctx, state) => {
+      if (ctx.event === 'turnStart' && ctx.youEnergy >= 25) {
+        return true;
+      }
+      return false;
+    },
+    progressHint: () => 'Reach 25+ energy in one turn.'
+  },
+  {
+    id: 'synthesis',
+    description: 'Use Loop 10 times cumulatively.',
+    check: (ctx, state) => {
+      if (ctx.event === 'cardPlayed' && ctx.card && ctx.card.id === 'loop') {
+        state.progress.synthesisLoopCount = (state.progress.synthesisLoopCount || 0) + 1;
+        return state.progress.synthesisLoopCount >= 10;
+      }
+      return false;
+    },
+    progressHint: s => `Loop uses: ${s.progress?.synthesisLoopCount || 0}/10`
+  },
+  {
+    id: 'vitality',
+    description: 'Heal 50+ HP cumulatively across all battles.',
+    check: (ctx, state) => {
+      if (ctx.event === 'heal' && ctx.amount > 0) {
+        state.progress.vitalityTotalHealing = (state.progress.vitalityTotalHealing || 0) + ctx.amount;
+        return state.progress.vitalityTotalHealing >= 50;
+      }
+      return false;
+    },
+    progressHint: s => `Total healing: ${s.progress?.vitalityTotalHealing || 0}/50`
+  },
+  {
+    id: 'chaos',
+    description: 'Use 10 different card types in a single battle and win.',
+    check: (ctx, state) => {
+      if (ctx.event === 'cardPlayed' && ctx.card) {
+        if (!state.progress.chaosCardTypesThisBattle) {
+          state.progress.chaosCardTypesThisBattle = [];
+        }
+        
+        // Get unique identifier for each card
+        const cardId = ctx.card.id;
+        if (!state.progress.chaosCardTypesThisBattle.includes(cardId)) {
+          state.progress.chaosCardTypesThisBattle.push(cardId);
+        }
+      }
+      if (ctx.event === 'battleEnd' && ctx.result === 'win') {
+        const types = state.progress.chaosCardTypesThisBattle;
+        return types && types.length >= 10;
+      }
+      return false;
+    },
+    progressHint: s => {
+      const types = s.progress?.chaosCardTypesThisBattle;
+      return `Different cards this battle: ${types ? types.length : 0}/10`;
+    },
+    resetBattleFlags: (state) => {
+      delete state.progress.chaosCardTypesThisBattle;
+    }
   }
 ];

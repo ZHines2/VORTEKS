@@ -16,8 +16,35 @@ function rngInt(n) {
 }
 
 export function randomName() {
-  const syllA = ["Bo","Cha","Mo","Lu","Pe","Za","Ti","Gro","Mi","Lo","Ka","Quo","Fi","Ra","Sn","We","Zo","Do","Ni","Ju","Pe","Ro","Ta","Zu"];
-  const syllB = ["bby","nky","bbit","mp","ggle","rk","zzle","mmy","nk","cko","ff","zz","bo","ppy","x","tron","floo","puff","dle","zzo","bug","snax","mancer","tune"];
+  // Dramatically expanded syllable arrays for much higher variety
+  // First syllables - fantasy/sci-fi inspired prefixes (80+ options)
+  const syllA = [
+    // Original syllables (preserved for compatibility)
+    "Bo","Cha","Mo","Lu","Pe","Za","Ti","Gro","Mi","Lo","Ka","Quo","Fi","Ra","Sn","We","Zo","Do","Ni","Ju","Ro","Ta","Zu",
+    // Fantasy-inspired additions
+    "Aer","Bla","Cri","Dra","Elf","Fae","Grim","Hex","Ith","Jax","Kry","Lum","Myr","Nyx","Orb","Pix","Qua","Rune","Syl","Tho","Urk","Vex","Wyr","Xen","Yth","Zep",
+    // Sci-fi inspired additions  
+    "Ast","Byt","Cyb","Dat","Eon","Flux","Gal","Hyp","Ion","Jet","Kin","Lab","Mag","Neo","Oxi","Pla","Qbit","Ray","Syn","Tek","Uni","Vec","Wav","Xyr","Zer",
+    // Mystical/ancient additions
+    "Ahn","Bel","Cth","Dae","Eth","Fel","Gho","Hal","Ilm","Jor","Kel","Lyn","Mor","Nar","Oth","Pyr","Qin","Ral","Sab","Tul","Ulm","Vol","Wil","Xal","Yor","Zul"
+  ];
+  
+  // Second syllables - diverse endings and suffixes (100+ options)
+  const syllB = [
+    // Original syllables (preserved for compatibility)
+    "bby","nky","bbit","mp","ggle","rk","zzle","mmy","nk","cko","ff","zz","bo","ppy","x","tron","floo","puff","dle","zzo","bug","snax","mancer","tune",
+    // Fantasy creature endings
+    "wing","claw","fang","horn","tail","eye","maw","scale","fur","hide","bone","tooth","spike","blade","shard","gem","stone","flame","ice","storm",
+    // Mystical/magical endings
+    "spell","ward","hex","curse","charm","rune","glyph","sigil","mark","seal","bind","weave","craft","lore","sage","witch","mage","lord","king","queen",
+    // Sci-fi/tech endings
+    "byte","code","chip","core","link","node","port","sync","beam","wave","grid","net","web","bot","droid","mech","tech","cyber","nano","mega",
+    // Action/personality endings
+    "rage","fury","wrath","joy","glee","hope","fear","dread","pain","bliss","wild","calm","bold","shy","quick","slow","wise","fool","strong","weak",
+    // Size/appearance endings
+    "tiny","huge","vast","small","grand","micro","macro","mini","maxi","slim","wide","tall","short","thick","thin","round","sharp","smooth","rough","soft"
+  ];
+  
   return syllA[rngInt(syllA.length)] + syllB[rngInt(syllB.length)];
 }
 
