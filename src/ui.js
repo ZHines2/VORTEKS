@@ -546,9 +546,15 @@ function renderTournamentPlayerHand() {
     const stolenIndicator = card.stolenFrom ? 
       `<div class="stolen-indicator" title="Stolen card - returns to opponent when played">🎭</div>` : '';
     
+    // Set innerHTML FIRST before adding event handlers
     cardElement.innerHTML = `${cost}${typeIndicator}${stolenIndicator}<div class="sym">${card.sym}</div><div class="nm">${card.name}</div><div class="ct">${cardText(card)}</div>`;
     
-    // Check if card is playable
+    // Add styling for stolen cards
+    if (card.stolenFrom) {
+      cardElement.classList.add('stolen');
+    }
+    
+    // Check if card is playable and add event handlers AFTER setting innerHTML
     if (player.energy >= card.cost) {
       cardElement.classList.add('playable');
       cardElement.style.cursor = 'pointer';
@@ -558,11 +564,6 @@ function renderTournamentPlayerHand() {
       };
     } else {
       cardElement.classList.add('unplayable');
-    }
-    
-    // Add styling for stolen cards
-    if (card.stolenFrom) {
-      cardElement.classList.add('stolen');
     }
     
     handDiv.appendChild(cardElement);
