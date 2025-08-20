@@ -536,8 +536,8 @@ function renderTournamentPlayerHand() {
   handDiv.innerHTML = '';
   
   player.hand.forEach((card, index) => {
-    const cardElement = document.createElement('div');
-    cardElement.className = 'card';
+    const cardElement = document.createElement('button');
+    cardElement.className = 'card tournament-hand-card';
     
     // Create proper card layout like in regular game
     const cost = `<div class="cost">${renderCost(card)}</div>`;

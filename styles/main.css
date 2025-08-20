@@ -1706,10 +1706,17 @@ button.card:disabled {
 
 .tournament-hand {
   display: flex;
-  gap: 8px;
+  gap: 12px;
   margin-bottom: 15px;
   flex-wrap: wrap;
   justify-content: center;
+}
+
+/* Tournament hand cards should be properly sized touch targets */
+.tournament-hand-card {
+  min-width: 120px;
+  min-height: 44px; /* Minimum touch target height for accessibility */
+  padding: 12px 10px 20px; /* Increase padding for better touch interaction */
 }
 
 .tournament-controls {
@@ -1786,7 +1793,13 @@ button.card:disabled {
   }
   
   .tournament-hand {
-    gap: 4px;
+    gap: 8px; /* Increase mobile gap for better touch interaction */
+  }
+  
+  .tournament-hand-card {
+    min-width: 110px; /* Slightly smaller on mobile but still touch-friendly */
+    min-height: 44px; /* Maintain minimum touch target size */
+    padding: 10px 8px 18px;
   }
   
   .target-buttons {
