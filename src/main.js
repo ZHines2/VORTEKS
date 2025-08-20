@@ -1,4 +1,4 @@
-import { Game, setLogFunction } from './game.js';
+import { Game, setLogFunction, Tournament } from './game.js';
 import { createRenderFunction, bump, bumpHP, bumpShield, fxBurn, fxFreeze, fxZap, fxFocus, fxSlash, fxSurge, fxEcho, fxReconsider, cardText, renderCost } from './ui.js';
 import { openDeckBuilder, buildRandomDeck } from './deck-builder.js';
 import { runSelfTests } from './tests.js';
@@ -3076,6 +3076,12 @@ document.addEventListener('DOMContentLoaded', () => {
       continueCampaign();
     };
     
+    // Tournament button handler
+    document.getElementById('tournamentBtn').onclick = () => {
+      modal.hidden = true;
+      startTournament();
+    };
+    
     // Reset all data button handler
     document.getElementById('resetAllDataBtn').onclick = () => {
       resetAllGameData();
@@ -3398,6 +3404,47 @@ document.addEventListener('DOMContentLoaded', () => {
     renderCampaignRewards(rewards);
     document.getElementById('campaignRewardModal').hidden = false;
   }
+
+  // Tournament Functions
+  function startTournament() {
+    // Show quirk picker for tournament
+    const quirkModal = document.getElementById('quirkModal');
+    quirkModal.hidden = false;
+    
+    // Override quirk selection for tournament
+    window.onQuirkSelected = (quirkId) => {
+      quirkModal.hidden = true;
+      initTournament(quirkId);
+    };
+  }
+
+  function initTournament(quirkId) {
+    // Initialize tournament mode
+    Tournament.init();
+    
+    // Apply selected quirk to player
+    if (quirkId && Tournament.you) {
+      Tournament.you.quirk = quirkId;
+      // Apply quirk start effects if any
+      if (window.applyQuirkStartEffects) {
+        window.applyQuirkStartEffects(Tournament.you, quirkId);
+      }
+    }
+    
+    // Hide start modal and switch to tournament UI
+    document.getElementById('startModal').hidden = true;
+    
+    // Initialize tournament UI
+    if (window.initTournamentUI) {
+      window.initTournamentUI();
+    }
+    
+    if (window.render) window.render();
+  }
+
+  // Expose Tournament functions for UI event handlers
+  window.Tournament = Tournament;
+  window.startTournament = startTournament;
 
   showStart();
 });

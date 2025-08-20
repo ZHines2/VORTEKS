@@ -1411,3 +1411,462 @@ export const Game = {
     logAction('system', 'Game restarted.');
   }
 };
+
+// Tournament Mode - Battle Royale with 9 AI opponents
+export const Tournament = {
+  participants: [], // Array of all participants (player + 9 AI)
+  you: null, // Player reference
+  currentParticipantIndex: 0,
+  over: false,
+  winner: null,
+  turnCount: 0,
+  
+  init() {
+    this.participants = [];
+    this.currentParticipantIndex = 0;
+    this.over = false;
+    this.winner = null;
+    this.turnCount = 0;
+    
+    // Create player
+    this.you = createPlayer(false);
+    this.you.name = 'YOU';
+    this.you.persona = 'Player';
+    this.you.isPlayer = true;
+    this.participants.push(this.you);
+    
+    // Create 9 AI opponents
+    for (let i = 0; i < 9; i++) {
+      const ai = createPlayer(true);
+      const faceInfo = drawOppFace();
+      ai.persona = faceInfo.persona;
+      ai.features = faceInfo.features;
+      ai.name = `AI-${i + 1}`;
+      ai.isPlayer = false;
+      ai.deck = makePersonaDeck(ai.persona);
+      ai.ai = createAIPlayer({ // Create AI controller for this opponent
+        you: this.you,
+        opp: ai,
+        turn: 'opp',
+        over: false,
+        simDamage: (attacker, defender, card) => {
+          // Simplified damage calculation for tournament
+          const damage = card.damage || 0;
+          return Math.min(damage, defender.hp);
+        }
+      });
+      this.participants.push(ai);
+    }
+    
+    // Player builds deck, then picks quirk, then start tournament
+    if (window.openDeckBuilder) {
+      window.openDeckBuilder((yourDeck) => {
+        this.you.deck = yourDeck;
+        this.startTournament();
+      });
+    }
+  },
+  
+  initQuick() {
+    this.participants = [];
+    this.currentParticipantIndex = 0;
+    this.over = false;
+    this.winner = null;
+    this.turnCount = 0;
+    
+    // Create player with random deck
+    this.you = createPlayer(false);
+    this.you.name = 'YOU';
+    this.you.persona = 'Player';
+    this.you.isPlayer = true;
+    if (window.buildRandomDeck) {
+      this.you.deck = window.buildRandomDeck(20, 4);
+    }
+    this.participants.push(this.you);
+    
+    // Create 9 AI opponents
+    for (let i = 0; i < 9; i++) {
+      const ai = createPlayer(true);
+      const faceInfo = drawOppFace();
+      ai.persona = faceInfo.persona;
+      ai.features = faceInfo.features;
+      ai.name = `AI-${i + 1}`;
+      ai.isPlayer = false;
+      ai.deck = makePersonaDeck(ai.persona);
+      ai.ai = createAIPlayer({
+        you: this.you,
+        opp: ai,
+        turn: 'opp',
+        over: false,
+        simDamage: (attacker, defender, card) => {
+          const damage = card.damage || 0;
+          return Math.min(damage, defender.hp);
+        }
+      });
+      this.participants.push(ai);
+    }
+    
+    this.startTournament();
+  },
+  
+  startTournament() {
+    // Draw initial hands for all participants
+    this.participants.forEach(p => {
+      p.draw(5);
+      p.energy = p.maxEnergy;
+    });
+    
+    if (log || window.log) {
+      const logFn = log || window.log;
+      if (typeof logFn === 'function') {
+        logFn('Tournament begins! 10 fighters enter, only 1 will remain!');
+        logFn(`Participants: ${this.participants.map(p => p.name).join(', ')}`);
+      }
+    }
+    
+    // Start with player's turn
+    this.currentParticipantIndex = 0;
+    this.nextTurn();
+  },
+  
+  nextTurn() {
+    if (this.over) return;
+    
+    // Check if tournament is over
+    const livingParticipants = this.participants.filter(p => p.hp > 0);
+    if (livingParticipants.length <= 1) {
+      this.endTournament(livingParticipants[0] || null);
+      return;
+    }
+    
+    // Find next living participant
+    let attempts = 0;
+    while (attempts < this.participants.length) {
+      this.currentParticipantIndex = (this.currentParticipantIndex + 1) % this.participants.length;
+      const currentParticipant = this.participants[this.currentParticipantIndex];
+      
+      if (currentParticipant.hp > 0) {
+        this.startParticipantTurn(currentParticipant);
+        return;
+      }
+      attempts++;
+    }
+    
+    // If we get here, something went wrong
+    this.endTournament(null);
+  },
+  
+  startParticipantTurn(participant) {
+    if (this.over) return;
+    
+    this.turnCount++;
+    
+    // Reset energy and draw card
+    participant.energy = Math.min(participant.maxEnergy, 3 + (participant.status?.nextPlus || 0));
+    if (participant.status?.nextPlus) participant.status.nextPlus = 0;
+    
+    // Apply freeze effect
+    if (participant.status?.frozenNext) {
+      participant.energy = Math.max(0, participant.energy - participant.status.frozenNext);
+      participant.status.frozenNext = 0;
+    }
+    
+    participant.draw(1);
+    
+    if (log || window.log) {
+      const logFn = log || window.log;
+      if (typeof logFn === 'function') {
+        logFn(`${participant.name}'s turn (HP: ${participant.hp})`);
+      }
+    }
+    
+    if (participant.isPlayer) {
+      // Player's turn - they can play cards and choose targets
+      this.startPlayerTurn(participant);
+    } else {
+      // AI turn - play automatically
+      this.playAITurn(participant);
+    }
+    
+    if (window.render) window.render();
+  },
+  
+  startPlayerTurn(player) {
+    // Player's turn - UI should show available cards and allow targeting
+    // This will be handled by the UI system
+    if (log || window.log) {
+      const logFn = log || window.log;
+      if (typeof logFn === 'function') {
+        logFn('Your turn! Choose your targets wisely.');
+      }
+    }
+  },
+  
+  playAITurn(ai) {
+    if (this.over) return;
+    
+    // AI plays cards targeting random living opponents
+    let actionsThisTurn = 0;
+    const maxActions = 10; // Prevent infinite loops
+    
+    while (ai.energy > 0 && actionsThisTurn < maxActions) {
+      const playable = ai.hand.filter(card => card.cost <= ai.energy);
+      if (playable.length === 0) break;
+      
+      // Simple AI: prioritize attacks, then other cards
+      let cardToPlay = playable.find(c => c.type === 'attack') || playable[0];
+      
+      // Choose random target (excluding self)
+      const potentialTargets = this.participants.filter(p => p !== ai && p.hp > 0);
+      if (potentialTargets.length === 0) break;
+      
+      const target = potentialTargets[Math.floor(Math.random() * potentialTargets.length)];
+      
+      this.playCard(ai, cardToPlay, target);
+      actionsThisTurn++;
+    }
+    
+    // End AI turn after a short delay
+    setTimeout(() => {
+      this.nextTurn();
+    }, 1000);
+  },
+  
+  playCard(player, card, target = null) {
+    if (this.over) return;
+    
+    // Remove card from hand and pay cost
+    const cardIndex = player.hand.indexOf(card);
+    if (cardIndex === -1) return;
+    
+    player.hand.splice(cardIndex, 1);
+    player.energy -= card.cost;
+    player.discard.push(card);
+    
+    // For tournament mode, we need to adapt the Game.applyCard method
+    // Create a temporary game-like context for card application
+    const gameContext = {
+      you: player,
+      opp: target || this.getRandomOpponent(player),
+      applyHeal: (p, amount) => {
+        const limit = p.maxHP * OVERHEAL_LIMIT_MULT;
+        const newHP = Math.min(limit, p.hp + amount);
+        return newHP;
+      },
+      applyEnergyGain: (p, amount) => {
+        return Math.min(SAFETY_MAX_ENERGY, p.energy + amount);
+      }
+    };
+    
+    // Apply card effects using the existing game logic
+    if (target) {
+      // Card targets specific opponent
+      this.applyCardToTarget(card, player, target, gameContext);
+    } else {
+      // Card affects self or needs random target
+      if (card.type === 'attack') {
+        const randomTarget = this.getRandomOpponent(player);
+        if (randomTarget) {
+          this.applyCardToTarget(card, player, randomTarget, gameContext);
+        }
+      } else {
+        // Apply to self (healing, shield, etc.)
+        this.applyCardToTarget(card, player, player, gameContext);
+      }
+    }
+    
+    if (log || window.log) {
+      const logFn = log || window.log;
+      if (typeof logFn === 'function') {
+        const targetText = target ? ` → ${target.name}` : '';
+        logFn(`${player.name} plays ${card.name}${targetText}`);
+      }
+    }
+    
+    // Check for eliminations
+    this.checkEliminations();
+  },
+  
+  applyCardToTarget(card, caster, target, gameContext) {
+    // Use simplified version of Game.applyCard for tournament
+    const effects = card.effects || {};
+    
+    // Apply damage
+    if (effects.damage && target !== caster) {
+      let damage = effects.damage;
+      
+      // Apply scaling if caster has nextPlus
+      if (card.scaling?.addToDamageFromSelf?.nextPlus && caster.status?.nextPlus) {
+        damage += caster.status.nextPlus;
+        caster.status.nextPlus = 0;
+      }
+      
+      this.dealDamage(target, damage, caster);
+    }
+    
+    // Apply healing
+    if (effects.heal && target === caster) {
+      const limit = caster.maxHP * 1.5; // Simple overheal limit
+      caster.hp = Math.min(limit, caster.hp + effects.heal);
+      if (log || window.log) {
+        const logFn = log || window.log;
+        if (typeof logFn === 'function') {
+          logFn(`${caster.name} heals ${effects.heal} HP`);
+        }
+      }
+    }
+    
+    // Apply shield
+    if (effects.shield && target === caster) {
+      caster.shield = (caster.shield || 0) + effects.shield;
+      if (log || window.log) {
+        const logFn = log || window.log;
+        if (typeof logFn === 'function') {
+          logFn(`${caster.name} gains ${effects.shield} shield`);
+        }
+      }
+    }
+    
+    // Apply status effects
+    const status = card.status || { target: {}, self: {} };
+    
+    // Apply status to target
+    if (target !== caster && status.target) {
+      if (status.target.burn) {
+        target.status = target.status || {};
+        target.status.burn = (target.status.burn || 0) + status.target.burn.amount;
+        target.status.burnTurns = (target.status.burnTurns || 0) + status.target.burn.turns;
+      }
+      if (status.target.freezeEnergy) {
+        target.status = target.status || {};
+        target.status.frozenNext = (target.status.frozenNext || 0) + status.target.freezeEnergy;
+      }
+    }
+    
+    // Apply status to self
+    if (status.self) {
+      if (status.self.nextPlus) {
+        caster.status = caster.status || {};
+        caster.status.nextPlus = (caster.status.nextPlus || 0) + status.self.nextPlus;
+      }
+      if (status.self.maxEnergyDelta) {
+        caster.maxEnergy += status.self.maxEnergyDelta;
+      }
+      if (status.self.energyNowDelta) {
+        caster.energy = Math.min(SAFETY_MAX_ENERGY, caster.energy + status.self.energyNowDelta);
+      }
+    }
+    
+    // Apply card draw
+    if (effects.draw) {
+      caster.draw(effects.draw);
+    }
+  },
+  
+  getRandomOpponent(player) {
+    const opponents = this.participants.filter(p => p !== player && p.hp > 0);
+    if (opponents.length === 0) return null;
+    return opponents[Math.floor(Math.random() * opponents.length)];
+  },
+  
+  dealDamage(target, amount, source) {
+    const actualDamage = Math.max(0, amount - target.shield);
+    target.shield = Math.max(0, target.shield - amount);
+    target.hp -= actualDamage;
+    
+    if (log || window.log) {
+      const logFn = log || window.log;
+      if (typeof logFn === 'function') {
+        logFn(`${target.name} takes ${actualDamage} damage (HP: ${target.hp})`);
+      }
+    }
+  },
+  
+  checkEliminations() {
+    this.participants.forEach(p => {
+      if (p.hp <= 0 && !p.eliminated) {
+        p.eliminated = true;
+        if (log || window.log) {
+          const logFn = log || window.log;
+          if (typeof logFn === 'function') {
+            logFn(`${p.name} has been eliminated!`);
+          }
+        }
+      }
+    });
+  },
+  
+  endTournament(winner) {
+    this.over = true;
+    this.winner = winner;
+    
+    if (log || window.log) {
+      const logFn = log || window.log;
+      if (typeof logFn === 'function') {
+        if (winner) {
+          logFn(`Tournament over! ${winner.name} is the victor!`);
+        } else {
+          logFn('Tournament ended with no victor.');
+        }
+      }
+    }
+    
+    // Show victory/defeat modal
+    this.showTournamentResult();
+  },
+  
+  showTournamentResult() {
+    const modal = document.getElementById('victoryModal');
+    if (!modal) return;
+    
+    const isPlayerWinner = this.winner && this.winner.isPlayer;
+    
+    // Update modal content for tournament
+    const titleElement = modal.querySelector('div[style*="font-size:20px"]');
+    if (titleElement) {
+      titleElement.textContent = isPlayerWinner ? 'Tournament Victory!' : 'Tournament Defeat';
+      titleElement.style.color = isPlayerWinner ? 'var(--good)' : 'var(--bad)';
+    }
+    
+    const messageElement = modal.querySelector('div[style*="margin-bottom:16px"]:not([style*="font-size"])');
+    if (messageElement) {
+      if (isPlayerWinner) {
+        messageElement.textContent = 'You defeated 9 AI opponents and won the tournament!';
+      } else {
+        const winnerName = this.winner ? this.winner.name : 'No one';
+        messageElement.textContent = `${winnerName} won the tournament. Better luck next time!`;
+      }
+    }
+    
+    modal.hidden = false;
+  },
+  
+  // End player turn and advance to next participant
+  endPlayerTurn() {
+    if (this.over) return;
+    this.nextTurn();
+  },
+  
+  // Get list of valid targets for player (all living opponents)
+  getValidTargets() {
+    return this.participants.filter(p => !p.isPlayer && p.hp > 0);
+  },
+  
+  // Reset tournament to start screen
+  resetToStart() {
+    this.over = true;
+    this.participants = [];
+    this.winner = null;
+    
+    // Hide victory modal and show start modal
+    $('#victoryModal').hidden = true;
+    $('#startModal').hidden = false;
+    
+    if (log || window.log) {
+      const logFn = log || window.log;
+      if (typeof logFn === 'function') {
+        logFn('Tournament ended. Returning to start screen.');
+      }
+    }
+  }
+};
