@@ -241,17 +241,17 @@ export function runSelfTests(Game, log, showStart) {
     }
   }
 
-  // Test burn stacking
+  // Test burn stacking - now stacks turns instead of damage
   {
     const target = createPlayer(true);
-    target.status.burn = 3;
+    target.status.burn = 1;
     target.status.burnTurns = 2;
     
-    // Apply new burn that should stack
+    // Apply new burn that should stack turns
     Game.applyBurn(target, 4, 3);
     
-    assertEqual('Burn stacking adds amounts', target.status.burn, 7, log);
-    assertEqual('Burn stacking keeps max turns', target.status.burnTurns, 3, log);
+    assertEqual('Burn always does 1 damage per turn', target.status.burn, 1, log);
+    assertEqual('Burn stacking adds turns', target.status.burnTurns, 5, log);
   }
 
   // Test overheal functionality
