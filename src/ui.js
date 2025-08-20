@@ -538,7 +538,15 @@ function renderTournamentPlayerHand() {
   player.hand.forEach((card, index) => {
     const cardElement = document.createElement('div');
     cardElement.className = 'card';
-    cardElement.innerHTML = cardText(card);
+    
+    // Create proper card layout like in regular game
+    const cost = `<div class="cost">${renderCost(card)}</div>`;
+    const typeIcon = getCardTypeIcon(card.type);
+    const typeIndicator = `<div class="card-type" title="${card.type} card">${typeIcon}</div>`;
+    const stolenIndicator = card.stolenFrom ? 
+      `<div class="stolen-indicator" title="Stolen card - returns to opponent when played">🎭</div>` : '';
+    
+    cardElement.innerHTML = `${cost}${typeIndicator}${stolenIndicator}<div class="sym">${card.sym}</div><div class="nm">${card.name}</div><div class="ct">${cardText(card)}</div>`;
     
     // Check if card is playable
     if (player.energy >= card.cost) {
@@ -550,6 +558,11 @@ function renderTournamentPlayerHand() {
       };
     } else {
       cardElement.classList.add('unplayable');
+    }
+    
+    // Add styling for stolen cards
+    if (card.stolenFrom) {
+      cardElement.classList.add('stolen');
     }
     
     handDiv.appendChild(cardElement);
