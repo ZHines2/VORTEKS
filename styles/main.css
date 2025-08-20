@@ -1591,11 +1591,23 @@ button.card:disabled {
   width: 100%;
   height: 100%;
   background: var(--bg);
-  z-index: 1001;
+  z-index: 999; /* Lower than modals (1000+) */
   display: flex;
   flex-direction: column;
   padding: 20px;
   box-sizing: border-box;
+  pointer-events: none; /* Allow clicks to pass through when modals are open */
+}
+
+.tournament-container[hidden] {
+  display: none !important;
+}
+
+/* Only allow pointer events on interactive elements */
+.tournament-container .tournament-card,
+.tournament-container button,
+.tournament-container .card {
+  pointer-events: auto;
 }
 
 .tournament-header {
