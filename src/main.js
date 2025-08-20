@@ -2658,6 +2658,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // Usual game boot
   const logFunction = function log(entry){
     const logBox = document.getElementById('log');
+    const tournamentLogBox = document.getElementById('tournamentLogContent');
+    
+    // Determine which log box to use (tournament takes priority if visible)
+    const currentLogBox = (tournamentLogBox && !document.getElementById('tournamentUI').hidden) ? tournamentLogBox : logBox;
+    
     if (typeof entry === 'string') {
       const p = document.createElement('div');
       
@@ -2672,7 +2677,7 @@ document.addEventListener('DOMContentLoaded', () => {
         p.textContent = '> ' + entry;
       }
       
-      logBox.prepend(p);
+      currentLogBox.prepend(p);
     } else if (entry && typeof entry === 'object') {
       // actor-aware - map opponent logs to current opponent name
       let actor = entry.actor;
@@ -2684,7 +2689,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       const p = document.createElement('div');
       p.textContent = `[${actor}] ${entry.text}`;
-      logBox.prepend(p);
+      currentLogBox.prepend(p);
     }
   };
   
@@ -3419,16 +3424,59 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function initTournament(quirkId) {
-    // Initialize tournament mode
-    Tournament.init();
+    // Initialize tournament participants without starting yet
+    Tournament.participants = [];
+    Tournament.currentParticipantIndex = 0;
+    Tournament.over = false;
+    Tournament.winner = null;
+    Tournament.turnCount = 0;
     
-    // Apply selected quirk to player
-    if (quirkId && Tournament.you) {
-      Tournament.you.quirk = quirkId;
-      // Apply quirk start effects if any
-      if (window.applyQuirkStartEffects) {
-        window.applyQuirkStartEffects(Tournament.you, quirkId);
-      }
+    // Store the quirk for later application
+    Tournament.selectedQuirk = quirkId;
+    
+    // Open deck builder with tournament callback
+    if (window.openDeckBuilder) {
+      window.openDeckBuilder((yourDeck) => {
+        startTournamentWithDeck(yourDeck, quirkId);
+      });
+    }
+  }
+
+  function startTournamentWithDeck(deck, quirkId) {
+    // Create player
+    Tournament.you = createPlayer(false);
+    Tournament.you.name = 'YOU';
+    Tournament.you.persona = 'Player';
+    Tournament.you.isPlayer = true;
+    Tournament.you.deck = deck;
+    Tournament.you.quirk = quirkId;
+    Tournament.participants.push(Tournament.you);
+    
+    // Apply quirk start effects if any
+    if (quirkId && window.applyQuirkStartEffects) {
+      window.applyQuirkStartEffects(Tournament.you, quirkId);
+    }
+    
+    // Create 9 AI opponents
+    for (let i = 0; i < 9; i++) {
+      const ai = createPlayer(true);
+      const faceInfo = drawOppFace();
+      ai.persona = faceInfo.persona;
+      ai.features = faceInfo.features;
+      ai.name = `AI-${i + 1}`;
+      ai.isPlayer = false;
+      ai.deck = makePersonaDeck(ai.persona, getUnlockedCards());
+      ai.ai = createAIPlayer({
+        you: Tournament.you,
+        opp: ai,
+        turn: 'opp',
+        over: false,
+        simDamage: (attacker, defender, card) => {
+          const damage = card.damage || 0;
+          return Math.min(damage, defender.hp);
+        }
+      });
+      Tournament.participants.push(ai);
     }
     
     // Hide start modal and switch to tournament UI
@@ -3439,6 +3487,10 @@ document.addEventListener('DOMContentLoaded', () => {
       window.initTournamentUI();
     }
     
+    // Start the tournament
+    Tournament.startTournament();
+    
+    // Initial render
     if (window.render) window.render();
   }
 

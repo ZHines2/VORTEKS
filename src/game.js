@@ -1420,52 +1420,7 @@ export const Tournament = {
   over: false,
   winner: null,
   turnCount: 0,
-  
-  init() {
-    this.participants = [];
-    this.currentParticipantIndex = 0;
-    this.over = false;
-    this.winner = null;
-    this.turnCount = 0;
-    
-    // Create player
-    this.you = createPlayer(false);
-    this.you.name = 'YOU';
-    this.you.persona = 'Player';
-    this.you.isPlayer = true;
-    this.participants.push(this.you);
-    
-    // Create 9 AI opponents
-    for (let i = 0; i < 9; i++) {
-      const ai = createPlayer(true);
-      const faceInfo = drawOppFace();
-      ai.persona = faceInfo.persona;
-      ai.features = faceInfo.features;
-      ai.name = `AI-${i + 1}`;
-      ai.isPlayer = false;
-      ai.deck = makePersonaDeck(ai.persona);
-      ai.ai = createAIPlayer({ // Create AI controller for this opponent
-        you: this.you,
-        opp: ai,
-        turn: 'opp',
-        over: false,
-        simDamage: (attacker, defender, card) => {
-          // Simplified damage calculation for tournament
-          const damage = card.damage || 0;
-          return Math.min(damage, defender.hp);
-        }
-      });
-      this.participants.push(ai);
-    }
-    
-    // Player builds deck, then picks quirk, then start tournament
-    if (window.openDeckBuilder) {
-      window.openDeckBuilder((yourDeck) => {
-        this.you.deck = yourDeck;
-        this.startTournament();
-      });
-    }
-  },
+  selectedQuirk: null,
   
   initQuick() {
     this.participants = [];
@@ -1527,6 +1482,11 @@ export const Tournament = {
     // Start with player's turn
     this.currentParticipantIndex = 0;
     this.nextTurn();
+    
+    // Refresh UI
+    if (window.renderTournamentUI) {
+      window.renderTournamentUI();
+    }
   },
   
   nextTurn() {
@@ -1588,6 +1548,10 @@ export const Tournament = {
       this.playAITurn(participant);
     }
     
+    // Refresh UI after turn starts
+    if (window.renderTournamentUI) {
+      window.renderTournamentUI();
+    }
     if (window.render) window.render();
   },
   
@@ -1685,6 +1649,11 @@ export const Tournament = {
     
     // Check for eliminations
     this.checkEliminations();
+    
+    // Refresh UI after card play
+    if (window.renderTournamentUI) {
+      window.renderTournamentUI();
+    }
   },
   
   applyCardToTarget(card, caster, target, gameContext) {
@@ -1852,6 +1821,12 @@ export const Tournament = {
     return this.participants.filter(p => !p.isPlayer && p.hp > 0);
   },
   
+  // Get list of valid targets for player (all living opponents)
+  getValidTargets() {
+    if (!this.you) return [];
+    return this.participants.filter(p => p !== this.you && p.hp > 0);
+  },
+  
   // Reset tournament to start screen
   resetToStart() {
     this.over = true;
@@ -1859,14 +1834,21 @@ export const Tournament = {
     this.winner = null;
     
     // Hide victory modal and show start modal
-    $('#victoryModal').hidden = true;
-    $('#startModal').hidden = false;
+    const victoryModal = document.getElementById('victoryModal');
+    const startModal = document.getElementById('startModal');
+    if (victoryModal) victoryModal.hidden = true;
+    if (startModal) startModal.hidden = false;
     
     if (log || window.log) {
       const logFn = log || window.log;
       if (typeof logFn === 'function') {
         logFn('Tournament ended. Returning to start screen.');
       }
+    }
+    
+    // Show start screen
+    if (window.showStart) {
+      window.showStart();
     }
   }
 };
