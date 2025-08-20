@@ -1,6 +1,6 @@
 import { clamp, $, shuffle } from './utils.js';
 import { createPlayer } from './player.js';
-import { drawOppFace, setOpponentName } from './face-generator.js';
+import { drawOppFace, setOpponentName, randomName } from './face-generator.js';
 import { makePersonaDeck, createAIPlayer } from './ai.js';
 import { checkAchievementUnlocks, checkPersonaDefeatUnlocks, recordBattleResult, getUnlockableCardsInfo, STARTER_CARDS } from './card-unlock.js';
 import { recordBattle, recordCardPlayed, recordCombat, recordTurn, recordQuirk, recordOpponent } from './telemetry.js';
@@ -1445,7 +1445,10 @@ export const Tournament = {
       const faceInfo = drawOppFace();
       ai.persona = faceInfo.persona;
       ai.features = faceInfo.features;
-      ai.name = `AI-${i + 1}`;
+      // Generate proper names using the same system as regular gameplay
+      ai.name = faceInfo.features.isEasterEgg 
+        ? `${randomName()} the ${ai.persona}` 
+        : randomName() + (ai.persona ? ' the ' + ai.persona : '');
       ai.isPlayer = false;
       ai.deck = makePersonaDeck(ai.persona);
       ai.ai = createAIPlayer({
