@@ -1,6 +1,6 @@
 import { clamp, $, shuffle } from './utils.js';
 import { createPlayer } from './player.js';
-import { drawOppFace, setOpponentName, randomName } from './face-generator.js';
+import { drawOppFace, setOpponentName } from './face-generator.js';
 import { makePersonaDeck, createAIPlayer } from './ai.js';
 import { checkAchievementUnlocks, checkPersonaDefeatUnlocks, recordBattleResult, getUnlockableCardsInfo, STARTER_CARDS } from './card-unlock.js';
 import { recordBattle, recordCardPlayed, recordCombat, recordTurn, recordQuirk, recordOpponent } from './telemetry.js';
@@ -1422,6 +1422,24 @@ export const Tournament = {
   turnCount: 0,
   selectedQuirk: null,
   
+  // Simple name generation function for tournament mode
+  generateRandomName() {
+    const syllA = [
+      "Bo","Cha","Mo","Lu","Pe","Za","Ti","Gro","Mi","Lo","Ka","Quo","Fi","Ra","Sn","We","Zo","Do","Ni","Ju","Ro","Ta","Zu",
+      "Aer","Bla","Cri","Dra","Elf","Fae","Grim","Hex","Ith","Jax","Kry","Lum","Myr","Nyx","Orb","Pix","Qua","Rune","Syl","Tho",
+      "Ast","Byt","Cyb","Dat","Eon","Flux","Gal","Hyp","Ion","Jet","Kin","Lab","Mag","Neo","Oxi","Pla","Qbit","Ray","Syn","Tek"
+    ];
+    const syllB = [
+      "bby","nky","bbit","mp","ggle","rk","zzle","mmy","nk","cko","ff","zz","bo","ppy","x","tron","floo","puff","dle","zzo",
+      "wing","claw","fang","horn","tail","eye","maw","scale","fur","hide","bone","tooth","spike","blade","shard","gem","stone",
+      "spell","ward","hex","curse","charm","rune","glyph","sigil","mark","seal","bind","weave","craft","lore","sage","witch",
+      "byte","code","chip","core","link","node","port","sync","beam","wave","grid","net","web","bot","droid","mech","tech"
+    ];
+    
+    const rngInt = (n) => Math.floor(Math.random() * n);
+    return syllA[rngInt(syllA.length)] + syllB[rngInt(syllB.length)];
+  },
+  
   initQuick() {
     this.participants = [];
     this.currentParticipantIndex = 0;
@@ -1447,8 +1465,8 @@ export const Tournament = {
       ai.features = faceInfo.features;
       // Generate proper names using the same system as regular gameplay
       ai.name = faceInfo.features.isEasterEgg 
-        ? `${randomName()} the ${ai.persona}` 
-        : randomName() + (ai.persona ? ' the ' + ai.persona : '');
+        ? `${this.generateRandomName()} the ${ai.persona}` 
+        : this.generateRandomName() + (ai.persona ? ' the ' + ai.persona : '');
       ai.isPlayer = false;
       ai.deck = makePersonaDeck(ai.persona);
       ai.ai = createAIPlayer({
