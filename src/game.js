@@ -196,16 +196,18 @@ export const Game = {
   applyBurn(target, newBurnAmount, newBurnTurns) {
     if (newBurnAmount <= 0 || newBurnTurns <= 0) return;
 
-    // Implement burn stacking: add amounts, keep max turns
-    const existingBurn = target.status.burn || 0;
+    // Initialize status if needed
+    if (!target.status) target.status = {};
+
+    // Implement burn stacking: always 1 damage per turn, stack turn duration
     const existingTurns = target.status.burnTurns || 0;
     
-    target.status.burn = Math.max(MIN_BURN_TICK, existingBurn + newBurnAmount);
-    target.status.burnTurns = Math.max(existingTurns, newBurnTurns);
+    target.status.burn = 1; // Always 1 damage per turn
+    target.status.burnTurns = existingTurns + newBurnTurns; // Stack turn duration
     
-    // Track max burn amount stats
+    // Track max burn amount stats (always 1 now)
     if (target.isAI) { // Player is applying burn to opponent
-      this.stats.maxBurnAmount = Math.max(this.stats.maxBurnAmount, target.status.burn);
+      this.stats.maxBurnAmount = Math.max(this.stats.maxBurnAmount, 1);
     }
   },
 
@@ -1542,6 +1544,23 @@ export const Tournament = {
     
     this.turnCount++;
     
+    // Process burn status at start of turn (like regular game endTurn)
+    if (participant.status && participant.status.burn && participant.status.burnTurns > 0) { 
+      const burnDamage = participant.status.burn;
+      this.dealDamage(participant, burnDamage, null); // Apply burn damage
+      participant.status.burnTurns--; 
+      
+      if (log || window.log) {
+        const logFn = log || window.log;
+        if (typeof logFn === 'function') {
+          logFn(`${participant.name} takes ${burnDamage} burn damage`);
+        }
+      }
+    }
+    if (participant.status && participant.status.burnTurns === 0) {
+      participant.status.burn = 0;
+    }
+    
     // Reset energy and draw card
     participant.energy = Math.min(participant.maxEnergy, 3 + (participant.status?.nextPlus || 0));
     if (participant.status?.nextPlus) participant.status.nextPlus = 0;
@@ -1723,9 +1742,8 @@ export const Tournament = {
     // Apply status to target
     if (target !== caster && status.target) {
       if (status.target.burn) {
-        target.status = target.status || {};
-        target.status.burn = (target.status.burn || 0) + status.target.burn.amount;
-        target.status.burnTurns = (target.status.burnTurns || 0) + status.target.burn.turns;
+        // Use the proper applyBurn method for consistent behavior
+        Game.applyBurn(target, status.target.burn.amount, status.target.burn.turns);
       }
       if (status.target.freezeEnergy) {
         target.status = target.status || {};
