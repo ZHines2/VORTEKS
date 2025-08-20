@@ -71,6 +71,53 @@
       <div class="log" id="log" aria-live="polite"></div>
     </div>
   </div>
+  
+  <!-- Tournament UI (hidden by default) -->
+  <div id="tournamentUI" class="tournament-container" hidden>
+    <div class="tournament-header">
+      <h2>TOURNAMENT MODE</h2>
+      <div class="tournament-status">
+        <span id="tournamentAlive">10 Fighters Remaining</span>
+        <span id="tournamentTurn">Turn: 1</span>
+      </div>
+    </div>
+    
+    <!-- Tournament Participants Grid -->
+    <div class="tournament-participants">
+      <div id="tournamentPlayerCard" class="tournament-card player-card">
+        <div class="card-header">YOU</div>
+        <div class="card-stats">
+          <div class="stat">❤<span id="tournamentPlayerHP">20</span></div>
+          <div class="stat">🛡<span id="tournamentPlayerShield">0</span></div>
+          <div class="stat">🔆<span id="tournamentPlayerEnergy">3</span></div>
+        </div>
+        <div class="card-status" id="tournamentPlayerStatus"></div>
+      </div>
+      
+      <div id="tournamentOpponents" class="opponents-grid">
+        <!-- AI opponent cards will be generated here -->
+      </div>
+    </div>
+    
+    <!-- Tournament Player Panel -->
+    <div id="tournamentPlayerPanel" class="tournament-player-panel">
+      <div class="tournament-hand" id="tournamentHand"></div>
+      <div class="tournament-controls">
+        <button id="tournamentEndTurn" class="btn">END TURN</button>
+        <button id="tournamentQuit" class="btn">QUIT TOURNAMENT</button>
+      </div>
+      <div id="tournamentTargetPrompt" class="target-prompt" hidden>
+        <div>Choose your target:</div>
+        <div id="tournamentTargets" class="target-buttons"></div>
+      </div>
+    </div>
+    
+    <!-- Tournament Log -->
+    <div class="tournament-log">
+      <div id="tournamentLogContent" class="log" aria-live="polite"></div>
+    </div>
+  </div>
+  
   <!-- Start Screen Modal -->
   <div class="modal" id="startModal">
     <div class="start-container">
@@ -85,6 +132,7 @@
           <button id="quickBtn" class="btn" title="Jump straight into battle with a random deck">QUICK START</button>
           <button id="campaignBtn" class="btn" title="Start a new campaign run">CAMPAIGN</button>
           <button id="campaignContinueBtn" class="btn" title="Continue your current campaign run" hidden>CONTINUE CAMPAIGN</button>
+          <button id="tournamentBtn" class="btn" title="Battle 9 AI opponents in a tournament until only one remains">TOURNAMENT</button>
         </div>
         <div class="debug-group">
           <button id="selfTest" class="btn debug-btn" title="Run built-in tests">DEBUG</button>

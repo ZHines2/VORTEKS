@@ -381,3 +381,268 @@ export function fxStrike(target) {
   panel.classList.add('impact-flash');
   setTimeout(() => panel.classList.remove('impact-flash'), 350);
 }
+
+// Tournament UI Functions
+export function initTournamentUI() {
+  // Hide regular game UI and show tournament UI
+  const wrap = document.querySelector('.wrap');
+  const tournamentUI = document.getElementById('tournamentUI');
+  
+  if (wrap) wrap.style.display = 'none';
+  if (tournamentUI) tournamentUI.hidden = false;
+  
+  // Set up tournament event handlers
+  setupTournamentEventHandlers();
+  
+  // Initial render
+  renderTournamentUI();
+}
+
+function setupTournamentEventHandlers() {
+  // End turn button
+  const endTurnBtn = document.getElementById('tournamentEndTurn');
+  if (endTurnBtn) {
+    endTurnBtn.onclick = () => {
+      if (window.Tournament) {
+        window.Tournament.endPlayerTurn();
+      }
+    };
+  }
+  
+  // Quit tournament button
+  const quitBtn = document.getElementById('tournamentQuit');
+  if (quitBtn) {
+    quitBtn.onclick = () => {
+      if (window.Tournament) {
+        window.Tournament.resetToStart();
+      }
+      hideTournamentUI();
+    };
+  }
+}
+
+export function renderTournamentUI() {
+  if (!window.Tournament) return;
+  
+  renderTournamentParticipants();
+  renderTournamentPlayerHand();
+  renderTournamentStatus();
+}
+
+function renderTournamentParticipants() {
+  if (!window.Tournament || !window.Tournament.participants) return;
+  
+  const participants = window.Tournament.participants;
+  const player = participants.find(p => p.isPlayer);
+  const opponents = participants.filter(p => !p.isPlayer);
+  
+  // Render player card
+  renderPlayerCard(player);
+  
+  // Render opponent cards
+  renderOpponentCards(opponents);
+}
+
+function renderPlayerCard(player) {
+  if (!player) return;
+  
+  const playerCard = document.getElementById('tournamentPlayerCard');
+  if (!playerCard) return;
+  
+  const hpSpan = document.getElementById('tournamentPlayerHP');
+  const shieldSpan = document.getElementById('tournamentPlayerShield');
+  const energySpan = document.getElementById('tournamentPlayerEnergy');
+  const statusDiv = document.getElementById('tournamentPlayerStatus');
+  
+  if (hpSpan) hpSpan.textContent = player.hp;
+  if (shieldSpan) shieldSpan.textContent = player.shield || 0;
+  if (energySpan) energySpan.textContent = player.energy || 0;
+  
+  // Update status
+  if (statusDiv) {
+    statusDiv.innerHTML = '';
+    if (player.status) {
+      if (player.status.burn && player.status.burnTurns > 0) {
+        statusDiv.innerHTML += `🔥 ${player.status.burn}(${player.status.burnTurns}) `;
+      }
+      if (player.status.nextPlus) {
+        statusDiv.innerHTML += `✨ +${player.status.nextPlus} `;
+      }
+    }
+  }
+  
+  // Highlight if it's player's turn
+  const currentParticipant = window.Tournament.participants[window.Tournament.currentParticipantIndex];
+  if (currentParticipant && currentParticipant.isPlayer) {
+    playerCard.classList.add('current-turn');
+  } else {
+    playerCard.classList.remove('current-turn');
+  }
+  
+  // Check if eliminated
+  if (player.hp <= 0) {
+    playerCard.classList.add('eliminated');
+  } else {
+    playerCard.classList.remove('eliminated');
+  }
+}
+
+function renderOpponentCards(opponents) {
+  const opponentsGrid = document.getElementById('tournamentOpponents');
+  if (!opponentsGrid) return;
+  
+  opponentsGrid.innerHTML = '';
+  
+  opponents.forEach((opponent, index) => {
+    const card = document.createElement('div');
+    card.className = 'tournament-card';
+    card.id = `tournament-opponent-${index}`;
+    
+    // Check if it's this opponent's turn
+    const currentParticipant = window.Tournament.participants[window.Tournament.currentParticipantIndex];
+    if (currentParticipant === opponent) {
+      card.classList.add('current-turn');
+    }
+    
+    // Check if eliminated
+    if (opponent.hp <= 0) {
+      card.classList.add('eliminated');
+    }
+    
+    card.innerHTML = `
+      <div class="card-header">${opponent.name}</div>
+      <div class="card-stats">
+        <div class="stat">❤${opponent.hp}</div>
+        <div class="stat">🛡${opponent.shield || 0}</div>
+        <div class="stat">🔆${opponent.energy || 0}</div>
+      </div>
+      <div class="card-status">
+        ${opponent.status?.burn && opponent.status.burnTurns > 0 ? `🔥 ${opponent.status.burn}(${opponent.status.burnTurns})` : ''}
+        ${opponent.status?.nextPlus ? `✨ +${opponent.status.nextPlus}` : ''}
+      </div>
+    `;
+    
+    opponentsGrid.appendChild(card);
+  });
+}
+
+function renderTournamentPlayerHand() {
+  if (!window.Tournament || !window.Tournament.you) return;
+  
+  const player = window.Tournament.you;
+  const handDiv = document.getElementById('tournamentHand');
+  if (!handDiv) return;
+  
+  handDiv.innerHTML = '';
+  
+  player.hand.forEach((card, index) => {
+    const cardElement = document.createElement('div');
+    cardElement.className = 'card';
+    cardElement.innerHTML = cardText(card);
+    
+    // Check if card is playable
+    if (player.energy >= card.cost) {
+      cardElement.classList.add('playable');
+      cardElement.style.cursor = 'pointer';
+      
+      cardElement.onclick = () => {
+        playTournamentCard(card, index);
+      };
+    } else {
+      cardElement.classList.add('unplayable');
+    }
+    
+    handDiv.appendChild(cardElement);
+  });
+}
+
+function playTournamentCard(card, cardIndex) {
+  if (!window.Tournament) return;
+  
+  const player = window.Tournament.you;
+  const currentParticipant = window.Tournament.participants[window.Tournament.currentParticipantIndex];
+  
+  // Only allow playing cards on player's turn
+  if (!currentParticipant || !currentParticipant.isPlayer) {
+    return;
+  }
+  
+  // If card needs a target, show target selection
+  if (card.type === 'attack' || (card.effects && card.effects.needsTarget)) {
+    showTargetSelection(card, cardIndex);
+  } else {
+    // Play card without target
+    window.Tournament.playCard(player, card);
+    renderTournamentUI();
+  }
+}
+
+function showTargetSelection(card, cardIndex) {
+  const prompt = document.getElementById('tournamentTargetPrompt');
+  const targetsDiv = document.getElementById('tournamentTargets');
+  
+  if (!prompt || !targetsDiv) return;
+  
+  const validTargets = window.Tournament.getValidTargets();
+  
+  targetsDiv.innerHTML = '';
+  
+  validTargets.forEach(target => {
+    const targetBtn = document.createElement('button');
+    targetBtn.className = 'target-btn';
+    targetBtn.textContent = `${target.name} (❤${target.hp})`;
+    
+    targetBtn.onclick = () => {
+      window.Tournament.playCard(window.Tournament.you, card, target);
+      hideTargetSelection();
+      renderTournamentUI();
+    };
+    
+    targetsDiv.appendChild(targetBtn);
+  });
+  
+  // Add cancel button
+  const cancelBtn = document.createElement('button');
+  cancelBtn.className = 'target-btn';
+  cancelBtn.textContent = 'Cancel';
+  cancelBtn.style.background = 'var(--bad)';
+  cancelBtn.onclick = hideTargetSelection;
+  targetsDiv.appendChild(cancelBtn);
+  
+  prompt.hidden = false;
+}
+
+function hideTargetSelection() {
+  const prompt = document.getElementById('tournamentTargetPrompt');
+  if (prompt) prompt.hidden = true;
+}
+
+function renderTournamentStatus() {
+  if (!window.Tournament) return;
+  
+  const aliveSpan = document.getElementById('tournamentAlive');
+  const turnSpan = document.getElementById('tournamentTurn');
+  
+  if (aliveSpan) {
+    const alive = window.Tournament.participants.filter(p => p.hp > 0).length;
+    aliveSpan.textContent = `${alive} Fighters Remaining`;
+  }
+  
+  if (turnSpan) {
+    turnSpan.textContent = `Turn: ${window.Tournament.turnCount}`;
+  }
+}
+
+export function hideTournamentUI() {
+  // Show regular game UI and hide tournament UI
+  const wrap = document.querySelector('.wrap');
+  const tournamentUI = document.getElementById('tournamentUI');
+  
+  if (wrap) wrap.style.display = 'block';
+  if (tournamentUI) tournamentUI.hidden = true;
+}
+
+// Make tournament functions available globally
+window.initTournamentUI = initTournamentUI;
+window.renderTournamentUI = renderTournamentUI;
+window.hideTournamentUI = hideTournamentUI;

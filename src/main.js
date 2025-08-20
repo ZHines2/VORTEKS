@@ -1,4 +1,4 @@
-import { Game, setLogFunction } from './game.js';
+import { Game, setLogFunction, Tournament } from './game.js';
 import { createRenderFunction, bump, bumpHP, bumpShield, fxBurn, fxFreeze, fxZap, fxFocus, fxSlash, fxSurge, fxEcho, fxReconsider, cardText, renderCost } from './ui.js';
 import { openDeckBuilder, buildRandomDeck } from './deck-builder.js';
 import { runSelfTests } from './tests.js';
@@ -2658,6 +2658,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // Usual game boot
   const logFunction = function log(entry){
     const logBox = document.getElementById('log');
+    const tournamentLogBox = document.getElementById('tournamentLogContent');
+    
+    // Determine which log box to use (tournament takes priority if visible)
+    const currentLogBox = (tournamentLogBox && !document.getElementById('tournamentUI').hidden) ? tournamentLogBox : logBox;
+    
     if (typeof entry === 'string') {
       const p = document.createElement('div');
       
@@ -2672,7 +2677,7 @@ document.addEventListener('DOMContentLoaded', () => {
         p.textContent = '> ' + entry;
       }
       
-      logBox.prepend(p);
+      currentLogBox.prepend(p);
     } else if (entry && typeof entry === 'object') {
       // actor-aware - map opponent logs to current opponent name
       let actor = entry.actor;
@@ -2684,7 +2689,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       const p = document.createElement('div');
       p.textContent = `[${actor}] ${entry.text}`;
-      logBox.prepend(p);
+      currentLogBox.prepend(p);
     }
   };
   
@@ -3076,6 +3081,12 @@ document.addEventListener('DOMContentLoaded', () => {
       continueCampaign();
     };
     
+    // Tournament button handler
+    document.getElementById('tournamentBtn').onclick = () => {
+      modal.hidden = true;
+      startTournament();
+    };
+    
     // Reset all data button handler
     document.getElementById('resetAllDataBtn').onclick = () => {
       resetAllGameData();
@@ -3398,6 +3409,97 @@ document.addEventListener('DOMContentLoaded', () => {
     renderCampaignRewards(rewards);
     document.getElementById('campaignRewardModal').hidden = false;
   }
+
+  // Tournament Functions
+  function startTournament() {
+    // Show quirk picker for tournament
+    const quirkModal = document.getElementById('quirkModal');
+    quirkModal.hidden = false;
+    
+    // Override quirk selection for tournament
+    window.onQuirkSelected = (quirkId) => {
+      quirkModal.hidden = true;
+      initTournament(quirkId);
+    };
+  }
+
+  function initTournament(quirkId) {
+    // Initialize tournament participants without starting yet
+    Tournament.participants = [];
+    Tournament.currentParticipantIndex = 0;
+    Tournament.over = false;
+    Tournament.winner = null;
+    Tournament.turnCount = 0;
+    
+    // Store the quirk for later application
+    Tournament.selectedQuirk = quirkId;
+    
+    // Open deck builder with tournament callback
+    if (window.openDeckBuilder) {
+      window.openDeckBuilder((yourDeck) => {
+        startTournamentWithDeck(yourDeck, quirkId);
+      });
+    }
+  }
+
+  function startTournamentWithDeck(deck, quirkId) {
+    // Create player
+    Tournament.you = createPlayer(false);
+    Tournament.you.name = 'YOU';
+    Tournament.you.persona = 'Player';
+    Tournament.you.isPlayer = true;
+    Tournament.you.deck = deck;
+    Tournament.you.quirk = quirkId;
+    Tournament.participants.push(Tournament.you);
+    
+    // Apply quirk start effects if any
+    if (quirkId && window.applyQuirkStartEffects) {
+      window.applyQuirkStartEffects(Tournament.you, quirkId);
+    }
+    
+    // Create 9 AI opponents
+    for (let i = 0; i < 9; i++) {
+      const ai = createPlayer(true);
+      const faceInfo = drawOppFace();
+      ai.persona = faceInfo.persona;
+      ai.features = faceInfo.features;
+      // Generate proper names using the same system as in Tournament.initQuick()
+      ai.name = faceInfo.features.isEasterEgg 
+        ? `${Tournament.generateRandomName()} the ${ai.persona}` 
+        : Tournament.generateRandomName() + (ai.persona ? ' the ' + ai.persona : '');
+      ai.isPlayer = false;
+      ai.deck = makePersonaDeck(ai.persona, getUnlockedCards());
+      ai.ai = createAIPlayer({
+        you: Tournament.you,
+        opp: ai,
+        turn: 'opp',
+        over: false,
+        simDamage: (attacker, defender, card) => {
+          const damage = card.damage || 0;
+          return Math.min(damage, defender.hp);
+        }
+      });
+      Tournament.participants.push(ai);
+    }
+    
+    // Hide start modal and switch to tournament UI
+    document.getElementById('startModal').hidden = true;
+    
+    // Initialize tournament UI
+    if (window.initTournamentUI) {
+      window.initTournamentUI();
+    }
+    
+    // Start the tournament
+    Tournament.startTournament();
+    
+    // Initial render
+    if (window.render) window.render();
+  }
+
+  // Expose Tournament functions for UI event handlers
+  window.Tournament = Tournament;
+  window.startTournament = startTournament;
 
   showStart();
 });
