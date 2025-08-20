@@ -3463,7 +3463,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const faceInfo = drawOppFace();
       ai.persona = faceInfo.persona;
       ai.features = faceInfo.features;
-      ai.name = `AI-${i + 1}`;
+      // Generate proper names using the same system as in Tournament.initQuick()
+      ai.name = faceInfo.features.isEasterEgg 
+        ? `${Tournament.generateRandomName()} the ${ai.persona}` 
+        : Tournament.generateRandomName() + (ai.persona ? ' the ' + ai.persona : '');
       ai.isPlayer = false;
       ai.deck = makePersonaDeck(ai.persona, getUnlockedCards());
       ai.ai = createAIPlayer({
