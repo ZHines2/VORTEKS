@@ -1633,17 +1633,17 @@ button.card:disabled {
 
 .tournament-participants {
   display: flex;
-  gap: 20px;
-  flex: 1;
-  margin-bottom: 20px;
+  gap: 15px;
+  flex: 0.7;
+  margin-bottom: 15px;
 }
 
 .tournament-card {
   background: var(--panel);
   border: 2px solid var(--border);
-  border-radius: 8px;
-  padding: 12px;
-  min-width: 120px;
+  border-radius: 6px;
+  padding: 8px;
+  min-width: 100px;
   text-align: center;
 }
 
@@ -1664,35 +1664,35 @@ button.card:disabled {
 }
 
 .card-header {
-  font-size: 10px;
+  font-size: 9px;
   color: var(--accent);
   font-weight: bold;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .card-stats {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  margin-bottom: 8px;
+  gap: 2px;
+  margin-bottom: 6px;
 }
 
 .stat {
-  font-size: 8px;
+  font-size: 7px;
   color: var(--ink);
 }
 
 .card-status {
-  font-size: 6px;
+  font-size: 5px;
   color: var(--ink);
   opacity: 0.8;
-  min-height: 12px;
+  min-height: 10px;
 }
 
 .opponents-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
   flex: 1;
 }
 
@@ -1776,13 +1776,13 @@ button.card:disabled {
   }
   
   .opponents-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 5px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
   }
   
   .tournament-card {
-    padding: 8px;
-    min-width: 100px;
+    padding: 6px;
+    min-width: 80px;
   }
   
   .tournament-hand {
