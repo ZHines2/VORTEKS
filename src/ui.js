@@ -536,11 +536,25 @@ function renderTournamentPlayerHand() {
   handDiv.innerHTML = '';
   
   player.hand.forEach((card, index) => {
-    const cardElement = document.createElement('div');
-    cardElement.className = 'card';
-    cardElement.innerHTML = cardText(card);
+    const cardElement = document.createElement('button');
+    cardElement.className = 'card tournament-hand-card';
     
-    // Check if card is playable
+    // Create proper card layout like in regular game
+    const cost = `<div class="cost">${renderCost(card)}</div>`;
+    const typeIcon = getCardTypeIcon(card.type);
+    const typeIndicator = `<div class="card-type" title="${card.type} card">${typeIcon}</div>`;
+    const stolenIndicator = card.stolenFrom ? 
+      `<div class="stolen-indicator" title="Stolen card - returns to opponent when played">🎭</div>` : '';
+    
+    // Set innerHTML FIRST before adding event handlers
+    cardElement.innerHTML = `${cost}${typeIndicator}${stolenIndicator}<div class="sym">${card.sym}</div><div class="nm">${card.name}</div><div class="ct">${cardText(card)}</div>`;
+    
+    // Add styling for stolen cards
+    if (card.stolenFrom) {
+      cardElement.classList.add('stolen');
+    }
+    
+    // Check if card is playable and add event handlers AFTER setting innerHTML
     if (player.energy >= card.cost) {
       cardElement.classList.add('playable');
       cardElement.style.cursor = 'pointer';
