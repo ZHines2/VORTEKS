@@ -48,6 +48,16 @@ class MetroidvaniaGame {
     this.keys = new Set(); // Pressed keys
     this.lastFrame = 0;
     
+    // Touch/mobile support
+    this.touchState = {
+      startX: 0,
+      startY: 0,
+      endX: 0,
+      endY: 0,
+      isActive: false,
+      minSwipeDistance: 50 // Minimum distance for a swipe
+    };
+    
     // Initialize the game
     this.generateMaze();
     this.spawnPlayer();
@@ -779,8 +789,17 @@ class MetroidvaniaGame {
     
     ctx.fillStyle = '#ffffff';
     ctx.font = '12px monospace';
-    ctx.fillText('WASD: Move', viewportWidth - 230, 50);
-    ctx.fillText('Enter enemies to battle', viewportWidth - 230, 70);
+    
+    // Detect if touch device and show appropriate controls
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    
+    if (isTouchDevice) {
+      ctx.fillText('Swipe: Move', viewportWidth - 230, 50);
+      ctx.fillText('Tap: Battle actions', viewportWidth - 230, 70);
+    } else {
+      ctx.fillText('WASD: Move', viewportWidth - 230, 50);
+      ctx.fillText('Enter enemies to battle', viewportWidth - 230, 70);
+    }
     ctx.fillText('🔴 = Enemies, 🟢 = You', viewportWidth - 230, 90);
   }
   
@@ -858,11 +877,22 @@ class MetroidvaniaGame {
     ctx.lineWidth = 3;
     ctx.strokeRect(menuX - 20, menuStartY - 20, menuWidth + 40, this.battleMenu.options.length * menuItemHeight + 40);
     
-    // Menu options
+    // Menu options with touch-friendly styling
     this.battleMenu.options.forEach((option, index) => {
       const y = menuStartY + index * menuItemHeight;
       const isSelected = index === this.battleMenu.selectedOption;
       const isEnabled = option.enabled;
+      
+      // Touch-friendly button background
+      if (isEnabled) {
+        ctx.fillStyle = isSelected ? 'rgba(255, 215, 0, 0.2)' : 'rgba(76, 175, 80, 0.1)';
+        ctx.fillRect(menuX + 5, y - 5, menuWidth - 10, menuItemHeight - 15);
+        
+        // Button border for touch indication
+        ctx.strokeStyle = isSelected ? '#ffd700' : '#4caf50';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(menuX + 5, y - 5, menuWidth - 10, menuItemHeight - 15);
+      }
       
       // Selection highlight
       if (isSelected) {
@@ -878,18 +908,35 @@ class MetroidvaniaGame {
       const prefix = isSelected ? '➤ ' : '   ';
       ctx.fillText(`${prefix}${option.text}`, menuX + 20, y + 15);
       
+      // Touch indicator for enabled options
+      if (isEnabled && !isSelected) {
+        ctx.fillStyle = '#4caf50';
+        ctx.font = '12px serif';
+        ctx.textAlign = 'right';
+        ctx.fillText('👆', menuX + menuWidth - 30, y + 15);
+      }
+      
       // Cost and description
       ctx.font = '14px monospace';
       ctx.fillStyle = isEnabled ? '#bdc3c7' : '#7f8c8d';
+      ctx.textAlign = 'left';
       ctx.fillText(`Cost: ${option.cost} GHIS`, menuX + 20, y + 35);
       ctx.fillText(option.description, menuX + 180, y + 35);
     });
     
-    // Instructions
+    // Instructions - show appropriate controls based on device
     ctx.fillStyle = '#95a5a6';
     ctx.font = '14px serif';
     ctx.textAlign = 'center';
-    ctx.fillText('Use ↑↓ arrows to select, ENTER to confirm', viewportWidth / 2, viewportHeight - 40);
+    
+    // Detect if touch device
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    
+    if (isTouchDevice) {
+      ctx.fillText('Tap an option to select it', viewportWidth / 2, viewportHeight - 40);
+    } else {
+      ctx.fillText('Use ↑↓ arrows to select, ENTER to confirm', viewportWidth / 2, viewportHeight - 40);
+    }
     
     ctx.textAlign = 'left'; // Reset alignment
   }
@@ -917,22 +964,123 @@ class MetroidvaniaGame {
     // Clear keys to prevent repeated actions
     this.keys.clear();
   }
+
+  // Handle swipe gestures for mobile
+  handleSwipe() {
+    if (!this.touchState.isActive) return;
+
+    const deltaX = this.touchState.endX - this.touchState.startX;
+    const deltaY = this.touchState.endY - this.touchState.startY;
+    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+    if (distance < this.touchState.minSwipeDistance) return;
+
+    // Determine swipe direction
+    const angle = Math.atan2(deltaY, deltaX) * (180 / Math.PI);
+    
+    if (this.gameState === 'exploring') {
+      // Convert swipe to movement
+      if (angle >= -45 && angle <= 45) {
+        this.movePlayer(1, 0); // Right
+      } else if (angle >= 45 && angle <= 135) {
+        this.movePlayer(0, 1); // Down
+      } else if (angle >= 135 || angle <= -135) {
+        this.movePlayer(-1, 0); // Left
+      } else if (angle >= -135 && angle <= -45) {
+        this.movePlayer(0, -1); // Up
+      }
+    }
+
+    this.touchState.isActive = false;
+  }
   
   // Game loop
   update(timestamp) {
     if (timestamp - this.lastFrame > 200) { // Limit to ~5 FPS for turn-based feel
       this.handleInput();
+      this.handleSwipe(); // Process any pending swipes
       this.lastFrame = timestamp;
     }
   }
-  
+
   // Key event handlers
   onKeyDown(event) {
     this.keys.add(event.key);
   }
-  
+
   onKeyUp(event) {
     // Optional: handle key up events
+  }
+
+  // Touch event handlers
+  onTouchStart(event) {
+    event.preventDefault();
+    const touch = event.touches[0];
+    this.touchState.startX = touch.clientX;
+    this.touchState.startY = touch.clientY;
+    this.touchState.isActive = true;
+  }
+
+  onTouchMove(event) {
+    event.preventDefault();
+    if (!this.touchState.isActive) return;
+    
+    const touch = event.touches[0];
+    this.touchState.endX = touch.clientX;
+    this.touchState.endY = touch.clientY;
+  }
+
+  onTouchEnd(event) {
+    event.preventDefault();
+    if (!this.touchState.isActive) return;
+
+    const touch = event.changedTouches[0];
+    this.touchState.endX = touch.clientX;
+    this.touchState.endY = touch.clientY;
+    
+    // Handle battle menu touch interaction
+    if (this.gameState === 'battle' && this.battleMenu.visible) {
+      this.handleBattleTouch(touch.clientX, touch.clientY);
+    }
+    
+    // Swipe will be processed in next update cycle
+  }
+
+  // Handle touch interaction with battle menu
+  handleBattleTouch(clientX, clientY) {
+    // Get canvas bounds to convert screen coordinates
+    const canvas = document.getElementById('metroidvaniaCanvas');
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+
+    // Scale coordinates if canvas is scaled
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const canvasX = x * scaleX;
+    const canvasY = y * scaleY;
+
+    // Check if touch is within battle menu area
+    const menuStartY = 320;
+    const menuItemHeight = 60;
+    const menuWidth = 600;
+    const menuX = (canvas.width - menuWidth) / 2;
+
+    if (canvasX >= menuX && canvasX <= menuX + menuWidth) {
+      const relativeY = canvasY - menuStartY;
+      if (relativeY >= 0) {
+        const optionIndex = Math.floor(relativeY / menuItemHeight);
+        if (optionIndex >= 0 && optionIndex < this.battleMenu.options.length) {
+          const option = this.battleMenu.options[optionIndex];
+          if (option.enabled) {
+            this.battleMenu.selectedOption = optionIndex;
+            this.executeBattleAction();
+          }
+        }
+      }
+    }
   }
 }
 
