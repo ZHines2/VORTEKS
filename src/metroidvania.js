@@ -1314,6 +1314,13 @@ class MetroidvaniaGame {
       if (this.keys.has('s') || this.keys.has('S')) this.movePlayer(0, 1);
       if (this.keys.has('a') || this.keys.has('A')) this.movePlayer(-1, 0);
       if (this.keys.has('d') || this.keys.has('D')) this.movePlayer(1, 0);
+      
+      // DEBUG: Press 'B' to force trigger a battle for testing
+      if (this.keys.has('b') || this.keys.has('B')) {
+        const testEnemy = { type: 'bruiser', level: 1, defeated: false };
+        console.log('[DEBUG] Force triggering test battle');
+        this.startBattle(testEnemy);
+      }
     } else if (this.gameState === 'battle' && this.battleMenu.visible) {
       // Menu navigation
       if (this.keys.has('ArrowUp')) {
