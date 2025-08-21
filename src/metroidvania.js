@@ -36,6 +36,11 @@ class MetroidvaniaGame {
     
     this.gameState = 'exploring'; // 'exploring', 'battle', 'paused'
     this.currentBattle = null;
+    this.battleMenu = {
+      visible: false,
+      selectedOption: 0,
+      options: []
+    };
     
     this.canvas = null;
     this.ctx = null;
@@ -53,26 +58,26 @@ class MetroidvaniaGame {
   generateMaze() {
     this.maze = Array(this.mazeSize).fill().map(() => Array(this.mazeSize).fill(1));
     
-    // Seed with random open spaces
+    // Seed with random open spaces (reduced for tighter maze)
     for (let x = 1; x < this.mazeSize - 1; x++) {
       for (let y = 1; y < this.mazeSize - 1; y++) {
-        if (Math.random() < 0.45) {
+        if (Math.random() < 0.35) { // Reduced from 0.45 for tighter corridors
           this.maze[x][y] = 0; // 0 = open, 1 = wall
         }
       }
     }
     
-    // Apply cellular automata rules for natural cave-like structures
-    for (let iteration = 0; iteration < 5; iteration++) {
+    // Apply cellular automata rules for natural cave-like structures (adjusted for tighter maze)
+    for (let iteration = 0; iteration < 6; iteration++) { // More iterations for tighter structure
       const newMaze = this.maze.map(row => [...row]);
       
       for (let x = 1; x < this.mazeSize - 1; x++) {
         for (let y = 1; y < this.mazeSize - 1; y++) {
           const neighbors = this.countNeighbors(x, y);
           
-          if (neighbors >= 5) {
+          if (neighbors >= 4) { // Reduced threshold for tighter corridors
             newMaze[x][y] = 1; // Become wall
-          } else if (neighbors <= 3) {
+          } else if (neighbors <= 2) { // Adjusted for balance
             newMaze[x][y] = 0; // Become open
           }
         }
@@ -229,49 +234,110 @@ class MetroidvaniaGame {
       battleState: 'player_turn' // 'player_turn', 'enemy_turn', 'ended'
     };
     
+    // Initialize battle menu
+    this.initializeBattleMenu();
+    
     // Regenerate GHIS for battle
     this.player.ghis = this.player.maxGhis;
     
     recordBattle({ mode: 'metroidvania', opponent: enemy.type });
   }
   
-  // Player uses ability during battle
-  useAbility(abilityType) {
+  // Initialize battle menu options
+  initializeBattleMenu() {
+    this.battleMenu.visible = true;
+    this.battleMenu.selectedOption = 0;
+    this.battleMenu.options = [];
+    
+    // Add available actions based on player abilities
+    if (this.player.abilities.has('strike')) {
+      this.battleMenu.options.push({
+        text: `Attack (Strike)`,
+        action: 'strike',
+        cost: 1,
+        enabled: this.player.ghis >= 1,
+        description: `Deal ${3 + this.player.stats.strike} damage`
+      });
+    }
+    
+    if (this.player.abilities.has('shield')) {
+      this.battleMenu.options.push({
+        text: `Defend (Shield)`,
+        action: 'shield',
+        cost: 1,
+        enabled: this.player.ghis >= 1,
+        description: `Block ${5 + this.player.stats.shield} damage`
+      });
+    }
+    
+    if (this.player.abilities.has('pierce')) {
+      this.battleMenu.options.push({
+        text: `Pierce Attack`,
+        action: 'pierce',
+        cost: 2,
+        enabled: this.player.ghis >= 2,
+        description: `Deal ${4 + this.player.stats.pierce} piercing damage`
+      });
+    }
+    
+    // Always available: Wait (regenerate GHIS)
+    this.battleMenu.options.push({
+      text: `Wait`,
+      action: 'wait',
+      cost: 0,
+      enabled: true,
+      description: `Regenerate 1 GHIS energy`
+    });
+  }
+  
+  // Execute selected battle action
+  executeBattleAction() {
     if (this.gameState !== 'battle' || this.currentBattle.battleState !== 'player_turn') {
+      return;
+    }
+    
+    const selectedOption = this.battleMenu.options[this.battleMenu.selectedOption];
+    if (!selectedOption || !selectedOption.enabled) {
       return;
     }
     
     let success = false;
     
-    switch (abilityType) {
+    switch (selectedOption.action) {
       case 'strike':
         if (this.player.abilities.has('strike') && this.player.ghis >= 1) {
-          const damage = Math.max(1, this.player.stats.strike);
+          const damage = 3 + this.player.stats.strike;
           this.currentBattle.enemy.hp -= damage;
           this.player.ghis -= 1;
           success = true;
-          this.logBattleAction(`You strike for ${damage} damage`);
+          this.logBattleAction(`You strike for ${damage} damage!`);
         }
         break;
         
       case 'shield':
         if (this.player.abilities.has('shield') && this.player.ghis >= 1) {
-          const shieldAmount = Math.max(1, this.player.stats.shield);
+          const shieldAmount = 5 + this.player.stats.shield;
           this.player.shield = (this.player.shield || 0) + shieldAmount;
           this.player.ghis -= 1;
           success = true;
-          this.logBattleAction(`You gain ${shieldAmount} shield`);
+          this.logBattleAction(`You gain ${shieldAmount} shield!`);
         }
         break;
         
       case 'pierce':
         if (this.player.abilities.has('pierce') && this.player.ghis >= 2) {
-          const damage = Math.max(2, this.player.stats.pierce);
-          this.currentBattle.enemy.hp -= damage; // Pierce ignores shields
+          const damage = 4 + this.player.stats.pierce;
+          this.currentBattle.enemy.hp -= damage;
           this.player.ghis -= 2;
           success = true;
-          this.logBattleAction(`You pierce for ${damage} damage`);
+          this.logBattleAction(`You pierce for ${damage} damage (ignores armor)!`);
         }
+        break;
+        
+      case 'wait':
+        this.player.ghis = Math.min(this.player.maxGhis, this.player.ghis + 1);
+        success = true;
+        this.logBattleAction(`You wait and regenerate 1 GHIS energy.`);
         break;
     }
     
@@ -279,13 +345,25 @@ class MetroidvaniaGame {
       this.checkBattleEnd();
       if (this.gameState === 'battle') {
         this.currentBattle.battleState = 'enemy_turn';
-        setTimeout(() => this.enemyTurn(), 1000);
+        this.battleMenu.visible = false;
+        setTimeout(() => {
+          this.executeEnemyTurn();
+        }, 1000); // Delay for dramatic effect
       }
     }
   }
+
+  // Player uses ability during battle (legacy function for compatibility)
+  useAbility(abilityType) {
+    // This function is now handled by the menu system
+    return;
+  }
+  
+  // Execute enemy turn
   
   // Enemy AI turn
-  enemyTurn() {
+  // Execute enemy turn
+  executeEnemyTurn() {
     if (this.gameState !== 'battle') return;
     
     const enemy = this.currentBattle.enemy;
@@ -301,13 +379,15 @@ class MetroidvaniaGame {
     }
     
     this.player.hp -= Math.max(0, actualDamage);
-    this.logBattleAction(`Enemy attacks for ${damage} damage`);
+    this.logBattleAction(`${enemy.persona} attacks for ${damage} damage!`);
     
     this.checkBattleEnd();
     if (this.gameState === 'battle') {
       this.currentBattle.battleState = 'player_turn';
       // Regenerate some GHIS
       this.player.ghis = Math.min(this.player.maxGhis, this.player.ghis + 1);
+      // Reinitialize menu for next turn
+      this.initializeBattleMenu();
     }
   }
   
@@ -339,6 +419,7 @@ class MetroidvaniaGame {
     
     this.gameState = 'exploring';
     this.currentBattle = null;
+    this.battleMenu.visible = false;
     
     // Restore some HP
     this.player.hp = Math.min(this.player.maxHP, this.player.hp + 5);
@@ -355,6 +436,7 @@ class MetroidvaniaGame {
     
     this.gameState = 'exploring';
     this.currentBattle = null;
+    this.battleMenu.visible = false;
   }
   
   // Generate loot from defeated enemy
@@ -489,61 +571,114 @@ class MetroidvaniaGame {
         // Only render discovered areas
         if (this.discovered.has(`${x},${y}`)) {
           if (this.maze[x][y] === 1) {
-            // Wall
-            ctx.fillStyle = '#4a4a4a';
+            // Wall - more atmospheric stone texture effect
+            const gradient = ctx.createLinearGradient(screenX, screenY, screenX + this.cellSize, screenY + this.cellSize);
+            gradient.addColorStop(0, '#3a3a5a');
+            gradient.addColorStop(0.5, '#2a2a4a');
+            gradient.addColorStop(1, '#1a1a3a');
+            ctx.fillStyle = gradient;
             ctx.fillRect(screenX, screenY, this.cellSize, this.cellSize);
+            
+            // Add texture highlights
+            ctx.fillStyle = 'rgba(100, 100, 120, 0.3)';
+            ctx.fillRect(screenX + 2, screenY + 2, 4, 4);
+            ctx.fillRect(screenX + this.cellSize - 6, screenY + this.cellSize - 6, 4, 4);
           } else {
-            // Floor
-            ctx.fillStyle = '#2a2a3a';
+            // Floor - darker, more atmospheric
+            ctx.fillStyle = '#1a1a2e';
             ctx.fillRect(screenX, screenY, this.cellSize, this.cellSize);
+            
+            // Subtle floor pattern
+            ctx.fillStyle = 'rgba(50, 50, 70, 0.5)';
+            ctx.fillRect(screenX + this.cellSize/2 - 1, screenY + this.cellSize/2 - 1, 2, 2);
           }
         } else {
-          // Undiscovered - darkness
-          ctx.fillStyle = '#0a0a0a';
+          // Undiscovered - deeper darkness
+          ctx.fillStyle = '#000010';
           ctx.fillRect(screenX, screenY, this.cellSize, this.cellSize);
         }
         
-        // Grid lines for clarity
-        ctx.strokeStyle = '#333';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(screenX, screenY, this.cellSize, this.cellSize);
+        // More subtle grid lines
+        if (this.discovered.has(`${x},${y}`)) {
+          ctx.strokeStyle = 'rgba(100, 100, 120, 0.2)';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(screenX, screenY, this.cellSize, this.cellSize);
+        }
       }
     }
   }
   
   // Render entities (player, enemies, loot)
   renderEntities(ctx) {
-    // Render player
-    const playerScreenX = this.player.x * this.cellSize - this.camera.x + this.cellSize / 4;
-    const playerScreenY = this.player.y * this.cellSize - this.camera.y + this.cellSize / 4;
+    // Render player with glow effect
+    const playerScreenX = this.player.x * this.cellSize - this.camera.x + this.cellSize / 6;
+    const playerScreenY = this.player.y * this.cellSize - this.camera.y + this.cellSize / 6;
+    const playerSize = this.cellSize * 2/3;
     
+    // Player glow
+    const gradient = ctx.createRadialGradient(
+      playerScreenX + playerSize/2, playerScreenY + playerSize/2, 0,
+      playerScreenX + playerSize/2, playerScreenY + playerSize/2, playerSize
+    );
+    gradient.addColorStop(0, 'rgba(0, 255, 136, 0.8)');
+    gradient.addColorStop(1, 'rgba(0, 255, 136, 0)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(playerScreenX - 4, playerScreenY - 4, playerSize + 8, playerSize + 8);
+    
+    // Player body
     ctx.fillStyle = '#00ff88';
-    ctx.fillRect(playerScreenX, playerScreenY, this.cellSize / 2, this.cellSize / 2);
+    ctx.fillRect(playerScreenX, playerScreenY, playerSize, playerSize);
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(playerScreenX, playerScreenY, playerSize, playerSize);
     
-    // Render enemies
+    // Render enemies with different styles
     for (const [pos, enemy] of this.enemies) {
       if (enemy.defeated) continue;
       
       const [x, y] = pos.split(',').map(Number);
       if (!this.discovered.has(pos)) continue;
       
-      const screenX = x * this.cellSize - this.camera.x + this.cellSize / 4;
-      const screenY = y * this.cellSize - this.camera.y + this.cellSize / 4;
+      const screenX = x * this.cellSize - this.camera.x + this.cellSize / 6;
+      const screenY = y * this.cellSize - this.camera.y + this.cellSize / 6;
+      const enemySize = this.cellSize * 2/3;
       
-      // Different colors for different enemy types
-      const colors = {
-        bruiser: '#ff4444',
-        doctor: '#44ff44', 
-        trickster: '#ffff44',
-        cat: '#ff44ff',
-        robot: '#4444ff'
+      // Enemy colors and styles
+      const enemyData = {
+        bruiser: { color: '#ff4444', symbol: '◆' },
+        doctor: { color: '#44ff44', symbol: '⚕' }, 
+        trickster: { color: '#ffff44', symbol: '◊' },
+        cat: { color: '#ff44ff', symbol: '◈' },
+        robot: { color: '#4444ff', symbol: '⬟' }
       };
       
-      ctx.fillStyle = colors[enemy.type] || '#ff0000';
-      ctx.fillRect(screenX, screenY, this.cellSize / 2, this.cellSize / 2);
+      const data = enemyData[enemy.type] || { color: '#ff0000', symbol: '◼' };
+      
+      // Enemy glow effect
+      const enemyGradient = ctx.createRadialGradient(
+        screenX + enemySize/2, screenY + enemySize/2, 0,
+        screenX + enemySize/2, screenY + enemySize/2, enemySize
+      );
+      enemyGradient.addColorStop(0, data.color + '80');
+      enemyGradient.addColorStop(1, data.color + '00');
+      ctx.fillStyle = enemyGradient;
+      ctx.fillRect(screenX - 4, screenY - 4, enemySize + 8, enemySize + 8);
+      
+      // Enemy body
+      ctx.fillStyle = data.color;
+      ctx.fillRect(screenX, screenY, enemySize, enemySize);
+      ctx.strokeStyle = '#333333';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(screenX, screenY, enemySize, enemySize);
+      
+      // Enemy symbol
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '16px serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(data.symbol, screenX + enemySize/2, screenY + enemySize/2 + 6);
     }
     
-    // Render loot
+    // Render loot with sparkle effects
     for (const [pos, loot] of this.loot) {
       const [x, y] = pos.split(',').map(Number);
       if (!this.discovered.has(pos)) continue;
@@ -551,78 +686,199 @@ class MetroidvaniaGame {
       const screenX = x * this.cellSize - this.camera.x + this.cellSize / 4;
       const screenY = y * this.cellSize - this.camera.y + this.cellSize / 4;
       
+      // Sparkle effect
+      const time = Date.now() * 0.005;
+      const sparkle = Math.sin(time) * 0.3 + 0.7;
+      ctx.fillStyle = `rgba(255, 170, 0, ${sparkle})`;
+      ctx.fillRect(screenX - 2, screenY - 2, this.cellSize / 2 + 4, this.cellSize / 2 + 4);
+      
       ctx.fillStyle = '#ffaa00';
       ctx.fillRect(screenX, screenY, this.cellSize / 2, this.cellSize / 2);
     }
+    
+    ctx.textAlign = 'left'; // Reset alignment
   }
   
   // Render UI overlay
   renderUI(ctx, viewportWidth, viewportHeight) {
-    // Player stats panel
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-    ctx.fillRect(10, 10, 200, 120);
+    // Player stats panel with more atmospheric styling
+    const panelGradient = ctx.createLinearGradient(10, 10, 10, 140);
+    panelGradient.addColorStop(0, 'rgba(15, 15, 35, 0.9)');
+    panelGradient.addColorStop(1, 'rgba(10, 10, 25, 0.9)');
+    ctx.fillStyle = panelGradient;
+    ctx.fillRect(10, 10, 220, 140);
     
-    ctx.fillStyle = '#ffffff';
+    // Panel border
+    ctx.strokeStyle = '#4ecdc4';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(10, 10, 220, 140);
+    
+    // Title
+    ctx.fillStyle = '#ffd700';
+    ctx.font = 'bold 16px serif';
+    ctx.fillText('◈ EXPLORER STATUS ◈', 20, 30);
+    
+    // Stats with colors
     ctx.font = '14px monospace';
-    ctx.fillText(`HP: ${this.player.hp}/${this.player.maxHP}`, 20, 30);
-    ctx.fillText(`GHIS: ${this.player.ghis}/${this.player.maxGhis}`, 20, 50);
-    ctx.fillText(`Position: ${this.player.x}, ${this.player.y}`, 20, 70);
-    ctx.fillText(`Cards: ${this.player.cards.length}`, 20, 90);
+    ctx.fillStyle = '#ff6b6b';
+    ctx.fillText(`♥ HP: ${this.player.hp}/${this.player.maxHP}`, 20, 50);
+    
+    ctx.fillStyle = '#4ecdc4';
+    ctx.fillText(`⚡ GHIS: ${this.player.ghis}/${this.player.maxGhis}`, 20, 70);
+    
+    ctx.fillStyle = '#95a5a6';
+    ctx.fillText(`📍 Pos: ${this.player.x}, ${this.player.y}`, 20, 90);
+    
+    ctx.fillStyle = '#ffd700';
+    ctx.fillText(`🎴 Cards: ${this.player.cards.length}`, 20, 110);
     
     // Abilities panel
-    ctx.fillText('Abilities:', 20, 110);
-    let abilityY = 130;
+    ctx.fillStyle = '#e74c3c';
+    ctx.fillText('⚔️ Abilities:', 20, 130);
+    let abilityY = 150;
     for (const ability of this.player.abilities) {
       const stat = this.player.stats[ability] || 0;
-      ctx.fillText(`${ability}: ${stat}`, 20, abilityY);
+      const abilityIcons = {
+        strike: '⚔️',
+        shield: '🛡️',
+        pierce: '🗡️',
+        surge: '⚡'
+      };
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(`${abilityIcons[ability] || '•'} ${ability}: ${stat}`, 30, abilityY);
       abilityY += 20;
     }
     
-    // Controls
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-    ctx.fillRect(viewportWidth - 220, 10, 210, 80);
+    // Controls panel with atmospheric styling
+    const controlsGradient = ctx.createLinearGradient(viewportWidth - 240, 10, viewportWidth - 240, 90);
+    controlsGradient.addColorStop(0, 'rgba(15, 15, 35, 0.9)');
+    controlsGradient.addColorStop(1, 'rgba(10, 10, 25, 0.9)');
+    ctx.fillStyle = controlsGradient;
+    ctx.fillRect(viewportWidth - 240, 10, 230, 90);
+    
+    ctx.strokeStyle = '#4ecdc4';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(viewportWidth - 240, 10, 230, 90);
+    
+    ctx.fillStyle = '#ffd700';
+    ctx.font = 'bold 14px serif';
+    ctx.fillText('⚡ CONTROLS ⚡', viewportWidth - 230, 30);
     
     ctx.fillStyle = '#ffffff';
-    ctx.fillText('Controls:', viewportWidth - 210, 30);
-    ctx.fillText('WASD: Move', viewportWidth - 210, 50);
-    ctx.fillText('Space: Use Strike', viewportWidth - 210, 70);
-    ctx.fillText('Q: Use Shield', viewportWidth - 210, 90);
+    ctx.font = '12px monospace';
+    ctx.fillText('WASD: Move', viewportWidth - 230, 50);
+    ctx.fillText('Enter enemies to battle', viewportWidth - 230, 70);
+    ctx.fillText('🔴 = Enemies, 🟢 = You', viewportWidth - 230, 90);
   }
   
   // Render battle UI
   renderBattleUI(ctx, viewportWidth, viewportHeight) {
-    // Battle overlay
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-    ctx.fillRect(0, viewportHeight - 150, viewportWidth, 150);
+    if (!this.battleMenu.visible) {
+      // Enemy turn or transition state
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+      ctx.fillRect(0, 0, viewportWidth, viewportHeight);
+      
+      ctx.fillStyle = '#ff6b6b';
+      ctx.font = 'bold 24px serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('ENEMY TURN', viewportWidth / 2, viewportHeight / 2);
+      ctx.textAlign = 'left';
+      return;
+    }
     
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '16px monospace';
-    ctx.fillText('BATTLE MODE', 20, viewportHeight - 120);
+    // RPG-style combat menu overlay
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.95)';
+    ctx.fillRect(0, 0, viewportWidth, viewportHeight);
     
+    // Title
+    ctx.fillStyle = '#ffd700';
+    ctx.font = 'bold 28px serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('⚔️ COMBAT ⚔️', viewportWidth / 2, 60);
+    
+    // Enemy information
     const enemy = this.currentBattle.enemy;
-    ctx.fillText(`Enemy: ${enemy.persona} (HP: ${enemy.hp}/${enemy.maxHP})`, 20, viewportHeight - 90);
-    ctx.fillText(`Your Turn: ${this.currentBattle.battleState === 'player_turn' ? 'YES' : 'NO'}`, 20, viewportHeight - 60);
+    ctx.fillStyle = '#ff6b6b';
+    ctx.font = 'bold 20px serif';
+    ctx.fillText(`${enemy.persona}`, viewportWidth / 2, 120);
     
-    // Available abilities
-    ctx.fillText('Available abilities:', 20, viewportHeight - 30);
-    let x = 200;
+    // Enemy HP bar
+    const enemyHPPercent = enemy.hp / enemy.maxHP;
+    const hpBarWidth = 300;
+    const hpBarHeight = 20;
+    const hpBarX = (viewportWidth - hpBarWidth) / 2;
+    const hpBarY = 140;
     
-    if (this.player.abilities.has('strike')) {
-      ctx.fillStyle = this.player.ghis >= 1 ? '#00ff00' : '#666666';
-      ctx.fillText('[SPACE] Strike', x, viewportHeight - 30);
-      x += 150;
+    ctx.fillStyle = '#333';
+    ctx.fillRect(hpBarX, hpBarY, hpBarWidth, hpBarHeight);
+    ctx.fillStyle = '#ff4444';
+    ctx.fillRect(hpBarX, hpBarY, hpBarWidth * enemyHPPercent, hpBarHeight);
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(hpBarX, hpBarY, hpBarWidth, hpBarHeight);
+    
+    ctx.fillStyle = '#fff';
+    ctx.font = '14px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${enemy.hp}/${enemy.maxHP} HP`, viewportWidth / 2, hpBarY + 15);
+    
+    // Player status
+    ctx.fillStyle = '#4ecdc4';
+    ctx.font = '16px serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(`Your HP: ${this.player.hp}/${this.player.maxHP}`, 50, 220);
+    ctx.fillText(`GHIS Energy: ${this.player.ghis}/${this.player.maxGhis}`, 50, 245);
+    if (this.player.shield > 0) {
+      ctx.fillStyle = '#6bb6ff';
+      ctx.fillText(`Shield: ${this.player.shield}`, 50, 270);
     }
     
-    if (this.player.abilities.has('shield')) {
-      ctx.fillStyle = this.player.ghis >= 1 ? '#00ff00' : '#666666';
-      ctx.fillText('[Q] Shield', x, viewportHeight - 30);
-      x += 120;
-    }
+    // Combat menu
+    const menuStartY = 320;
+    const menuItemHeight = 60;
+    const menuWidth = 600;
+    const menuX = (viewportWidth - menuWidth) / 2;
     
-    if (this.player.abilities.has('pierce')) {
-      ctx.fillStyle = this.player.ghis >= 2 ? '#00ff00' : '#666666';
-      ctx.fillText('[E] Pierce', x, viewportHeight - 30);
-    }
+    ctx.fillStyle = '#2c3e50';
+    ctx.fillRect(menuX - 20, menuStartY - 20, menuWidth + 40, this.battleMenu.options.length * menuItemHeight + 40);
+    ctx.strokeStyle = '#ffd700';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(menuX - 20, menuStartY - 20, menuWidth + 40, this.battleMenu.options.length * menuItemHeight + 40);
+    
+    // Menu options
+    this.battleMenu.options.forEach((option, index) => {
+      const y = menuStartY + index * menuItemHeight;
+      const isSelected = index === this.battleMenu.selectedOption;
+      const isEnabled = option.enabled;
+      
+      // Selection highlight
+      if (isSelected) {
+        ctx.fillStyle = 'rgba(255, 215, 0, 0.3)';
+        ctx.fillRect(menuX, y - 10, menuWidth, menuItemHeight - 10);
+      }
+      
+      // Option text
+      ctx.fillStyle = isEnabled ? (isSelected ? '#ffd700' : '#ecf0f1') : '#7f8c8d';
+      ctx.font = isSelected ? 'bold 18px serif' : '16px serif';
+      ctx.textAlign = 'left';
+      
+      const prefix = isSelected ? '➤ ' : '   ';
+      ctx.fillText(`${prefix}${option.text}`, menuX + 20, y + 15);
+      
+      // Cost and description
+      ctx.font = '14px monospace';
+      ctx.fillStyle = isEnabled ? '#bdc3c7' : '#7f8c8d';
+      ctx.fillText(`Cost: ${option.cost} GHIS`, menuX + 20, y + 35);
+      ctx.fillText(option.description, menuX + 180, y + 35);
+    });
+    
+    // Instructions
+    ctx.fillStyle = '#95a5a6';
+    ctx.font = '14px serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Use ↑↓ arrows to select, ENTER to confirm', viewportWidth / 2, viewportHeight - 40);
+    
+    ctx.textAlign = 'left'; // Reset alignment
   }
   
   // Handle input
@@ -632,10 +888,17 @@ class MetroidvaniaGame {
       if (this.keys.has('s') || this.keys.has('S')) this.movePlayer(0, 1);
       if (this.keys.has('a') || this.keys.has('A')) this.movePlayer(-1, 0);
       if (this.keys.has('d') || this.keys.has('D')) this.movePlayer(1, 0);
-    } else if (this.gameState === 'battle') {
-      if (this.keys.has(' ')) this.useAbility('strike');
-      if (this.keys.has('q') || this.keys.has('Q')) this.useAbility('shield');
-      if (this.keys.has('e') || this.keys.has('E')) this.useAbility('pierce');
+    } else if (this.gameState === 'battle' && this.battleMenu.visible) {
+      // Menu navigation
+      if (this.keys.has('ArrowUp')) {
+        this.battleMenu.selectedOption = Math.max(0, this.battleMenu.selectedOption - 1);
+      }
+      if (this.keys.has('ArrowDown')) {
+        this.battleMenu.selectedOption = Math.min(this.battleMenu.options.length - 1, this.battleMenu.selectedOption + 1);
+      }
+      if (this.keys.has('Enter')) {
+        this.executeBattleAction();
+      }
     }
     
     // Clear keys to prevent repeated actions
