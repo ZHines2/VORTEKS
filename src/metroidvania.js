@@ -114,6 +114,19 @@ class MetroidvaniaGame {
     return count;
   }
   
+  // Discover an area around the player position
+  discoverArea(centerX, centerY) {
+    const discoveryRadius = 2; // How far around the player can see
+    
+    for (let x = centerX - discoveryRadius; x <= centerX + discoveryRadius; x++) {
+      for (let y = centerY - discoveryRadius; y <= centerY + discoveryRadius; y++) {
+        if (x >= 0 && x < this.mazeSize && y >= 0 && y < this.mazeSize) {
+          this.discovered.add(`${x},${y}`);
+        }
+      }
+    }
+  }
+  
   // Find a valid spawn position
   spawnPlayer() {
     for (let attempts = 0; attempts < 100; attempts++) {
@@ -123,7 +136,7 @@ class MetroidvaniaGame {
       if (this.maze[x][y] === 0) {
         this.player.x = x;
         this.player.y = y;
-        this.discovered.add(`${x},${y}`);
+        this.discoverArea(x, y);
         this.updateCamera();
         return;
       }
@@ -133,7 +146,7 @@ class MetroidvaniaGame {
     this.player.x = Math.floor(this.mazeSize / 2);
     this.player.y = Math.floor(this.mazeSize / 2);
     this.maze[this.player.x][this.player.y] = 0;
-    this.discovered.add(`${this.player.x},${this.player.y}`);
+    this.discoverArea(this.player.x, this.player.y);
     this.updateCamera();
   }
   
@@ -191,7 +204,7 @@ class MetroidvaniaGame {
       
       this.player.x = newX;
       this.player.y = newY;
-      this.discovered.add(`${newX},${newY}`);
+      this.discoverArea(newX, newY);
       this.updateCamera();
       
       // Check for encounters
