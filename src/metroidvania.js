@@ -121,33 +121,34 @@ class MetroidvaniaGame {
   generateMaze() {
     this.maze = Array(this.mazeSize).fill().map(() => Array(this.mazeSize).fill(1));
     
-    // Seed with random open spaces (reduced for tighter maze)
-    for (let x = 1; x < this.mazeSize - 1; x++) {
-      for (let y = 1; y < this.mazeSize - 1; y++) {
-        if (Math.random() < 0.35) { // Reduced from 0.45 for tighter corridors
-          this.maze[x][y] = 0; // 0 = open, 1 = wall
-        }
+    // Generate a hedge-maze-like structure with thin corridors
+    // Start with all walls, then carve corridors
+    this.generateHedgeMaze();
+  }
+  
+  // Generate hedge-maze-like corridors
+  generateHedgeMaze() {
+    // Initialize all as walls
+    for (let x = 0; x < this.mazeSize; x++) {
+      for (let y = 0; y < this.mazeSize; y++) {
+        this.maze[x][y] = 1;
       }
     }
     
-    // Apply cellular automata rules for natural cave-like structures (adjusted for tighter maze)
-    for (let iteration = 0; iteration < 6; iteration++) { // More iterations for tighter structure
-      const newMaze = this.maze.map(row => [...row]);
-      
-      for (let x = 1; x < this.mazeSize - 1; x++) {
-        for (let y = 1; y < this.mazeSize - 1; y++) {
-          const neighbors = this.countNeighbors(x, y);
-          
-          if (neighbors >= 4) { // Reduced threshold for tighter corridors
-            newMaze[x][y] = 1; // Become wall
-          } else if (neighbors <= 2) { // Adjusted for balance
-            newMaze[x][y] = 0; // Become open
-          }
-        }
+    // Create a grid pattern of potential paths (every other cell)
+    const pathCells = [];
+    for (let x = 1; x < this.mazeSize - 1; x += 2) {
+      for (let y = 1; y < this.mazeSize - 1; y += 2) {
+        pathCells.push({ x, y });
+        this.maze[x][y] = 0; // Mark as open
       }
-      
-      this.maze = newMaze;
     }
+    
+    // Use a simplified maze generation algorithm to connect paths
+    this.connectPaths(pathCells);
+    
+    // Add some random openings for more variety (but keep it sparse)
+    this.addRandomOpenings();
     
     // Ensure borders are walls
     for (let x = 0; x < this.mazeSize; x++) {
@@ -160,7 +161,78 @@ class MetroidvaniaGame {
     }
   }
   
-  countNeighbors(x, y) {
+  // Connect path cells to create corridors
+  connectPaths(pathCells) {
+    if (pathCells.length === 0) return;
+    
+    // Start with a random path cell
+    const visited = new Set();
+    const stack = [pathCells[Math.floor(Math.random() * pathCells.length)]];
+    visited.add(`${stack[0].x},${stack[0].y}`);
+    
+    while (stack.length > 0) {
+      const current = stack[stack.length - 1];
+      const neighbors = this.getUnvisitedPathNeighbors(current, pathCells, visited);
+      
+      if (neighbors.length > 0) {
+        // Choose a random unvisited neighbor
+        const next = neighbors[Math.floor(Math.random() * neighbors.length)];
+        
+        // Remove wall between current and next
+        const wallX = (current.x + next.x) / 2;
+        const wallY = (current.y + next.y) / 2;
+        this.maze[wallX][wallY] = 0;
+        
+        visited.add(`${next.x},${next.y}`);
+        stack.push(next);
+      } else {
+        stack.pop();
+      }
+    }
+  }
+  
+  // Get unvisited path neighbors (2 cells away in cardinal directions)
+  getUnvisitedPathNeighbors(cell, pathCells, visited) {
+    const neighbors = [];
+    const directions = [
+      { x: 0, y: -2 }, // Up
+      { x: 2, y: 0 },  // Right
+      { x: 0, y: 2 },  // Down
+      { x: -2, y: 0 }  // Left
+    ];
+    
+    for (const dir of directions) {
+      const nx = cell.x + dir.x;
+      const ny = cell.y + dir.y;
+      
+      if (nx >= 1 && nx < this.mazeSize - 1 && ny >= 1 && ny < this.mazeSize - 1) {
+        const key = `${nx},${ny}`;
+        if (!visited.has(key) && pathCells.some(p => p.x === nx && p.y === ny)) {
+          neighbors.push({ x: nx, y: ny });
+        }
+      }
+    }
+    
+    return neighbors;
+  }
+  
+  // Add a few random openings to make the maze less predictable
+  addRandomOpenings() {
+    const numOpenings = Math.floor(this.mazeSize * 0.3); // 30% chance of extra openings
+    
+    for (let i = 0; i < numOpenings; i++) {
+      const x = Math.floor(Math.random() * (this.mazeSize - 2)) + 1;
+      const y = Math.floor(Math.random() * (this.mazeSize - 2)) + 1;
+      
+      // Only open if it doesn't create too large an open area
+      if (this.countOpenNeighbors(x, y) <= 2) {
+        this.maze[x][y] = 0;
+      }
+    }
+  }
+  
+  // Count open neighbors for avoiding large open areas
+  countOpenNeighbors(x, y) {
     let count = 0;
     for (let dx = -1; dx <= 1; dx++) {
       for (let dy = -1; dy <= 1; dy++) {
@@ -168,9 +240,7 @@ class MetroidvaniaGame {
         const nx = x + dx;
         const ny = y + dy;
         if (nx >= 0 && nx < this.mazeSize && ny >= 0 && ny < this.mazeSize) {
-          count += this.maze[nx][ny];
-        } else {
-          count++; // Count out-of-bounds as walls
+          if (this.maze[nx][ny] === 0) count++;
         }
       }
     }
