@@ -1853,6 +1853,49 @@ button.card:disabled {
 #metroidvaniaCanvas {
   display: block;
   background: #1a1a2e;
+  touch-action: none; /* Prevent scrolling and zooming on touch */
+  user-select: none; /* Prevent text selection */
+}
+
+/* Mobile-specific metroidvania styles */
+@media (max-width: 768px) {
+  .metroidvania-container {
+    padding: 10px;
+    /* Ensure full viewport usage on mobile */
+    padding-top: max(10px, env(safe-area-inset-top));
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+    padding-left: max(10px, env(safe-area-inset-left));
+    padding-right: max(10px, env(safe-area-inset-right));
+  }
+  
+  .metroidvania-header {
+    margin-bottom: 10px;
+  }
+  
+  .metroidvania-header h2 {
+    font-size: 14px;
+  }
+  
+  .metroidvania-game {
+    margin-bottom: 10px;
+    border-width: 2px;
+  }
+  
+  #metroidvaniaCanvas {
+    /* Ensure canvas is responsive on mobile */
+    max-width: 100%;
+    height: auto;
+  }
+  
+  .metroidvania-instructions {
+    padding: 8px;
+    font-size: 8px;
+  }
+  
+  .metroidvania-instructions div {
+    font-size: 8px;
+    margin: 2px 0;
+  }
 }
 
 .metroidvania-instructions {

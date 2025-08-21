@@ -3559,9 +3559,36 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     };
     
+    // Touch event handlers for mobile support
+    const handleTouchStart = (event) => {
+      if (currentMetroidvaniaGame) {
+        currentMetroidvaniaGame.onTouchStart(event);
+      }
+    };
+    
+    const handleTouchMove = (event) => {
+      if (currentMetroidvaniaGame) {
+        currentMetroidvaniaGame.onTouchMove(event);
+      }
+    };
+    
+    const handleTouchEnd = (event) => {
+      if (currentMetroidvaniaGame) {
+        currentMetroidvaniaGame.onTouchEnd(event);
+      }
+    };
+    
     document.addEventListener('keydown', handleKeyDown);
     document.addEventListener('keyup', handleKeyUp);
     document.addEventListener('keypress', handleKeyPress);
+    
+    // Add touch event listeners to the canvas
+    const canvas = document.getElementById('metroidvaniaCanvas');
+    if (canvas) {
+      canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+      canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+      canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+    }
     
     // Quit button handler
     document.getElementById('metroidvaniaQuit').onclick = () => {
@@ -3572,7 +3599,10 @@ document.addEventListener('DOMContentLoaded', () => {
     currentMetroidvaniaGame.keyHandlers = {
       keydown: handleKeyDown,
       keyup: handleKeyUp,
-      keypress: handleKeyPress
+      keypress: handleKeyPress,
+      touchstart: handleTouchStart,
+      touchmove: handleTouchMove,
+      touchend: handleTouchEnd
     };
   }
   
@@ -3588,6 +3618,14 @@ document.addEventListener('DOMContentLoaded', () => {
       document.removeEventListener('keydown', currentMetroidvaniaGame.keyHandlers.keydown);
       document.removeEventListener('keyup', currentMetroidvaniaGame.keyHandlers.keyup);
       document.removeEventListener('keypress', currentMetroidvaniaGame.keyHandlers.keypress);
+      
+      // Clean up touch event listeners
+      const canvas = document.getElementById('metroidvaniaCanvas');
+      if (canvas) {
+        canvas.removeEventListener('touchstart', currentMetroidvaniaGame.keyHandlers.touchstart);
+        canvas.removeEventListener('touchmove', currentMetroidvaniaGame.keyHandlers.touchmove);
+        canvas.removeEventListener('touchend', currentMetroidvaniaGame.keyHandlers.touchend);
+      }
     }
     
     // Clean up game
