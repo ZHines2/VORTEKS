@@ -117,8 +117,18 @@ A modular, browser-based tactical card game built with vanilla JavaScript ES6 mo
 - **Comprehensive Testing**: Automated test suite covering all major mechanics
 - **Debug Console**: Full-screen debug panel with testing tools and controls
 - **Defensive Programming**: Type checking for logging system prevents runtime errors
-- **Edge Case Handling**: Proper state management for complex card interactions
+- **Enhanced Edge Case Detection**: Advanced monitoring for game state anomalies
 - **Cross-Browser Compatibility**: Vanilla ES6 modules work in all modern browsers
+
+#### Enhanced Edge Case Monitoring
+The game includes sophisticated edge case detection that monitors for:
+- **Energy Management**: Overflow (>15 energy) and underflow (<0 energy) detection
+- **Game State Validation**: Impossible states like negative HP or excessive healing
+- **Card Interaction Monitoring**: Echo/Overload chain detection and loop prevention
+- **AI Behavior Analysis**: Decision timeout and anomaly detection
+- **Performance Tracking**: Rapid state changes and system stress monitoring
+
+Edge cases are automatically categorized by severity (high/medium/low) and tracked for analysis, enabling proactive game balance and stability improvements.
 
 ## 🎯 How to Play
 
@@ -400,6 +410,42 @@ configureJSONBin({
 ## 🔮 Future Expansion Potential
 
 The modular architecture supports extensive future development including new card mechanics, additional personas, campaign modes, multiplayer features, and visual/audio enhancements.
+
+### 🗡️ Dungeon Crawling & Metroidvania Adaptation
+
+VORTEKS's card-based mechanics could be brilliantly adapted into a dungeon crawling or metroidvania-style adventure game:
+
+#### **Card-as-Ability System**
+- **Equipment Cards**: Transform current attack/defense cards into collectible equipment
+- **Skill Trees**: Cards become abilities unlocked through exploration and progression
+- **Rarity Tiers**: Common, Rare, Epic, and Legendary card discoveries in different areas
+- **Combo Mechanics**: Echo/Overload chains could trigger environmental interactions
+
+#### **Exploration Mechanics**
+- **Room-Based Encounters**: Each room requires tactical card play to progress
+- **Environmental Puzzles**: Use specific card combinations to unlock passages
+- **Resource Management**: Energy becomes a limited exploration resource
+- **Checkpoint System**: Save progress at discovered shrines or campfires
+
+#### **Progression & Discovery**
+- **Card Fragments**: Find pieces of powerful cards scattered throughout the world
+- **Quirk Shrines**: Discover and activate quirks at special locations
+- **Boss Encounters**: Current AI personas become unique area bosses with signature decks
+- **Deck Evolution**: Starting deck grows through exploration and discovery
+
+#### **Narrative Integration**
+- **Card Lore**: Each discovered card reveals world history and character backstories
+- **Environmental Storytelling**: Visual clues hint at optimal card strategies for areas
+- **Character Progression**: Companion creatures evolve based on playstyle and discoveries
+- **Multiple Endings**: Different card collection paths lead to varied conclusions
+
+#### **Technical Adaptations**
+- **Spatial Deck Building**: Cards have location requirements and environmental synergies
+- **Real-time Elements**: Some cards could have cooldowns or timing-based effects
+- **Map Integration**: Visual dungeon maps show card discovery progress
+- **Atmospheric Audio**: Dynamic music responds to current deck composition and threats
+
+The existing campaign mode, card unlock system, and telemetry tracking provide a strong foundation for this evolution, requiring primarily UI/UX adaptations rather than core mechanical overhauls.
 
 ---
 

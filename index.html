@@ -118,6 +118,28 @@
     </div>
   </div>
   
+  <!-- Metroidvania UI (hidden by default) -->
+  <div id="metroidvaniaUI" class="metroidvania-container" hidden>
+    <div class="metroidvania-header">
+      <h2>MAZE EXPLORER</h2>
+      <button id="metroidvaniaQuit" class="btn">RETURN TO MENU</button>
+    </div>
+    
+    <!-- Game Canvas -->
+    <div class="metroidvania-game">
+      <canvas id="metroidvaniaCanvas" width="800" height="600"></canvas>
+    </div>
+    
+    <!-- Game Instructions -->
+    <div class="metroidvania-instructions">
+      <div><strong>Instructions:</strong></div>
+      <div>• Move: WASD keys</div>
+      <div>• Battle: [Space] Strike, [Q] Shield, [E] Pierce</div>
+      <div>• Find cards to unlock abilities and increase stats</div>
+      <div>• Red squares = enemies, Green square = you</div>
+    </div>
+  </div>
+  
   <!-- Start Screen Modal -->
   <div class="modal" id="startModal">
     <div class="start-container">
@@ -133,6 +155,7 @@
           <button id="campaignBtn" class="btn" title="Start a new campaign run">CAMPAIGN</button>
           <button id="campaignContinueBtn" class="btn" title="Continue your current campaign run" hidden>CONTINUE CAMPAIGN</button>
           <button id="tournamentBtn" class="btn" title="Battle 9 AI opponents in a tournament until only one remains">TOURNAMENT</button>
+          <button id="metroidvaniaBtn" class="btn" title="Explore a procedural maze, start with no cards, and collect abilities by defeating enemies">MAZE EXPLORER</button>
         </div>
         <div class="debug-group">
           <button id="selfTest" class="btn debug-btn" title="Run built-in tests">DEBUG</button>

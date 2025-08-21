@@ -218,6 +218,90 @@ function detectEdgeCases(gameState, turnData) {
     });
   }
 
+  // Energy overflow/underflow detection
+  if (gameState.energy && gameState.energy < 0) {
+    edgeCases.push({
+      type: 'energy_underflow',
+      description: `Negative energy detected: ${gameState.energy}`,
+      severity: 'high',
+      context: { energy: gameState.energy }
+    });
+  }
+  
+  if (gameState.energy && gameState.energy > 15) {
+    edgeCases.push({
+      type: 'energy_overflow',
+      description: `Excessive energy accumulated: ${gameState.energy}`,
+      severity: 'medium',
+      context: { energy: gameState.energy }
+    });
+  }
+
+  // Impossible game state detection
+  if (gameState.hp !== undefined && gameState.hp < 0) {
+    edgeCases.push({
+      type: 'impossible_negative_hp',
+      description: `Player has negative HP: ${gameState.hp}`,
+      severity: 'high',
+      context: { hp: gameState.hp }
+    });
+  }
+
+  // Excessive HP (potential healing overflow)
+  if (gameState.hp && gameState.maxHP && gameState.hp > gameState.maxHP + 20) {
+    edgeCases.push({
+      type: 'excessive_hp_overheal',
+      description: `HP significantly exceeds max HP: ${gameState.hp}/${gameState.maxHP}`,
+      severity: 'medium',
+      context: { hp: gameState.hp, maxHP: gameState.maxHP }
+    });
+  }
+
+  // Echo/Overload chain detection
+  if (turnData.cardsPlayed) {
+    const echoOverloadCards = turnData.cardsPlayed.filter(card => 
+      card === 'echo' || card === 'overload'
+    );
+    if (echoOverloadCards.length >= 3) {
+      edgeCases.push({
+        type: 'echo_overload_chain',
+        description: `Potential Echo/Overload chain: ${echoOverloadCards.length} repetition cards`,
+        severity: 'medium',
+        context: { chainLength: echoOverloadCards.length, cards: echoOverloadCards }
+      });
+    }
+  }
+
+  // Deck depletion scenario
+  if (gameState.deckSize !== undefined && gameState.deckSize <= 0 && gameState.turn < 20) {
+    edgeCases.push({
+      type: 'early_deck_depletion',
+      description: `Deck depleted early in battle (turn ${gameState.turn})`,
+      severity: 'medium',
+      context: { turn: gameState.turn, deckSize: gameState.deckSize }
+    });
+  }
+
+  // AI behavior anomaly detection
+  if (turnData.aiDecisionTime && turnData.aiDecisionTime > 5000) {
+    edgeCases.push({
+      type: 'ai_decision_timeout',
+      description: `AI took excessive time to decide: ${turnData.aiDecisionTime}ms`,
+      severity: 'low',
+      context: { decisionTime: turnData.aiDecisionTime }
+    });
+  }
+
+  // Rapid game state changes
+  if (turnData.stateChanges && turnData.stateChanges > 10) {
+    edgeCases.push({
+      type: 'rapid_state_changes',
+      description: `Excessive state changes in single turn: ${turnData.stateChanges}`,
+      severity: 'medium',
+      context: { stateChanges: turnData.stateChanges }
+    });
+  }
+
   return edgeCases;
 }
 
@@ -380,6 +464,52 @@ function generateRecommendations() {
     });
   }
 
+  // Check for specific edge case patterns
+  const edgeCaseTypes = {};
+  _findingsState.edgeCases.forEach(ec => {
+    edgeCaseTypes[ec.type] = (edgeCaseTypes[ec.type] || 0) + 1;
+  });
+
+  // Energy management issues
+  if (edgeCaseTypes.energy_underflow > 0) {
+    recommendations.push({
+      type: 'energy_management',
+      priority: 'high',
+      description: `Energy underflow detected ${edgeCaseTypes.energy_underflow} times - check energy cost calculations`,
+      data: { occurrences: edgeCaseTypes.energy_underflow }
+    });
+  }
+
+  // Game state validation issues
+  if (edgeCaseTypes.impossible_negative_hp > 0) {
+    recommendations.push({
+      type: 'game_state_validation',
+      priority: 'critical',
+      description: `Impossible negative HP states detected ${edgeCaseTypes.impossible_negative_hp} times`,
+      data: { occurrences: edgeCaseTypes.impossible_negative_hp }
+    });
+  }
+
+  // Echo/Overload chain optimization
+  if (edgeCaseTypes.echo_overload_chain > 0) {
+    recommendations.push({
+      type: 'card_mechanics',
+      priority: 'medium',
+      description: `Echo/Overload chains detected ${edgeCaseTypes.echo_overload_chain} times - consider chain limits`,
+      data: { occurrences: edgeCaseTypes.echo_overload_chain }
+    });
+  }
+
+  // AI performance issues
+  if (edgeCaseTypes.ai_decision_timeout > 0) {
+    recommendations.push({
+      type: 'ai_optimization',
+      priority: 'low',
+      description: `AI decision timeouts detected ${edgeCaseTypes.ai_decision_timeout} times - optimize AI decision logic`,
+      data: { occurrences: edgeCaseTypes.ai_decision_timeout }
+    });
+  }
+
   return recommendations;
 }
 
@@ -400,6 +530,35 @@ function getRating(winRate, timesPlayed, edgeCases) {
   if (score >= 50) return 'C';
   if (score >= 40) return 'D';
   return 'F';
+}
+
+// Get edge case statistics
+function getEdgeCaseStatistics() {
+  const stats = {
+    total: _findingsState.edgeCases.length,
+    bySeverity: { high: 0, medium: 0, low: 0 },
+    byType: {},
+    recentTrends: {},
+    averagePerBattle: _findingsState.totalBattles > 0 ? 
+      (_findingsState.edgeCases.length / _findingsState.totalBattles).toFixed(2) : 0
+  };
+
+  _findingsState.edgeCases.forEach(ec => {
+    stats.bySeverity[ec.severity]++;
+    stats.byType[ec.type] = (stats.byType[ec.type] || 0) + 1;
+  });
+
+  // Calculate trends for recent edge cases (last 24 hours)
+  const recent = _findingsState.edgeCases.filter(ec => {
+    const age = Date.now() - new Date(ec.timestamp).getTime();
+    return age < 24 * 60 * 60 * 1000; // 24 hours in ms
+  });
+
+  recent.forEach(ec => {
+    stats.recentTrends[ec.type] = (stats.recentTrends[ec.type] || 0) + 1;
+  });
+
+  return stats;
 }
 
 // Clear all findings
@@ -440,6 +599,7 @@ export {
   analyzePersonaPerformance,
   analyzeCardPerformance,
   analyzeEdgeCases,
+  getEdgeCaseStatistics,
   clearFindings,
   exportFindings,
   _findingsState as findingsState

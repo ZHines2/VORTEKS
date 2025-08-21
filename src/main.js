@@ -8,6 +8,7 @@ import { createPlayer } from './player.js';
 import { MOTTOS } from './mottos.js';
 import { CARDS } from '../data/cards.js';
 import { Campaign } from './campaign.js';
+import { MetroidvaniaGame } from './metroidvania.js';
 import { 
   getUnlockedCards, 
   isCardUnlocked, 
@@ -3087,6 +3088,12 @@ document.addEventListener('DOMContentLoaded', () => {
       startTournament();
     };
     
+    // Metroidvania button handler
+    document.getElementById('metroidvaniaBtn').onclick = () => {
+      modal.hidden = true;
+      startMetroidvania();
+    };
+    
     // Reset all data button handler
     document.getElementById('resetAllDataBtn').onclick = () => {
       resetAllGameData();
@@ -3495,6 +3502,105 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Initial render
     if (window.render) window.render();
+  }
+
+  // Metroidvania Functions
+  let currentMetroidvaniaGame = null;
+  let metroidvaniaAnimationId = null;
+  
+  function startMetroidvania() {
+    // Hide main game UI
+    document.querySelector('.wrap').style.display = 'none';
+    
+    // Show metroidvania UI
+    const metroidvaniaUI = document.getElementById('metroidvaniaUI');
+    metroidvaniaUI.hidden = false;
+    
+    // Create new metroidvania game
+    currentMetroidvaniaGame = new MetroidvaniaGame();
+    
+    // Get canvas and start rendering
+    const canvas = document.getElementById('metroidvaniaCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Set up event listeners
+    setupMetroidvaniaControls();
+    
+    // Start game loop
+    function gameLoop(timestamp) {
+      if (currentMetroidvaniaGame) {
+        currentMetroidvaniaGame.update(timestamp);
+        currentMetroidvaniaGame.render(ctx);
+        metroidvaniaAnimationId = requestAnimationFrame(gameLoop);
+      }
+    }
+    
+    metroidvaniaAnimationId = requestAnimationFrame(gameLoop);
+  }
+  
+  function setupMetroidvaniaControls() {
+    // Add key event listeners
+    const handleKeyDown = (event) => {
+      if (currentMetroidvaniaGame) {
+        currentMetroidvaniaGame.onKeyDown(event);
+      }
+    };
+    
+    const handleKeyUp = (event) => {
+      if (currentMetroidvaniaGame) {
+        currentMetroidvaniaGame.onKeyUp(event);
+      }
+    };
+    
+    // Prevent default for game keys
+    const handleKeyPress = (event) => {
+      if (['w', 'a', 's', 'd', 'W', 'A', 'S', 'D', ' ', 'q', 'Q', 'e', 'E'].includes(event.key)) {
+        event.preventDefault();
+      }
+    };
+    
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('keyup', handleKeyUp);
+    document.addEventListener('keypress', handleKeyPress);
+    
+    // Quit button handler
+    document.getElementById('metroidvaniaQuit').onclick = () => {
+      exitMetroidvania();
+    };
+    
+    // Store references for cleanup
+    currentMetroidvaniaGame.keyHandlers = {
+      keydown: handleKeyDown,
+      keyup: handleKeyUp,
+      keypress: handleKeyPress
+    };
+  }
+  
+  function exitMetroidvania() {
+    // Stop game loop
+    if (metroidvaniaAnimationId) {
+      cancelAnimationFrame(metroidvaniaAnimationId);
+      metroidvaniaAnimationId = null;
+    }
+    
+    // Clean up event listeners
+    if (currentMetroidvaniaGame && currentMetroidvaniaGame.keyHandlers) {
+      document.removeEventListener('keydown', currentMetroidvaniaGame.keyHandlers.keydown);
+      document.removeEventListener('keyup', currentMetroidvaniaGame.keyHandlers.keyup);
+      document.removeEventListener('keypress', currentMetroidvaniaGame.keyHandlers.keypress);
+    }
+    
+    // Clean up game
+    currentMetroidvaniaGame = null;
+    
+    // Hide metroidvania UI
+    document.getElementById('metroidvaniaUI').hidden = true;
+    
+    // Show main game UI
+    document.querySelector('.wrap').style.display = 'block';
+    
+    // Return to start screen
+    showStart();
   }
 
   // Expose Tournament functions for UI event handlers

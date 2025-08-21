@@ -1806,3 +1806,74 @@ button.card:disabled {
     gap: 4px;
   }
 }
+
+/* Metroidvania Mode Styles */
+.metroidvania-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: var(--bg);
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.metroidvania-container[hidden] {
+  display: none !important;
+}
+
+.metroidvania-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 800px;
+  margin-bottom: 20px;
+}
+
+.metroidvania-header h2 {
+  color: var(--accent);
+  margin: 0;
+  font-size: 16px;
+}
+
+.metroidvania-game {
+  border: 3px solid var(--border);
+  border-radius: 8px;
+  background: #000;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+#metroidvaniaCanvas {
+  display: block;
+  background: #1a1a2e;
+}
+
+.metroidvania-instructions {
+  background: var(--panel);
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  padding: 12px;
+  max-width: 800px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.metroidvania-instructions div {
+  margin: 4px 0;
+  color: var(--ink);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.metroidvania-instructions div:first-child {
+  color: var(--accent);
+  font-weight: bold;
+  margin-bottom: 8px;
+}
