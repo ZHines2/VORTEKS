@@ -365,16 +365,39 @@ class MetroidvaniaGame {
     }
   }
   
+  // Create enemy stats based on type and level
+  createEnemyStats(type, level) {
+    const baseStats = {
+      bruiser: { hp: 15, persona: 'Brutal Bruiser', color: '#ff4444' },
+      doctor: { hp: 12, persona: 'Mystic Doctor', color: '#44ff44' },
+      trickster: { hp: 10, persona: 'Cunning Trickster', color: '#ffff44' },
+      cat: { hp: 8, persona: 'Feral Cat', color: '#ff44ff' },
+      robot: { hp: 18, persona: 'Steel Automaton', color: '#4444ff' }
+    };
+    
+    const enemyBase = baseStats[type] || baseStats.bruiser;
+    const hpBonus = level * 3; // Scale HP with level
+    
+    return {
+      hp: enemyBase.hp + hpBonus,
+      maxHP: enemyBase.hp + hpBonus,
+      persona: enemyBase.persona,
+      type: type,
+      level: level,
+      color: enemyBase.color,
+      status: {} // For status effects like burn, stun, etc.
+    };
+  }
+
   // Start battle with enemy
   startBattle(enemy) {
     this.gameState = 'battle';
     
-    // Create AI opponent
-    const aiPlayer = createAIPlayer(enemy.type, enemy.level);
-    aiPlayer.deck = makePersonaDeck(enemy.type, enemy.level);
+    // Create proper enemy with stats based on type and level
+    const enemyStats = this.createEnemyStats(enemy.type, enemy.level);
     
     this.currentBattle = {
-      enemy: aiPlayer,
+      enemy: enemyStats,
       enemyData: enemy,
       playerInitialCards: [...this.player.cards],
       battleState: 'player_turn' // 'player_turn', 'enemy_turn', 'ended'
@@ -400,8 +423,8 @@ class MetroidvaniaGame {
       this.battleMenu.options.push({
         text: `Attack (Strike)`,
         action: 'strike',
-        cost: 1,
-        enabled: this.player.ghis >= 1,
+        cost: 0, // Strike costs no ghis - basic attack
+        enabled: true, // Always enabled since it costs nothing
         description: `Deal ${3 + this.player.stats.strike} damage`
       });
     }
@@ -410,8 +433,8 @@ class MetroidvaniaGame {
       this.battleMenu.options.push({
         text: `Defend (Shield)`,
         action: 'shield',
-        cost: 1,
-        enabled: this.player.ghis >= 1,
+        cost: 0, // Shield costs no ghis - basic defense
+        enabled: true, // Always enabled since it costs nothing
         description: `Block ${5 + this.player.stats.shield} damage`
       });
     }
@@ -481,20 +504,20 @@ class MetroidvaniaGame {
     
     switch (selectedOption.action) {
       case 'strike':
-        if (this.player.abilities.has('strike') && this.player.ghis >= 1) {
+        if (this.player.abilities.has('strike')) {
           const damage = 3 + this.player.stats.strike;
           this.currentBattle.enemy.hp -= damage;
-          this.player.ghis -= 1;
+          // Strike costs no ghis - removed ghis consumption
           success = true;
           this.logBattleAction(`You strike for ${damage} damage!`);
         }
         break;
         
       case 'shield':
-        if (this.player.abilities.has('shield') && this.player.ghis >= 1) {
+        if (this.player.abilities.has('shield')) {
           const shieldAmount = 5 + this.player.stats.shield;
           this.player.shield = (this.player.shield || 0) + shieldAmount;
-          this.player.ghis -= 1;
+          // Shield costs no ghis - removed ghis consumption
           success = true;
           this.logBattleAction(`You gain ${shieldAmount} shield!`);
         }
