@@ -12,17 +12,20 @@ class MetroidvaniaGame {
     this.player = {
       x: 0,
       y: 0,
-      hp: 20,
-      maxHP: 20,
-      ghis: 3, // Energy system renamed to GHIS
-      maxGhis: 3,
+      hp: 5,  // Start with 5 HP from first heart card
+      maxHP: 5,
+      ghis: 0, // Start with no ghis - will be set by surge cards
+      maxGhis: 0,
       cards: [], // Player's collected cards
       abilities: new Set(), // Unlocked abilities
       stats: {
         strike: 0,
         shield: 0,
         surge: 0,
-        pierce: 0
+        pierce: 0,
+        hope: 0,
+        zap: 0,
+        ignite: 0
       }
     };
     
@@ -34,7 +37,22 @@ class MetroidvaniaGame {
     this.loot = new Map(); // Position -> loot data
     this.discovered = new Set(); // Discovered cell positions
     
-    this.gameState = 'exploring'; // 'exploring', 'battle', 'paused'
+    this.gameState = 'judge_intro'; // Start with JUDGE introduction
+    this.judgeDialogue = {
+      visible: true,
+      currentStep: 0,
+      steps: [
+        "The world as you know it is crumbling.",
+        "Beyond this point is madness - fortunately for you, KNOWLEDGE is the legacy of mankind.",
+        "I cannot betray what remnants of truth may have been left behind.",
+        "But I can give you these three cards to begin your journey:",
+        "Strike - to attack your foes",
+        "Heart - to preserve your life force", 
+        "Shield - to defend against harm",
+        "Use them wisely. The maze holds many secrets..."
+      ]
+    };
+    
     this.currentBattle = null;
     this.battleMenu = {
       visible: false,
@@ -58,10 +76,45 @@ class MetroidvaniaGame {
       minSwipeDistance: 50 // Minimum distance for a swipe
     };
     
-    // Initialize the game
+    // Initialize maze and spawn, but don't populate enemies yet
     this.generateMaze();
     this.spawnPlayer();
+  }
+  
+  // Handle JUDGE introduction sequence
+  advanceJudgeDialogue() {
+    if (this.gameState !== 'judge_intro') return;
+    
+    this.judgeDialogue.currentStep++;
+    
+    if (this.judgeDialogue.currentStep >= this.judgeDialogue.steps.length) {
+      // Dialogue finished, give player starting cards and begin game
+      this.giveStartingCards();
+      this.startMazeExploration();
+    }
+  }
+  
+  // Give player the three starting cards from the JUDGE
+  giveStartingCards() {
+    // Find the basic cards in the CARDS database
+    const startingCardIds = ['swords', 'heart', 'shield'];
+    
+    startingCardIds.forEach(cardId => {
+      const card = CARDS.find(c => c.id === cardId);
+      if (card) {
+        this.addCardToPlayer(card);
+      }
+    });
+    
+    this.logBattleAction("The JUDGE grants you three essential cards to begin your journey.");
+  }
+  
+  // Start the maze exploration after JUDGE sequence
+  startMazeExploration() {
+    this.gameState = 'exploring';
+    this.judgeDialogue.visible = false;
     this.populateEnemies();
+    this.logBattleAction("You enter the crumbling maze. Find more cards by defeating enemies.");
   }
   
   // Generate procedural maze using cellular automata
@@ -299,7 +352,37 @@ class MetroidvaniaGame {
         action: 'pierce',
         cost: 2,
         enabled: this.player.ghis >= 2,
-        description: `Deal ${4 + this.player.stats.pierce} piercing damage`
+        description: `Deal ${1 + this.player.stats.pierce} piercing damage`
+      });
+    }
+    
+    if (this.player.abilities.has('hope')) {
+      this.battleMenu.options.push({
+        text: `Hope (Heal)`,
+        action: 'hope',
+        cost: 1,
+        enabled: this.player.ghis >= 1,
+        description: `Heal ${1 + this.player.stats.hope} HP`
+      });
+    }
+    
+    if (this.player.abilities.has('zap')) {
+      this.battleMenu.options.push({
+        text: `Zap (Stun)`,
+        action: 'zap',
+        cost: 1,
+        enabled: this.player.ghis >= 1,
+        description: `${10 + (this.player.stats.zap * 10)}% chance to stun enemy`
+      });
+    }
+    
+    if (this.player.abilities.has('ignite')) {
+      this.battleMenu.options.push({
+        text: `Ignite (Burn)`,
+        action: 'ignite',
+        cost: 2,
+        enabled: this.player.ghis >= 2,
+        description: `Deal 2 damage + burn for ${2 + this.player.stats.ignite} turns`
       });
     }
     
@@ -349,11 +432,60 @@ class MetroidvaniaGame {
         
       case 'pierce':
         if (this.player.abilities.has('pierce') && this.player.ghis >= 2) {
-          const damage = 4 + this.player.stats.pierce;
+          const damage = 1 + this.player.stats.pierce;
           this.currentBattle.enemy.hp -= damage;
           this.player.ghis -= 2;
           success = true;
           this.logBattleAction(`You pierce for ${damage} damage (ignores armor)!`);
+        }
+        break;
+        
+      case 'hope':
+        if (this.player.abilities.has('hope') && this.player.ghis >= 1) {
+          const healAmount = 1 + this.player.stats.hope;
+          this.player.hp = Math.min(this.player.maxHP, this.player.hp + healAmount);
+          this.player.ghis -= 1;
+          success = true;
+          this.logBattleAction(`You use Hope to heal ${healAmount} HP!`);
+        }
+        break;
+        
+      case 'zap':
+        if (this.player.abilities.has('zap') && this.player.ghis >= 1) {
+          const stunChance = 10 + (this.player.stats.zap * 10);
+          const stunSuccess = Math.random() * 100 < stunChance;
+          
+          if (stunSuccess) {
+            // Add stun status to enemy (freeze their next turn)
+            this.currentBattle.enemy.status = this.currentBattle.enemy.status || {};
+            this.currentBattle.enemy.status.stunned = true;
+            this.logBattleAction(`You zap the enemy! They are stunned and will lose their next turn!`);
+          } else {
+            this.logBattleAction(`You zap the enemy, but they resist the stun effect.`);
+          }
+          
+          // Small damage regardless
+          this.currentBattle.enemy.hp -= 1;
+          this.player.ghis -= 1;
+          success = true;
+        }
+        break;
+        
+      case 'ignite':
+        if (this.player.abilities.has('ignite') && this.player.ghis >= 2) {
+          const damage = 2;
+          const burnTurns = 2 + this.player.stats.ignite;
+          
+          this.currentBattle.enemy.hp -= damage;
+          
+          // Add burn status
+          this.currentBattle.enemy.status = this.currentBattle.enemy.status || {};
+          this.currentBattle.enemy.status.burn = (this.currentBattle.enemy.status.burn || 0) + 1;
+          this.currentBattle.enemy.status.burnTurns = (this.currentBattle.enemy.status.burnTurns || 0) + burnTurns;
+          
+          this.player.ghis -= 2;
+          success = true;
+          this.logBattleAction(`You ignite the enemy for ${damage} damage + burn for ${burnTurns} turns!`);
         }
         break;
         
@@ -391,7 +523,26 @@ class MetroidvaniaGame {
     
     const enemy = this.currentBattle.enemy;
     
-    // Simple AI: random attack
+    // Check if enemy is stunned
+    if (enemy.status && enemy.status.stunned) {
+      this.logBattleAction(`${enemy.persona || 'Enemy'} is stunned and loses their turn!`);
+      enemy.status.stunned = false; // Remove stun after one turn
+      
+      // Apply burn damage if present
+      this.applyEnemyStatusEffects(enemy);
+      
+      this.checkBattleEnd();
+      if (this.gameState === 'battle') {
+        this.currentBattle.battleState = 'player_turn';
+        // Regenerate some GHIS
+        this.player.ghis = Math.min(this.player.maxGhis, this.player.ghis + 1);
+        // Reinitialize menu for next turn
+        this.initializeBattleMenu();
+      }
+      return;
+    }
+    
+    // Normal enemy attack
     const damage = Math.floor(Math.random() * 4) + 2;
     let actualDamage = damage;
     
@@ -402,7 +553,10 @@ class MetroidvaniaGame {
     }
     
     this.player.hp -= Math.max(0, actualDamage);
-    this.logBattleAction(`${enemy.persona} attacks for ${damage} damage!`);
+    this.logBattleAction(`${enemy.persona || 'Enemy'} attacks for ${damage} damage!`);
+    
+    // Apply status effects at end of turn
+    this.applyEnemyStatusEffects(enemy);
     
     this.checkBattleEnd();
     if (this.gameState === 'battle') {
@@ -411,6 +565,26 @@ class MetroidvaniaGame {
       this.player.ghis = Math.min(this.player.maxGhis, this.player.ghis + 1);
       // Reinitialize menu for next turn
       this.initializeBattleMenu();
+    }
+  }
+  
+  // Apply status effects to enemy at end of their turn
+  applyEnemyStatusEffects(enemy) {
+    if (!enemy.status) return;
+    
+    // Apply burn damage
+    if (enemy.status.burn && enemy.status.burnTurns > 0) {
+      const burnDamage = enemy.status.burn;
+      enemy.hp -= burnDamage;
+      enemy.status.burnTurns--;
+      
+      this.logBattleAction(`${enemy.persona || 'Enemy'} takes ${burnDamage} burn damage!`);
+      
+      // Remove burn if duration is over
+      if (enemy.status.burnTurns <= 0) {
+        enemy.status.burn = 0;
+        enemy.status.burnTurns = 0;
+      }
     }
   }
   
@@ -465,12 +639,13 @@ class MetroidvaniaGame {
   // Generate loot from defeated enemy
   generateLoot(enemy) {
     const lootCards = [];
+    // Include maze explorer cards in the loot pool
     const cardPool = CARDS.filter(card => 
-      ['heart', 'swords', 'shield', 'surge', 'pierce'].includes(card.id)
+      ['heart', 'swords', 'shield', 'surge', 'mazepierce', 'hope', 'zap', 'ignite'].includes(card.id)
     );
     
-    // Number of cards based on enemy level
-    const numCards = enemy.level;
+    // Number of cards based on enemy level (ensure at least 1 card drops)
+    const numCards = Math.max(1, enemy.level);
     
     for (let i = 0; i < numCards; i++) {
       const card = cardPool[Math.floor(Math.random() * cardPool.length)];
@@ -498,17 +673,33 @@ class MetroidvaniaGame {
         
       case 'surge': // Surge cards affect max GHIS
         this.player.stats.surge++;
-        this.player.maxGhis = Math.min(10, 3 + this.player.stats.surge);
+        this.player.maxGhis = Math.max(1, this.player.stats.surge); // Start with 1 ghis per surge card
+        this.player.ghis = this.player.maxGhis; // Restore ghis when gaining surge
         break;
         
-      case 'pierce': // Pierce cards
+      case 'mazepierce': // Pierce cards
         this.player.abilities.add('pierce');
         this.player.stats.pierce++;
         break;
         
-      case 'heart': // Heart cards increase max HP
-        this.player.maxHP += 2;
-        this.player.hp += 2; // Also heal
+      case 'heart': // Heart cards increase max HP by 5 (as per problem statement)
+        this.player.maxHP += 5;
+        this.player.hp = Math.min(this.player.maxHP, this.player.hp + 5); // Heal when gaining heart
+        break;
+        
+      case 'hope': // Hope cards for healing ability
+        this.player.abilities.add('hope');
+        this.player.stats.hope++;
+        break;
+        
+      case 'zap': // Zap cards for stunning
+        this.player.abilities.add('zap');
+        this.player.stats.zap++;
+        break;
+        
+      case 'ignite': // Ignite cards for burn damage
+        this.player.abilities.add('ignite');
+        this.player.stats.ignite++;
         break;
     }
     
@@ -564,6 +755,12 @@ class MetroidvaniaGame {
     ctx.fillStyle = '#1a1a2e';
     ctx.fillRect(0, 0, viewportWidth, viewportHeight);
     
+    // Render JUDGE dialogue if in intro state
+    if (this.gameState === 'judge_intro') {
+      this.renderJudgeDialogue(ctx, viewportWidth, viewportHeight);
+      return;
+    }
+    
     // Render maze
     this.renderMaze(ctx, viewportWidth, viewportHeight);
     
@@ -577,6 +774,74 @@ class MetroidvaniaGame {
     if (this.gameState === 'battle') {
       this.renderBattleUI(ctx, viewportWidth, viewportHeight);
     }
+  }
+  
+  // Render JUDGE introduction dialogue
+  renderJudgeDialogue(ctx, viewportWidth, viewportHeight) {
+    // Dark background
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.95)';
+    ctx.fillRect(0, 0, viewportWidth, viewportHeight);
+    
+    // JUDGE figure (centered, imposing)
+    ctx.fillStyle = '#ffd700';
+    ctx.font = 'bold 48px serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('⚖️', viewportWidth / 2, 150);
+    
+    ctx.fillStyle = '#ffd700';
+    ctx.font = 'bold 24px serif';
+    ctx.fillText('THE JUDGE', viewportWidth / 2, 200);
+    
+    // Current dialogue text
+    const currentText = this.judgeDialogue.steps[this.judgeDialogue.currentStep];
+    if (currentText) {
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '18px serif';
+      ctx.textAlign = 'center';
+      
+      // Word wrap the text
+      const maxWidth = viewportWidth - 100;
+      const words = currentText.split(' ');
+      let line = '';
+      let y = 300;
+      
+      for (let n = 0; n < words.length; n++) {
+        const testLine = line + words[n] + ' ';
+        const metrics = ctx.measureText(testLine);
+        const testWidth = metrics.width;
+        
+        if (testWidth > maxWidth && n > 0) {
+          ctx.fillText(line, viewportWidth / 2, y);
+          line = words[n] + ' ';
+          y += 30;
+        } else {
+          line = testLine;
+        }
+      }
+      ctx.fillText(line, viewportWidth / 2, y);
+    }
+    
+    // Progress indicator
+    ctx.fillStyle = '#888888';
+    ctx.font = '14px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${this.judgeDialogue.currentStep + 1} / ${this.judgeDialogue.steps.length}`, viewportWidth / 2, viewportHeight - 80);
+    
+    // Instructions
+    ctx.fillStyle = '#4ecdc4';
+    ctx.font = '16px serif';
+    ctx.textAlign = 'center';
+    
+    // Detect touch device
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    
+    if (isTouchDevice) {
+      ctx.fillText('Tap to continue...', viewportWidth / 2, viewportHeight - 40);
+    } else {
+      ctx.fillText('Press SPACE or ENTER to continue...', viewportWidth / 2, viewportHeight - 40);
+    }
+    
+    ctx.textAlign = 'left'; // Reset alignment
   }
   
   // Render maze
@@ -765,7 +1030,10 @@ class MetroidvaniaGame {
         strike: '⚔️',
         shield: '🛡️',
         pierce: '🗡️',
-        surge: '⚡'
+        surge: '⚡',
+        hope: '🕊️',
+        zap: '⚡',
+        ignite: '🔥'
       };
       ctx.fillStyle = '#ffffff';
       ctx.fillText(`${abilityIcons[ability] || '•'} ${ability}: ${stat}`, 30, abilityY);
@@ -943,7 +1211,12 @@ class MetroidvaniaGame {
   
   // Handle input
   handleInput() {
-    if (this.gameState === 'exploring') {
+    if (this.gameState === 'judge_intro') {
+      // Handle JUDGE dialogue progression
+      if (this.keys.has(' ') || this.keys.has('Enter')) {
+        this.advanceJudgeDialogue();
+      }
+    } else if (this.gameState === 'exploring') {
       if (this.keys.has('w') || this.keys.has('W')) this.movePlayer(0, -1);
       if (this.keys.has('s') || this.keys.has('S')) this.movePlayer(0, 1);
       if (this.keys.has('a') || this.keys.has('A')) this.movePlayer(-1, 0);
@@ -1037,6 +1310,12 @@ class MetroidvaniaGame {
     const touch = event.changedTouches[0];
     this.touchState.endX = touch.clientX;
     this.touchState.endY = touch.clientY;
+    
+    // Handle JUDGE dialogue touch interaction
+    if (this.gameState === 'judge_intro') {
+      this.advanceJudgeDialogue();
+      return;
+    }
     
     // Handle battle menu touch interaction
     if (this.gameState === 'battle' && this.battleMenu.visible) {

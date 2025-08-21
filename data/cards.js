@@ -289,5 +289,71 @@ export const CARDS = [
     status: { target: { burn: null, freezeEnergy: 0, infectStatus: true }, self: { nextPlus: 0, maxEnergyDelta: 0, energyNowDelta: 0, cleanse: false } }, 
     scaling: {}, 
     ai: { role: 'attrition', pri: 60 } 
+  },
+  // MAZE EXPLORER CARDS
+  { 
+    id: 'hope', 
+    sym: icons.hope, 
+    name: 'Hope', 
+    description: 'Heal +1 HP per Hope card collected. Costs ghïs energy.',
+    cost: 1, 
+    type: 'skill', 
+    tags: ['heal', 'maze'],
+    effects: { damage: 0, pierce: false, heal: 1, shield: 0, draw: 0 }, 
+    status: { target: { burn: null, freezeEnergy: 0 }, self: { nextPlus: 0, maxEnergyDelta: 0, energyNowDelta: 0, cleanse: false } }, 
+    scaling: { hopeHealing: true }, 
+    ai: { role: 'sustain', pri: 45 } 
+  },
+  { 
+    id: 'surge', 
+    sym: icons.bolt, 
+    name: 'Surge', 
+    description: 'Unlocks ghïs energy 1/1 and increases +1 per Surge card. Required for abilities.',
+    cost: 0, 
+    type: 'power', 
+    tags: ['energy', 'maze'],
+    effects: { damage: 0, pierce: false, heal: 0, shield: 0, draw: 0 }, 
+    status: { target: { burn: null, freezeEnergy: 0 }, self: { nextPlus: 0, maxEnergyDelta: 1, energyNowDelta: 1, cleanse: false } }, 
+    scaling: { ghisBoost: true }, 
+    ai: { role: 'economy', pri: 80 } 
+  },
+  { 
+    id: 'mazepierce', 
+    sym: icons.dagger, 
+    name: 'Pierce', 
+    description: 'Hit enemy through shields, ignoring defense. Deals +1 damage per Pierce card.',
+    cost: 2, 
+    type: 'attack', 
+    tags: ['pierce', 'maze'],
+    effects: { damage: 1, pierce: true, heal: 0, shield: 0, draw: 0 }, 
+    status: { target: { burn: null, freezeEnergy: 0 }, self: { nextPlus: 0, maxEnergyDelta: 0, energyNowDelta: 0, cleanse: false } }, 
+    scaling: { pierceDamage: true }, 
+    ai: { role: 'tempo', pri: 75 } 
+  },
+  { 
+    id: 'zap', 
+    sym: icons.bolt, 
+    name: 'Zap', 
+    description: 'Chance to stun opponent. Stun chance increases per Zap card collected.',
+    cost: 1, 
+    type: 'skill', 
+    tags: ['stun', 'maze'],
+    effects: { damage: 1, pierce: false, heal: 0, shield: 0, draw: 0 }, 
+    status: { target: { burn: null, freezeEnergy: 1 }, self: { nextPlus: 0, maxEnergyDelta: 0, energyNowDelta: 0, cleanse: false } }, 
+    scaling: { zapStun: true }, 
+    ai: { role: 'control', pri: 65 } 
+  },
+  { 
+    id: 'ignite', 
+    sym: icons.fire, 
+    name: 'Ignite', 
+    description: 'Cause lingering burn damage. Duration +1 per Ignite card collected.',
+    cost: 2, 
+    type: 'attack', 
+    tags: ['burn', 'maze'],
+    effects: { damage: 2, pierce: false, heal: 0, shield: 0, draw: 0 }, 
+    status: { target: { burn: { amount: 1, turns: 2 } }, self: { nextPlus: 0, maxEnergyDelta: 0, energyNowDelta: 0, cleanse: false } }, 
+    scaling: { igniteBurn: true }, 
+    ai: { role: 'attrition', pri: 70 } 
   }
 ];
