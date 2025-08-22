@@ -1219,6 +1219,19 @@ export const Game = {
   // Show victory modal with action buttons
   showVictoryModal() {
     const modal = $('#victoryModal');
+    
+    // Reset modal content to quick play mode (in case it was modified by tournament mode)
+    const titleElement = modal.querySelector('div[style*="font-size:20px"]');
+    if (titleElement) {
+      titleElement.innerHTML = '<strong>Victory!</strong>';
+      titleElement.style.color = 'var(--good)';
+    }
+    
+    const messageElement = modal.querySelector('div[style*="margin-bottom:16px"]:not([style*="font-size"])');
+    if (messageElement) {
+      messageElement.textContent = 'You defeated your opponent and your streak continues!';
+    }
+    
     modal.hidden = false;
   },
 
