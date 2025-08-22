@@ -3509,33 +3509,50 @@ document.addEventListener('DOMContentLoaded', () => {
   let metroidvaniaAnimationId = null;
   
   function startMetroidvania() {
-    // Hide main game UI
-    document.querySelector('.wrap').style.display = 'none';
-    
-    // Show metroidvania UI
-    const metroidvaniaUI = document.getElementById('metroidvaniaUI');
-    metroidvaniaUI.hidden = false;
-    
-    // Create new metroidvania game
-    currentMetroidvaniaGame = new MetroidvaniaGame();
-    
-    // Get canvas and start rendering
-    const canvas = document.getElementById('metroidvaniaCanvas');
-    const ctx = canvas.getContext('2d');
-    
-    // Set up event listeners
-    setupMetroidvaniaControls();
-    
-    // Start game loop
-    function gameLoop(timestamp) {
-      if (currentMetroidvaniaGame) {
-        currentMetroidvaniaGame.update(timestamp);
-        currentMetroidvaniaGame.render(ctx);
-        metroidvaniaAnimationId = requestAnimationFrame(gameLoop);
+    try {
+      console.log('Starting metroidvania game...');
+      
+      // Hide main game UI
+      document.querySelector('.wrap').style.display = 'none';
+      
+      // Show metroidvania UI
+      const metroidvaniaUI = document.getElementById('metroidvaniaUI');
+      metroidvaniaUI.hidden = false;
+      
+      // Create new metroidvania game
+      console.log('Creating MetroidvaniaGame instance...');
+      currentMetroidvaniaGame = new MetroidvaniaGame();
+      console.log('MetroidvaniaGame instance created successfully:', !!currentMetroidvaniaGame);
+      
+      // Get canvas and start rendering
+      const canvas = document.getElementById('metroidvaniaCanvas');
+      const ctx = canvas.getContext('2d');
+      
+      // Set up event listeners
+      setupMetroidvaniaControls();
+      
+      // Start game loop
+      function gameLoop(timestamp) {
+        if (currentMetroidvaniaGame) {
+          currentMetroidvaniaGame.update(timestamp);
+          currentMetroidvaniaGame.render(ctx);
+          metroidvaniaAnimationId = requestAnimationFrame(gameLoop);
+        }
       }
+      
+      metroidvaniaAnimationId = requestAnimationFrame(gameLoop);
+      console.log('Metroidvania game started successfully');
+    } catch (error) {
+      console.error('Error starting metroidvania game:', error);
+      console.error('Error stack:', error.stack);
+      
+      // Show error to user
+      alert('Error starting Maze Explorer: ' + error.message);
+      
+      // Hide metroidvania UI and show main UI again
+      document.getElementById('metroidvaniaUI').hidden = true;
+      document.querySelector('.wrap').style.display = '';
     }
-    
-    metroidvaniaAnimationId = requestAnimationFrame(gameLoop);
   }
   
   function setupMetroidvaniaControls() {
