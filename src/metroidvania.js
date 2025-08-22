@@ -87,7 +87,7 @@ class MetroidvaniaGame {
     this.spawnPlayer();
     
     // If skipping judge intro, set up the game immediately
-    if (hasSeenJudge) {
+    if (this.judgeDialogue.hasSeenBefore) {
       this.giveStartingCards();
       this.populateEnemies();
     }
