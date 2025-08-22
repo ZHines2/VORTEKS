@@ -37,10 +37,14 @@ class MetroidvaniaGame {
     this.loot = new Map(); // Position -> loot data
     this.discovered = new Set(); // Discovered cell positions
     
-    this.gameState = 'judge_intro'; // Start with JUDGE introduction
+    // Check if player has seen Judge dialogue before
+    const hasSeenJudge = localStorage.getItem('vorteks-judge-seen') === 'true';
+    
+    this.gameState = hasSeenJudge ? 'exploring' : 'judge_intro'; // Skip intro if seen before
     this.judgeDialogue = {
-      visible: true,
+      visible: !hasSeenJudge,
       currentStep: 0,
+      hasSeenBefore: hasSeenJudge,
       steps: [
         "The world as you know it is crumbling.",
         "Beyond this point is madness - fortunately for you, KNOWLEDGE is the legacy of mankind.",
@@ -73,12 +77,20 @@ class MetroidvaniaGame {
       endX: 0,
       endY: 0,
       isActive: false,
-      minSwipeDistance: 50 // Minimum distance for a swipe
+      minSwipeDistance: 50, // Minimum distance for a swipe
+      lastTapTime: 0, // For double-tap detection
+      doubleTapDelay: 300 // Maximum time between taps for double-tap
     };
     
-    // Initialize maze and spawn, but don't populate enemies yet
+    // Initialize maze and spawn
     this.generateMaze();
     this.spawnPlayer();
+    
+    // If skipping judge intro, set up the game immediately
+    if (hasSeenJudge) {
+      this.giveStartingCards();
+      this.populateEnemies();
+    }
   }
   
   // Handle JUDGE introduction sequence
@@ -91,7 +103,21 @@ class MetroidvaniaGame {
       // Dialogue finished, give player starting cards and begin game
       this.giveStartingCards();
       this.startMazeExploration();
+      
+      // Mark judge dialogue as seen
+      localStorage.setItem('vorteks-judge-seen', 'true');
     }
+  }
+  
+  // Skip judge dialogue entirely
+  skipJudgeDialogue() {
+    if (this.gameState !== 'judge_intro') return;
+    
+    this.giveStartingCards();
+    this.startMazeExploration();
+    
+    // Mark judge dialogue as seen
+    localStorage.setItem('vorteks-judge-seen', 'true');
   }
   
   // Give player the three starting cards from the JUDGE
@@ -929,9 +955,21 @@ class MetroidvaniaGame {
     const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     
     if (isTouchDevice) {
-      ctx.fillText('Tap to continue...', viewportWidth / 2, viewportHeight - 40);
+      ctx.fillText('Tap to continue...', viewportWidth / 2, viewportHeight - 60);
+      // Show skip option if available
+      if (this.judgeDialogue.hasSeenBefore) {
+        ctx.fillStyle = '#ffaa00';
+        ctx.font = '14px serif';
+        ctx.fillText('Double-tap to skip', viewportWidth / 2, viewportHeight - 40);
+      }
     } else {
-      ctx.fillText('Press SPACE or ENTER to continue...', viewportWidth / 2, viewportHeight - 40);
+      ctx.fillText('Press SPACE or ENTER to continue...', viewportWidth / 2, viewportHeight - 60);
+      // Show skip option if available  
+      if (this.judgeDialogue.hasSeenBefore) {
+        ctx.fillStyle = '#ffaa00';
+        ctx.font = '14px serif';
+        ctx.fillText('Press S to skip', viewportWidth / 2, viewportHeight - 40);
+      }
     }
     
     ctx.textAlign = 'left'; // Reset alignment
@@ -1309,6 +1347,10 @@ class MetroidvaniaGame {
       if (this.keys.has(' ') || this.keys.has('Enter')) {
         this.advanceJudgeDialogue();
       }
+      // Handle skip option if available
+      if ((this.keys.has('s') || this.keys.has('S')) && this.judgeDialogue.hasSeenBefore) {
+        this.skipJudgeDialogue();
+      }
     } else if (this.gameState === 'exploring') {
       if (this.keys.has('w') || this.keys.has('W')) this.movePlayer(0, -1);
       if (this.keys.has('s') || this.keys.has('S')) this.movePlayer(0, 1);
@@ -1413,7 +1455,17 @@ class MetroidvaniaGame {
     
     // Handle JUDGE dialogue touch interaction
     if (this.gameState === 'judge_intro') {
-      this.advanceJudgeDialogue();
+      const currentTime = Date.now();
+      const timeSinceLastTap = currentTime - this.touchState.lastTapTime;
+      
+      // Check for double-tap to skip (if available)
+      if (timeSinceLastTap < this.touchState.doubleTapDelay && this.judgeDialogue.hasSeenBefore) {
+        this.skipJudgeDialogue();
+      } else {
+        this.advanceJudgeDialogue();
+      }
+      
+      this.touchState.lastTapTime = currentTime;
       return;
     }
     
