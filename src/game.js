@@ -279,6 +279,9 @@ export const Game = {
 
   startTurn(p) {
     p.status.firstAttackUsed = false;
+    
+    // Reset card play counter to prevent false positives from previous turns
+    p.cardPlayCount = {};
     if (p.status.frozenNext) { 
       p.energyPenaltyNext = 1; 
       p.status.frozenNext = 0; 
@@ -471,6 +474,24 @@ export const Game = {
     const card = p.hand[idx]; 
     if (!card) return; 
     if (!p.canAfford(card)) return;
+    
+    // Safety check: prevent potential infinite loops with rapid card repeats
+    if (!this.isEchoing) {
+      if (!p.cardPlayCount) p.cardPlayCount = {};
+      p.cardPlayCount[card.id] = (p.cardPlayCount[card.id] || 0) + 1;
+      
+      // If same card played more than 15 times this turn, it might be an infinite loop
+      if (p.cardPlayCount[card.id] > 15) {
+        const isPlayer = (p === this.you);
+        const cardName = card.name || card.id;
+        if (isPlayer) {
+          logYou(`${cardName} loop safety triggered - preventing infinite loop`);
+        } else {
+          logOpp(`${cardName} loop safety triggered - preventing infinite loop`);
+        }
+        return false;
+      }
+    }
     
     // Log card play
     const isPlayer = (p === this.you);
@@ -1219,6 +1240,19 @@ export const Game = {
   // Show victory modal with action buttons
   showVictoryModal() {
     const modal = $('#victoryModal');
+    
+    // Reset modal content to quick play mode (in case it was modified by tournament mode)
+    const titleElement = modal.querySelector('div[style*="font-size:20px"]');
+    if (titleElement) {
+      titleElement.innerHTML = '<strong>Victory!</strong>';
+      titleElement.style.color = 'var(--good)';
+    }
+    
+    const messageElement = modal.querySelector('div[style*="margin-bottom:16px"]:not([style*="font-size"])');
+    if (messageElement) {
+      messageElement.textContent = 'You defeated your opponent and your streak continues!';
+    }
+    
     modal.hidden = false;
   },
 

@@ -482,7 +482,7 @@ button.card:disabled {
   align-items:center; 
   justify-content:center; 
   background:#000a;
-  z-index: 100; /* Higher than top menu buttons (z-index: 50) */
+  z-index: 3000; /* Higher than metroidvania container (z-index: 2000) */
   /* Mobile safe area support */
   padding-top: max(20px, env(safe-area-inset-top));
   padding-bottom: max(20px, env(safe-area-inset-bottom));
@@ -1836,6 +1836,11 @@ button.card:disabled {
   margin-bottom: 20px;
 }
 
+.metroidvania-header-buttons {
+  display: flex;
+  gap: 8px;
+}
+
 .metroidvania-header h2 {
   color: var(--accent);
   margin: 0;
@@ -1919,4 +1924,46 @@ button.card:disabled {
   color: var(--accent);
   font-weight: bold;
   margin-bottom: 8px;
+}
+
+/* Maze Equipment Modal Styles */
+.maze-ability-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  margin: 4px 0;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.maze-ability-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.maze-ability-name {
+  font-weight: bold;
+  color: var(--accent);
+}
+
+.maze-ability-cost {
+  color: #4ecdc4;
+  font-size: 12px;
+}
+
+.maze-ability-stats {
+  color: #ffd700;
+  font-size: 12px;
+}
+
+.maze-card-item {
+  display: inline-block;
+  padding: 4px 8px;
+  margin: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--ink);
 }

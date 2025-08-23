@@ -634,14 +634,24 @@ class MetroidvaniaGame {
   }
   
   // Execute enemy turn
-  
-  // Enemy AI turn
-  // Execute enemy turn
   executeEnemyTurn() {
     if (this.gameState !== 'battle') return;
     
     const enemy = this.currentBattle.enemy;
     
+    // Add enemy turn animation state
+    this.enemyTurnPhase = 'thinking';
+    this.enemyTurnTimer = 0;
+    
+    // Show "Enemy is thinking..." for a brief moment
+    setTimeout(() => {
+      this.enemyTurnPhase = 'acting';
+      this.processEnemyAction(enemy);
+    }, 800);
+  }
+  
+  // Process the actual enemy action
+  processEnemyAction(enemy) {
     // Check if enemy is stunned
     if (enemy.status && enemy.status.stunned) {
       this.logBattleAction(`${enemy.persona || 'Enemy'} is stunned and loses their turn!`);
@@ -650,33 +660,126 @@ class MetroidvaniaGame {
       // Apply burn damage if present
       this.applyEnemyStatusEffects(enemy);
       
-      this.checkBattleEnd();
-      if (this.gameState === 'battle') {
-        this.currentBattle.battleState = 'player_turn';
-        // Regenerate some GHIS
-        this.player.ghis = Math.min(this.player.maxGhis, this.player.ghis + 1);
-        // Reinitialize menu for next turn
-        this.initializeBattleMenu();
-      }
+      this.endEnemyTurn();
       return;
     }
     
-    // Normal enemy attack
-    const damage = Math.floor(Math.random() * 4) + 2;
+    // Enemy AI decision making
+    const actions = this.getEnemyActions(enemy);
+    const selectedAction = this.selectEnemyAction(actions, enemy);
+    
+    // Execute the selected action
+    this.executeEnemyAction(selectedAction, enemy);
+    
+    // Apply status effects at end of turn
+    this.applyEnemyStatusEffects(enemy);
+    
+    this.endEnemyTurn();
+  }
+  
+  // Get available enemy actions based on type and status
+  getEnemyActions(enemy) {
+    const actions = [];
+    
+    // All enemies can attack
+    actions.push({
+      type: 'attack',
+      damage: this.getEnemyAttackDamage(enemy),
+      priority: 70
+    });
+    
+    // Some enemies have special abilities based on type
+    switch (enemy.type) {
+      case 'doctor':
+        if (enemy.hp < enemy.maxHP * 0.5) {
+          actions.push({ type: 'heal', amount: 3, priority: 90 });
+        }
+        break;
+      case 'trickster':
+        actions.push({ type: 'stun_attempt', priority: 60 });
+        break;
+      case 'robot':
+        if (Math.random() < 0.3) {
+          actions.push({ type: 'power_attack', damage: this.getEnemyAttackDamage(enemy) * 1.5, priority: 80 });
+        }
+        break;
+    }
+    
+    return actions;
+  }
+  
+  // Select best enemy action based on AI logic
+  selectEnemyAction(actions, enemy) {
+    // Simple AI: pick highest priority action, with some randomness
+    const sortedActions = actions.sort((a, b) => b.priority - a.priority);
+    
+    // 70% chance to pick best action, 30% chance for variety
+    if (Math.random() < 0.7) {
+      return sortedActions[0];
+    } else {
+      return sortedActions[Math.floor(Math.random() * sortedActions.length)];
+    }
+  }
+  
+  // Execute the enemy's selected action
+  executeEnemyAction(action, enemy) {
+    switch (action.type) {
+      case 'attack':
+        this.performEnemyAttack(action.damage, enemy);
+        break;
+      case 'power_attack':
+        this.logBattleAction(`${enemy.persona} charges up for a powerful attack!`);
+        this.performEnemyAttack(action.damage, enemy);
+        break;
+      case 'heal':
+        enemy.hp = Math.min(enemy.maxHP, enemy.hp + action.amount);
+        this.logBattleAction(`${enemy.persona} heals for ${action.amount} HP!`);
+        break;
+      case 'stun_attempt':
+        if (Math.random() < 0.3) {
+          this.player.stunned = true;
+          this.logBattleAction(`${enemy.persona} attempts to confuse you! You feel disoriented!`);
+        } else {
+          this.logBattleAction(`${enemy.persona} tries to confuse you, but you resist!`);
+        }
+        break;
+    }
+  }
+  
+  // Perform enemy attack
+  performEnemyAttack(damage, enemy) {
     let actualDamage = damage;
     
     if (this.player.shield > 0) {
       const shieldBlock = Math.min(this.player.shield, damage);
       this.player.shield -= shieldBlock;
       actualDamage -= shieldBlock;
+      this.logBattleAction(`Your shield blocks ${shieldBlock} damage!`);
     }
     
     this.player.hp -= Math.max(0, actualDamage);
-    this.logBattleAction(`${enemy.persona || 'Enemy'} attacks for ${damage} damage!`);
+    this.logBattleAction(`${enemy.persona} attacks for ${actualDamage} damage!`);
+  }
+  
+  // Get enemy attack damage based on type and level
+  getEnemyAttackDamage(enemy) {
+    const baseDamage = {
+      bruiser: 4,
+      doctor: 2,
+      trickster: 3,
+      cat: 2,
+      robot: 5
+    };
     
-    // Apply status effects at end of turn
-    this.applyEnemyStatusEffects(enemy);
+    const base = baseDamage[enemy.type] || 3;
+    const levelBonus = Math.floor(enemy.level / 2);
+    const variance = Math.floor(Math.random() * 3); // 0-2 random variance
     
+    return base + levelBonus + variance;
+  }
+  
+  // End enemy turn and transition back to player
+  endEnemyTurn() {
     this.checkBattleEnd();
     if (this.gameState === 'battle') {
       this.currentBattle.battleState = 'player_turn';
@@ -684,6 +787,9 @@ class MetroidvaniaGame {
       this.player.ghis = Math.min(this.player.maxGhis, this.player.ghis + 1);
       // Reinitialize menu for next turn
       this.initializeBattleMenu();
+      
+      // Reset enemy turn state
+      this.enemyTurnPhase = null;
     }
   }
   
@@ -743,16 +849,12 @@ class MetroidvaniaGame {
   
   // Player loses battle
   loseBattle() {
-    this.logBattleAction('Defeat! You respawn at a safe location.');
-    
-    // Respawn logic - move to a safe area
-    this.findSafeRespawn();
-    this.player.hp = Math.floor(this.player.maxHP / 2);
-    this.player.shield = 0;
-    
-    this.gameState = 'exploring';
+    this.gameState = 'game_over';
     this.currentBattle = null;
     this.battleMenu.visible = false;
+    
+    // Show Judge game over modal
+    this.showJudgeGameOver();
   }
   
   // Generate loot from defeated enemy
@@ -861,6 +963,143 @@ class MetroidvaniaGame {
   logBattleAction(message) {
     console.log(`[BATTLE] ${message}`);
     // Could integrate with existing UI logging system
+  }
+  
+  // Show Judge game over modal
+  showJudgeGameOver() {
+    const modal = document.getElementById('judgeGameOverModal');
+    const textElement = document.getElementById('judgeGameOverText');
+    
+    const gameOverMessages = [
+      "Your journey ends here, explorer. But knowledge is eternal...",
+      "The maze claims another soul. Yet wisdom persists beyond death.",
+      "You have fallen, but your discoveries live on. Rise again, if you dare.",
+      "Death is but a teacher. What lessons will you carry forward?",
+      "The shadows consume you, but the light of understanding remains.",
+      "Your path ends in darkness, but others may find the way..."
+    ];
+    
+    const randomMessage = gameOverMessages[Math.floor(Math.random() * gameOverMessages.length)];
+    textElement.textContent = `"${randomMessage}"`;
+    
+    if (modal) {
+      modal.hidden = false;
+    }
+  }
+  
+  // Restart the maze exploration
+  restartExploration() {
+    // Reset player to starting state
+    this.player = {
+      x: 0,
+      y: 0,
+      hp: 5,
+      maxHP: 5,
+      ghis: 0,
+      maxGhis: 0,
+      cards: [],
+      abilities: new Set(),
+      stats: {
+        strike: 0,
+        shield: 0,
+        surge: 0,
+        pierce: 0,
+        hope: 0,
+        zap: 0,
+        ignite: 0
+      }
+    };
+    
+    // Generate new maze
+    this.generateMaze();
+    
+    // Reset game state
+    this.gameState = 'exploring';
+    this.currentBattle = null;
+    this.battleMenu.visible = false;
+    this.discovered.clear();
+    this.camera = { x: 0, y: 0 };
+    
+    // Hide game over modal
+    const modal = document.getElementById('judgeGameOverModal');
+    if (modal) {
+      modal.hidden = true;
+    }
+  }
+  
+  // Show equipment menu
+  showEquipmentMenu() {
+    this.updateEquipmentModal();
+    const modal = document.getElementById('mazeEquipmentModal');
+    if (modal) {
+      modal.hidden = false;
+    }
+  }
+  
+  // Update equipment modal content
+  updateEquipmentModal() {
+    // Update player stats
+    document.getElementById('mazeStatsHP').textContent = `${this.player.hp}/${this.player.maxHP}`;
+    document.getElementById('mazeStatsGHIS').textContent = `${this.player.ghis}/${this.player.maxGhis}`;
+    document.getElementById('mazeStatsPos').textContent = `${this.player.x}, ${this.player.y}`;
+    document.getElementById('mazeStatsCards').textContent = this.player.cards.length;
+    
+    // Update abilities list
+    const abilitiesList = document.getElementById('mazeAbilitiesList');
+    if (this.player.abilities.size === 0) {
+      abilitiesList.innerHTML = '<div style="color:#888; text-align:center; padding:20px;">No abilities unlocked yet. Defeat enemies to find cards!</div>';
+    } else {
+      let abilitiesHTML = '';
+      for (const ability of this.player.abilities) {
+        const stat = this.player.stats[ability] || 0;
+        const abilityInfo = this.getAbilityInfo(ability);
+        abilitiesHTML += `
+          <div class="maze-ability-item">
+            <div>
+              <div class="maze-ability-name">${abilityInfo.icon} ${abilityInfo.name}</div>
+              <div style="font-size:12px; color:#bbb;">${abilityInfo.description}</div>
+            </div>
+            <div style="text-align:right;">
+              <div class="maze-ability-cost">Cost: ${abilityInfo.cost} GHIS</div>
+              <div class="maze-ability-stats">Level: ${stat}</div>
+            </div>
+          </div>
+        `;
+      }
+      abilitiesList.innerHTML = abilitiesHTML;
+    }
+    
+    // Update cards list
+    const cardsList = document.getElementById('mazeCardsList');
+    if (this.player.cards.length === 0) {
+      cardsList.innerHTML = '<div style="color:#888; text-align:center; padding:20px;">No cards collected yet.</div>';
+    } else {
+      let cardsHTML = '';
+      const cardCounts = {};
+      this.player.cards.forEach(card => {
+        cardCounts[card.name] = (cardCounts[card.name] || 0) + 1;
+      });
+      
+      for (const [cardName, count] of Object.entries(cardCounts)) {
+        cardsHTML += `<span class="maze-card-item">${cardName} ${count > 1 ? `(x${count})` : ''}</span>`;
+      }
+      cardsList.innerHTML = cardsHTML;
+    }
+  }
+  
+  // Get ability information for display
+  getAbilityInfo(ability) {
+    const abilityData = {
+      strike: { icon: '⚔️', name: 'Strike', description: 'Basic attack', cost: 0 },
+      shield: { icon: '🛡️', name: 'Shield', description: 'Block incoming damage', cost: 0 },
+      pierce: { icon: '🗡️', name: 'Pierce', description: 'Piercing attack', cost: 2 },
+      hope: { icon: '💚', name: 'Hope', description: 'Heal HP', cost: 1 },
+      zap: { icon: '⚡', name: 'Zap', description: 'Chance to stun enemy', cost: 1 },
+      ignite: { icon: '🔥', name: 'Ignite', description: 'Burn damage over time', cost: 2 },
+      surge: { icon: '⭐', name: 'Surge', description: 'Increase max GHIS', cost: 0 }
+    };
+    
+    return abilityData[ability] || { icon: '❓', name: ability, description: 'Unknown ability', cost: 0 };
   }
   
   // Render the game
@@ -1209,10 +1448,31 @@ class MetroidvaniaGame {
       ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
       ctx.fillRect(0, 0, viewportWidth, viewportHeight);
       
-      ctx.fillStyle = '#ff6b6b';
+      // Show different messages based on enemy turn phase
       ctx.font = 'bold 24px serif';
       ctx.textAlign = 'center';
-      ctx.fillText('ENEMY TURN', viewportWidth / 2, viewportHeight / 2);
+      
+      if (this.enemyTurnPhase === 'thinking') {
+        ctx.fillStyle = '#ffd700';
+        ctx.fillText('Enemy is thinking...', viewportWidth / 2, viewportHeight / 2 - 20);
+        
+        // Add thinking animation dots
+        const dots = '.'.repeat((Math.floor(Date.now() / 500) % 3) + 1);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '20px serif';
+        ctx.fillText(dots, viewportWidth / 2, viewportHeight / 2 + 10);
+      } else {
+        ctx.fillStyle = '#ff6b6b';
+        ctx.fillText('ENEMY TURN', viewportWidth / 2, viewportHeight / 2 - 20);
+        
+        // Show enemy name
+        if (this.currentBattle && this.currentBattle.enemy) {
+          ctx.fillStyle = '#ffffff';
+          ctx.font = '16px serif';
+          ctx.fillText(`${this.currentBattle.enemy.persona} acts!`, viewportWidth / 2, viewportHeight / 2 + 10);
+        }
+      }
+      
       ctx.textAlign = 'left';
       return;
     }
@@ -1356,6 +1616,11 @@ class MetroidvaniaGame {
       if (this.keys.has('s') || this.keys.has('S')) this.movePlayer(0, 1);
       if (this.keys.has('a') || this.keys.has('A')) this.movePlayer(-1, 0);
       if (this.keys.has('d') || this.keys.has('D')) this.movePlayer(1, 0);
+      
+      // Equipment menu
+      if (this.keys.has('e') || this.keys.has('E')) {
+        this.showEquipmentMenu();
+      }
       
       // DEBUG: Press 'B' to force trigger a battle for testing
       if (this.keys.has('b') || this.keys.has('B')) {
