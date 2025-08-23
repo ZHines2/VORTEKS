@@ -482,7 +482,7 @@ button.card:disabled {
   align-items:center; 
   justify-content:center; 
   background:#000a;
-  z-index: 100; /* Higher than top menu buttons (z-index: 50) */
+  z-index: 3000; /* Higher than metroidvania container (z-index: 2000) */
   /* Mobile safe area support */
   padding-top: max(20px, env(safe-area-inset-top));
   padding-bottom: max(20px, env(safe-area-inset-bottom));
