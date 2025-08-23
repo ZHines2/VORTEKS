@@ -295,13 +295,19 @@ export function runSelfTests(Game, log, showStart) {
     
     const reconsiderCard = CARDS.find(c => c.id === 'reconsider');
     
+    // Test with sufficient energy
     me.energy = 7;
     const canAfford = me.canAfford(reconsiderCard);
-    assertEqual('Reconsider card is always affordable', canAfford, true, log);
+    assertEqual('Reconsider card is affordable with 3+ energy', canAfford, true, log);
     
-    // Test the actual card playing mechanics, not just the spend function
+    // Test the actual card playing mechanics - should only cost 3 energy
     testGame.applyCard(reconsiderCard, me, foe, false);
-    assertEqual('Reconsider spends all energy', me.energy, 0, log);
+    assertEqual('Reconsider costs 3 energy', me.energy, 4, log); // 7 - 3 = 4
+    
+    // Test with insufficient energy
+    me.energy = 2;
+    const cannotAfford = me.canAfford(reconsiderCard);
+    assertEqual('Reconsider card is not affordable with <3 energy', cannotAfford, false, log);
     
     Game.setLogFunction(originalSetLog);
   }
