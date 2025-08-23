@@ -39,6 +39,9 @@ export function renderStatuses(p, nodeId, Game = null) {
   if (p.status.hopeAmount && p.status.hopeTurns > 0) {
     addTag(`🕊 Hope ${p.status.hopeAmount} (${p.status.hopeTurns})`);
   }
+  if (p.status.infect && p.status.infect > 0) {
+    addTag(`🦠 Infect ${p.status.infect}`);
+  }
   if (p.status.nextPlus) addTag('✨ +' + p.status.nextPlus + ' atk');
   if (!p.isAI && p.quirk === 'piercer' && !p.status.firstAttackUsed) addTag('⟂ pierce 1 ready');
   
