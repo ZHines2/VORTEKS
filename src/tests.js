@@ -1384,5 +1384,40 @@ export function runSelfTests(Game, log, showStart) {
     assertEqual('Freeze inflicts 1 freeze turn', foe.status.freeze, 1, log);
   }
   
+  // Test Infect status application and stacking
+  {
+    log('Testing Infect status application and stacking...');
+    const me = createPlayer(false);
+    const foe = createPlayer(true);
+    const infectCard = CARDS.find(c => c.id === 'infect');
+    
+    if (infectCard) {
+      const testGame = Object.create(Game);
+      testGame.you = me;
+      testGame.opp = foe;
+      testGame.turn = 'you';
+      testGame.over = false;
+      
+      const originalSetLog = Game.setLogFunction;
+      Game.setLogFunction(() => {});
+      
+      // Apply infect once
+      testGame.applyCard(infectCard, me, foe, false);
+      assertEqual('First Infect application', foe.status.infect, 1, log);
+      
+      // Apply infect again to test stacking
+      testGame.applyCard(infectCard, me, foe, false);
+      assertEqual('Infect stacks correctly', foe.status.infect, 2, log);
+      
+      // Test that infect status shows up correctly (just test the logic, not actual DOM)
+      const hasInfectStatus = foe.status.infect && foe.status.infect > 0;
+      assertEqual('Infect status is trackable for UI display', hasInfectStatus, true, log);
+      
+      Game.setLogFunction(originalSetLog);
+    } else {
+      log('SKIP: Infect card not found for testing');
+    }
+  }
+
   log('Self-tests complete.');
 }
