@@ -2,6 +2,24 @@
 
 This comprehensive analysis examines ALL cards and their attributes, uses, descriptions, and implementations across the VORTEKS codebase.
 
+## ⚠️ CRITICAL ARCHITECTURAL NOTE
+
+**VORTEKS has TWO SEPARATE GAME SYSTEMS that must remain isolated:**
+
+### BASE GAME SYSTEM
+- **Mode**: Standard card battles (Classic, Scrimmage, AI battles)
+- **Energy**: Regular energy system
+- **Cards**: 22 core cards with standard mechanics
+- **Location**: Used in main game modes
+
+### MAZE EXPLORER SYSTEM  
+- **Mode**: Metroidvania maze exploration 
+- **Energy**: Ghïs energy system (separate from regular energy)
+- **Cards**: 5 maze cards with collection-based scaling mechanics
+- **Location**: Isolated in metroidvania.js
+
+**⚠️ SEPARATION CRITICAL**: Updates to maze mode must NOT affect base game mechanics. Several cards have overlapping names/IDs that create confusion and potential conflicts.
+
 ## Summary
 
 **Total Cards Found:** 27 (including 1 duplicate)
@@ -72,6 +90,7 @@ This comprehensive analysis examines ALL cards and their attributes, uses, descr
 - **Implementation:** Standard burn application
 - **Tests:** ❌ No self-test
 - **Status:** ⚠️ NEEDS TESTING
+- **⚠️ MAZE CONFLICT:** In maze mode, "ignite" has different burn mechanics and scaling
 
 ### SNOW (Freeze)
 - **Name:** Freeze
@@ -92,6 +111,7 @@ This comprehensive analysis examines ALL cards and their attributes, uses, descr
 - **Implementation:** Pierce damage + card draw
 - **Tests:** ✅ Has explicit test
 - **Status:** 🟢 LOCKED IN
+- **⚠️ MAZE CONFLICT:** In maze mode, "zap" becomes a stun mechanic with different functionality
 
 ### STAR (Focus)
 - **Name:** Focus
@@ -112,6 +132,7 @@ This comprehensive analysis examines ALL cards and their attributes, uses, descr
 - **Implementation:** Pierce damage with focus scaling
 - **Tests:** ✅ Has explicit test
 - **Status:** 🟢 LOCKED IN
+- **⚠️ MAZE CONFLICT:** In maze mode, "mazepierce" has different scaling mechanics
 
 ### LOOP (Surge)
 - **Name:** Surge
@@ -122,6 +143,7 @@ This comprehensive analysis examines ALL cards and their attributes, uses, descr
 - **Implementation:** Energy ramp effect
 - **Tests:** ❌ No self-test
 - **Status:** ⚠️ NEEDS TESTING
+- **⚠️ MAZE CONFLICT:** In maze mode, "surge" uses ghïs energy system instead of regular energy
 
 ### CURIOSITY
 - **Name:** Curiosity
@@ -227,7 +249,8 @@ This comprehensive analysis examines ALL cards and their attributes, uses, descr
 - **UI Text:** "Heal 1-5 HP per turn for 3 turns. Effect stacks."
 - **Implementation:** Multi-turn healing effect
 - **Tests:** ❌ No self-test
-- **Status:** ⚠️ NEEDS TESTING + 🔴 DUPLICATE (conflicts with maze version)
+- **Status:** ⚠️ NEEDS TESTING + 🔴 **CRITICAL DUPLICATE ID CONFLICT**
+- **⚠️ MAZE CONFLICT:** In maze mode, "hope" has completely different mechanics (instant heal scaling with card count, costs ghïs energy)
 
 ### INFECT
 - **Name:** Infect
@@ -239,39 +262,65 @@ This comprehensive analysis examines ALL cards and their attributes, uses, descr
 - **Tests:** ❌ No self-test
 - **Status:** ⚠️ NEEDS TESTING
 
-## MAZE EXPLORER CARDS
+## MAZE EXPLORER CARDS - SEPARATE SYSTEM ⚠️
 
-These appear to be a separate card system for a maze exploration mode:
+**CRITICAL ARCHITECTURE NOTE**: These maze cards operate in a completely separate game mode (Metroidvania) with different mechanics. They should NOT interfere with base game functionality, but several have conflicting IDs and overlapping names that create confusion.
 
-### MAZE-HOPE (Duplicate ID!)
-- **Cost:** 1 energy
+### MAZE-HOPE (🔴 DUPLICATE ID CONFLICT!)
+- **ID:** 'hope' (CONFLICTS with base game Hope card!)
+- **Cost:** 1 ghïs energy
 - **Description:** "Heal +1 HP per Hope card collected. Costs ghïs energy."
-- **Status:** 🔴 CONFLICTS with regular Hope card
+- **Maze Mechanics:** Instant heal that scales with collected Hope cards
+- **Base Game Conflict:** Base Hope is a multi-turn healing power that costs regular energy
+- **Status:** 🔴 URGENT - Rename to avoid ID collision
 
 ### MAZE-SURGE  
-- **Cost:** 0 energy
+- **ID:** 'surge'
+- **Cost:** 0 ghïs energy
 - **Description:** "Unlocks ghïs energy 1/1 and increases +1 per Surge card."
+- **Maze Mechanics:** Uses ghïs energy system, unlocks/increases max ghïs
+- **Base Game Conflict:** Base Surge (Loop) uses regular energy system
+- **Status:** 🟡 Different mechanics but no direct ID conflict
 
 ### MAZE-PIERCE
-- **Cost:** 2 energy  
+- **ID:** 'mazepierce' (Different ID, good!)
+- **Cost:** 2 ghïs energy  
 - **Description:** "Hit enemy through shields, ignoring defense. Deals +1 damage per Pierce card."
+- **Maze Mechanics:** Damage scales with collected Pierce cards
+- **Base Game Conflict:** Base Pierce (Dagger) scales with Focus system
+- **Status:** 🟢 Separate ID prevents conflicts
 
-### MAZE-ZAP
-- **Cost:** 1 energy
+### MAZE-ZAP (⚠️ DIFFERENT MECHANIC, SAME NAME)
+- **ID:** 'zap' 
+- **Cost:** 1 ghïs energy
 - **Description:** "Chance to stun opponent. Stun chance increases per Zap card collected."
+- **Maze Mechanics:** Stun chance that scales with collected Zap cards
+- **Base Game Conflict:** Base Zap (Bolt) is pierce damage + card draw
+- **Status:** ⚠️ Same name, different ID, but confusing for players
 
-### MAZE-IGNITE
-- **Cost:** 2 energy
+### MAZE-IGNITE (⚠️ DIFFERENT MECHANIC, SAME NAME)
+- **ID:** 'ignite'
+- **Cost:** 2 ghïs energy
 - **Description:** "Cause lingering burn damage. Duration +1 per Ignite card collected."
+- **Maze Mechanics:** Burn duration scales with collected Ignite cards
+- **Base Game Conflict:** Base Ignite (Fire) has fixed burn duration with spicy quirk scaling
+- **Status:** ⚠️ Same name and ID, but different game modes prevent runtime conflicts
 
 ## MAJOR ISSUES IDENTIFIED ("FUNNY" BEHAVIOR)
 
-### 🔴 CRITICAL ISSUES
+### 🔴 CRITICAL ARCHITECTURAL ISSUES
 
-1. **DUPLICATE HOPE CARDS**: Two different hope cards with the same ID but different mechanics
-   - Regular Hope: Multi-turn healing power (cost 2)
-   - Maze Hope: Scaling heal skill (cost 1)
-   - **Impact**: Potential conflicts in card resolution
+1. **DUPLICATE HOPE CARD IDs**: Same ID 'hope' used for completely different mechanics
+   - Base Game Hope: Multi-turn healing power (cost 2 regular energy)
+   - Maze Hope: Instant scaling heal (cost 1 ghïs energy)
+   - **Impact**: Potential runtime conflicts, player confusion, code maintenance issues
+
+2. **MAZE-BASE GAME SEPARATION CONCERNS**: Several cards have overlapping names/mechanics across game modes
+   - Zap: Pierce damage (base) vs Stun chance (maze)
+   - Ignite: Fixed burn (base) vs Scaling burn (maze)  
+   - Pierce: Focus scaling (base) vs Card count scaling (maze)
+   - Surge: Regular energy (base) vs Ghïs energy (maze)
+   - **Impact**: Updates to maze mode could accidentally affect base game mechanics
 
 ### ⚠️ TESTING GAPS
 
@@ -282,7 +331,11 @@ These appear to be a separate card system for a maze exploration mode:
 ### 🟡 INCONSISTENCIES
 
 1. **Card Text vs UI Text**: Some cards have different descriptions in cardText() vs card definition
-2. **Maze Card Integration**: Unclear how maze cards interact with regular game systems
+2. **Maze-Base Game Architectural Mixing**: Cards with same names operate differently across game modes
+   - Creates confusion for developers and players
+   - Risk of cross-contamination between game modes during updates
+   - Difficulty maintaining separate game logic
+3. **Energy System Conflicts**: Base game uses regular energy, maze uses ghïs energy
 
 ### ✅ RECENTLY FIXED
 
@@ -337,9 +390,29 @@ All tests currently pass! The Reconsider fix is working correctly.
 
 ### IMMEDIATE ACTIONS NEEDED
 
-1. **Fix Hope Duplicate**: Rename maze hope card to avoid ID conflict
-2. **Add Missing Tests**: Create self-tests for 13 untested cards
-3. **Clarify Maze Cards**: Document maze card system integration
+1. **Fix Hope ID Duplicate**: Rename maze hope card to 'mazehope' to avoid runtime conflicts
+2. **Establish Clear Game Mode Separation**: 
+   - Prefix all maze cards with 'maze' in their IDs
+   - Document which cards belong to which game mode
+   - Ensure maze card updates cannot affect base game mechanics
+3. **Add Missing Tests**: Create self-tests for 13 untested cards
+4. **Document Architectural Boundaries**: Clear documentation of base vs maze game systems
+
+### ARCHITECTURAL SEPARATION PLAN
+
+**Base Game Cards (22 core cards)**: Should remain isolated from maze mechanics
+- Use regular energy system
+- Follow standard card effects and scaling
+- Should not be affected by maze mode development
+
+**Maze Cards (5 cards)**: Should operate independently
+- Use ghïs energy system
+- Follow maze-specific scaling mechanics
+- Should be clearly differentiated from base cards
+
+**Naming Convention Proposal**:
+- All maze cards should have 'maze' prefix in ID: 'mazehope', 'mazezap', 'mazeignite'
+- This prevents accidental conflicts and makes game mode clear
 
 ### WHAT'S "LOCKED IN" (Consistent & Tested)
 - Basic attack/heal/shield cards (Heart, Swords, Shield)
@@ -350,10 +423,12 @@ All tests currently pass! The Reconsider fix is working correctly.
 - Advanced mechanics (Droid Protocol)
 
 ### WHAT'S "FUNNY" (Needs Attention)
-- Hope card duplication
+- **Hope card ID duplication (CRITICAL)**
+- **Maze-Base game architectural mixing**
+- **Shared card names across different game modes**
 - Untested cards (especially complex ones like Curiosity, Wallop)
-- Maze card system integration
 - Missing validation for burn/freeze mechanics
+- **Energy system conflicts (regular vs ghïs)**
 
 ---
 
