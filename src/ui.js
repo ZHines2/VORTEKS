@@ -82,6 +82,9 @@ export function cardText(c) {
   if (st.burn) { 
     parts.push(`Burn ${st.burn.amount} for ${st.burn.turns}.`); 
   }
+  if (st.infectStatus) {
+    parts.push(`Apply Infect (1 stack).`);
+  }
   if (st.freezeEnergy) { 
     parts.push(`Foe -${st.freezeEnergy} 🔆 next.`); 
   }

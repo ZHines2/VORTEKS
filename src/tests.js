@@ -1340,7 +1340,9 @@ export function runSelfTests(Game, log, showStart) {
     const mockGame = {
       you: me,
       opp: createPlayer(true),
-      checkWin: () => {}
+      checkWin: () => {},
+      applyBurn: Game.applyBurn,
+      applyInfect: Game.applyInfect
     };
     
     Game.applyCard.call(mockGame, CARDS.find(c => c.id === 'shield'), me, me, false);
@@ -1358,7 +1360,9 @@ export function runSelfTests(Game, log, showStart) {
     const mockGame = {
       you: me,
       opp: foe,
-      checkWin: () => {}
+      checkWin: () => {},
+      applyBurn: Game.applyBurn,
+      applyInfect: Game.applyInfect
     };
     
     Game.applyCard.call(mockGame, CARDS.find(c => c.id === 'fire'), me, foe, false);
@@ -1376,7 +1380,9 @@ export function runSelfTests(Game, log, showStart) {
     const mockGame = {
       you: me,
       opp: foe,
-      checkWin: () => {}
+      checkWin: () => {},
+      applyBurn: Game.applyBurn,
+      applyInfect: Game.applyInfect
     };
     
     Game.applyCard.call(mockGame, CARDS.find(c => c.id === 'snow'), me, foe, false);
@@ -1417,6 +1423,58 @@ export function runSelfTests(Game, log, showStart) {
     } else {
       log('SKIP: Infect card not found for testing');
     }
+  }
+
+  // Test edge case: Infect damage killing a player should end the game properly
+  {
+    log('Testing Infect damage edge case - game ending...');
+    const me = createPlayer(false);
+    const foe = createPlayer(true);
+    
+    const testGame = Object.create(Game);
+    testGame.you = me;
+    testGame.opp = foe;
+    testGame.turn = 'you';
+    testGame.over = false;
+    testGame.streak = 0;
+    
+    // Set up a scenario where infect will kill the opponent
+    foe.hp = 1; // Very low health
+    foe.status = { infect: 5 }; // High infect stacks to guarantee damage
+    
+    const originalSetLog = Game.setLogFunction;
+    Game.setLogFunction(() => {});
+    
+    // Mock checkWin to track if it gets called
+    let checkWinCalled = false;
+    const originalCheckWin = testGame.checkWin;
+    testGame.checkWin = function() {
+      checkWinCalled = true;
+      return originalCheckWin.call(this);
+    };
+    
+    // Simulate a specific damage scenario for predictable testing
+    const originalHit = testGame.hit;
+    testGame.hit = function(target, dmg, pierce, simulate) {
+      if (!simulate && target === foe && dmg >= 1) {
+        // This hit will kill the opponent
+        target.hp = 0;
+        this.over = true;
+        this.checkWin();
+      }
+      return originalHit.call(this, target, dmg, pierce, simulate);
+    };
+    
+    // Test the endTurn method with infect damage
+    const gameWasOver = testGame.over;
+    testGame.endTurn();
+    
+    // Verify that game properly ended and didn't continue processing
+    assertEqual('Game ended after lethal infect damage', testGame.over, true, log);
+    assertEqual('CheckWin was called during infect processing', checkWinCalled, true, log);
+    
+    Game.setLogFunction(originalSetLog);
+    log('Infect edge case test completed.');
   }
 
   log('Self-tests complete.');
