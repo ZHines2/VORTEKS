@@ -96,8 +96,8 @@ export function runSelfTests(Game, log, showStart) {
     const originalSetLog = Game.setLogFunction;
     Game.setLogFunction(() => {});
     
-    // Set lastPlayed to Strike
-    me.lastPlayed = CARDS.find(c => c.id === 'swords');
+    // Set lastPlayedThisTurn to Strike (Echo uses lastPlayedThisTurn, not lastPlayed)
+    me.lastPlayedThisTurn = CARDS.find(c => c.id === 'swords');
     foe.hp = 20; // Reset health
     
     // Apply Echo card
@@ -281,16 +281,29 @@ export function runSelfTests(Game, log, showStart) {
 
   // Test Reconsider card mechanics
   {
-    const player = createPlayer(false);
-    const reconsiderCard = { id: 'reconsider', cost: 0 };
+    const me = createPlayer(false);
+    const foe = createPlayer(true);
+    const testGame = Object.create(Game);
+    testGame.you = me;
+    testGame.opp = foe;
+    testGame.turn = 'you';
+    testGame.over = false;
+    testGame.checkWin = () => {};
     
-    player.energy = 7;
-    const canAfford = player.canAfford(reconsiderCard);
+    const originalSetLog = Game.setLogFunction;
+    Game.setLogFunction(() => {});
+    
+    const reconsiderCard = CARDS.find(c => c.id === 'reconsider');
+    
+    me.energy = 7;
+    const canAfford = me.canAfford(reconsiderCard);
     assertEqual('Reconsider card is always affordable', canAfford, true, log);
     
-    const spent = player.spend(0, reconsiderCard);
-    assertEqual('Reconsider spends all energy', spent, 7, log);
-    assertEqual('Player energy is 0 after reconsider', player.energy, 0, log);
+    // Test the actual card playing mechanics, not just the spend function
+    testGame.applyCard(reconsiderCard, me, foe, false);
+    assertEqual('Reconsider spends all energy', me.energy, 0, log);
+    
+    Game.setLogFunction(originalSetLog);
   }
 
   // Test Echo & Zap interaction (regression test) - Now tests last card behavior
@@ -301,9 +314,16 @@ export function runSelfTests(Game, log, showStart) {
     testGame.you = me;
     testGame.opp = foe;
     testGame.isEchoing = false;
+    testGame.checkWin = () => {};
     
-    // Set lastPlayed to Zap
-    me.lastPlayed = CARDS.find(c => c.id === 'bolt');
+    const originalSetLog = Game.setLogFunction;
+    Game.setLogFunction(() => {});
+    
+    // Ensure player has cards in deck to draw from
+    me.deck = [CARDS.find(c => c.id === 'heart'), CARDS.find(c => c.id === 'swords')];
+    
+    // Set lastPlayedThisTurn to Zap (Echo uses lastPlayedThisTurn, not lastPlayed)
+    me.lastPlayedThisTurn = CARDS.find(c => c.id === 'bolt');
     foe.hp = 20;
     const initialHandSize = me.hand.length;
     
@@ -315,6 +335,8 @@ export function runSelfTests(Game, log, showStart) {
     assertEqual('Echo repeats Zap damage', foe.hp, 18, log); // 20 - 2 = 18
     assertEqual('Echo repeats Zap card draw', me.hand.length, initialHandSize + 1, log);
     assertEqual('Echo flag properly managed', testGame.isEchoing, false, log);
+    
+    Game.setLogFunction(originalSetLog);
   }
 
   // Test complete Overload functionality - Overload then play another card

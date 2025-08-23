@@ -1175,7 +1175,7 @@ export const Game = {
     if (this.you.hp <= 0 || this.opp.hp <= 0) {
       this.over = true; 
       const youWin = this.opp.hp <= 0 && this.you.hp > 0;
-      log(youWin ? 'You win!' : 'AI wins!');
+      if (log) log(youWin ? 'You win!' : 'AI wins!');
       if (youWin) { 
         this.streak++; 
         
