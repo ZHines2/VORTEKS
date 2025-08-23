@@ -478,7 +478,7 @@ class MetroidvaniaGame {
     if (this.player.abilities.has('hope')) {
       this.battleMenu.options.push({
         text: `Hope (Heal)`,
-        action: 'hope',
+        action: 'mazehope',
         cost: 1,
         enabled: this.player.ghis >= 1,
         description: `Heal ${1 + this.player.stats.hope} HP`
@@ -488,7 +488,7 @@ class MetroidvaniaGame {
     if (this.player.abilities.has('zap')) {
       this.battleMenu.options.push({
         text: `Zap (Stun)`,
-        action: 'zap',
+        action: 'mazezap',
         cost: 1,
         enabled: this.player.ghis >= 1,
         description: `${10 + (this.player.stats.zap * 10)}% chance to stun enemy`
@@ -498,7 +498,7 @@ class MetroidvaniaGame {
     if (this.player.abilities.has('ignite')) {
       this.battleMenu.options.push({
         text: `Ignite (Burn)`,
-        action: 'ignite',
+        action: 'mazeignite',
         cost: 2,
         enabled: this.player.ghis >= 2,
         description: `Deal 2 damage + burn for ${2 + this.player.stats.ignite} turns`
@@ -559,7 +559,7 @@ class MetroidvaniaGame {
         }
         break;
         
-      case 'hope':
+      case 'mazehope':
         if (this.player.abilities.has('hope') && this.player.ghis >= 1) {
           const healAmount = 1 + this.player.stats.hope;
           this.player.hp = Math.min(this.player.maxHP, this.player.hp + healAmount);
@@ -569,7 +569,7 @@ class MetroidvaniaGame {
         }
         break;
         
-      case 'zap':
+      case 'mazezap':
         if (this.player.abilities.has('zap') && this.player.ghis >= 1) {
           const stunChance = 10 + (this.player.stats.zap * 10);
           const stunSuccess = Math.random() * 100 < stunChance;
@@ -590,7 +590,7 @@ class MetroidvaniaGame {
         }
         break;
         
-      case 'ignite':
+      case 'mazeignite':
         if (this.player.abilities.has('ignite') && this.player.ghis >= 2) {
           const damage = 2;
           const burnTurns = 2 + this.player.stats.ignite;
@@ -862,7 +862,7 @@ class MetroidvaniaGame {
     const lootCards = [];
     // Include maze explorer cards in the loot pool
     const cardPool = CARDS.filter(card => 
-      ['heart', 'swords', 'shield', 'surge', 'mazepierce', 'hope', 'zap', 'ignite'].includes(card.id)
+      ['heart', 'swords', 'shield', 'mazesurge', 'mazepierce', 'mazehope', 'mazezap', 'mazeignite'].includes(card.id)
     );
     
     // Number of cards based on enemy level (ensure at least 1 card drops)
@@ -892,7 +892,7 @@ class MetroidvaniaGame {
         this.player.stats.shield++;
         break;
         
-      case 'surge': // Surge cards affect max GHIS
+      case 'mazesurge': // Surge cards affect max GHIS
         this.player.stats.surge++;
         this.player.maxGhis = Math.max(1, this.player.stats.surge); // Start with 1 ghis per surge card
         this.player.ghis = this.player.maxGhis; // Restore ghis when gaining surge
@@ -908,17 +908,17 @@ class MetroidvaniaGame {
         this.player.hp = Math.min(this.player.maxHP, this.player.hp + 5); // Heal when gaining heart
         break;
         
-      case 'hope': // Hope cards for healing ability
+      case 'mazehope': // Hope cards for healing ability
         this.player.abilities.add('hope');
         this.player.stats.hope++;
         break;
         
-      case 'zap': // Zap cards for stunning
+      case 'mazezap': // Zap cards for stunning
         this.player.abilities.add('zap');
         this.player.stats.zap++;
         break;
         
-      case 'ignite': // Ignite cards for burn damage
+      case 'mazeignite': // Ignite cards for burn damage
         this.player.abilities.add('ignite');
         this.player.stats.ignite++;
         break;

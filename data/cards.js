@@ -290,9 +290,9 @@ export const CARDS = [
     scaling: {}, 
     ai: { role: 'attrition', pri: 60 } 
   },
-  // MAZE EXPLORER CARDS
+  // MAZE EXPLORER CARDS - Separate system using ghïs energy
   { 
-    id: 'hope', 
+    id: 'mazehope', 
     sym: icons.hope, 
     name: 'Hope', 
     description: 'Heal +1 HP per Hope card collected. Costs ghïs energy.',
@@ -305,7 +305,7 @@ export const CARDS = [
     ai: { role: 'sustain', pri: 45 } 
   },
   { 
-    id: 'surge', 
+    id: 'mazesurge', 
     sym: icons.bolt, 
     name: 'Surge', 
     description: 'Unlocks ghïs energy 1/1 and increases +1 per Surge card. Required for abilities.',
@@ -331,7 +331,7 @@ export const CARDS = [
     ai: { role: 'tempo', pri: 75 } 
   },
   { 
-    id: 'zap', 
+    id: 'mazezap', 
     sym: icons.bolt, 
     name: 'Zap', 
     description: 'Chance to stun opponent. Stun chance increases per Zap card collected.',
@@ -344,7 +344,7 @@ export const CARDS = [
     ai: { role: 'control', pri: 65 } 
   },
   { 
-    id: 'ignite', 
+    id: 'mazeignite', 
     sym: icons.fire, 
     name: 'Ignite', 
     description: 'Cause lingering burn damage. Duration +1 per Ignite card collected.',
