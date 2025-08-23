@@ -507,8 +507,8 @@ export const Game = {
     if (isPlayer) {
       this.turnTypes.add(card.type);
       
-      // For reconsider, track the actual energy spent (all remaining)
-      const energyToSpend = card.id === 'reconsider' ? p.energy : card.cost;
+      // Track the actual energy spent
+      const energyToSpend = card.cost;
       this.playerTurnEnergySpent += energyToSpend;
       
       // Record card usage for telemetry
@@ -522,7 +522,7 @@ export const Game = {
         cardId: card.id,
         cardType: card.type,
         card: card, // Add full card object for flavor unlocks
-        youEnergyAfter: card.id === 'reconsider' ? 0 : (p.energy - card.cost)
+        youEnergyAfter: p.energy - card.cost
       });
     }
     
@@ -797,23 +797,18 @@ export const Game = {
       } 
     }
     if (effects.reconsider && !simulate) {
-      // Reconsider effect: spend all remaining energy, reshuffle deck
-      const isPlayer = (state.me === this.you);
-      const energySpent = state.me.energy;
-      if (isPlayer) {
-        this.playerTurnEnergySpent += energySpent;
-      }
-      state.me.energy = 0; // Spend all remaining energy
+      // Reconsider effect: reshuffle deck (cost is already paid normally)
       
       // Reshuffle: move discard into deck and shuffle
       state.me.deck.push(...state.me.discard);
       state.me.discard = [];
       shuffle(state.me.deck);
       
+      const isPlayer = (state.me === this.you);
       if (isPlayer) {
-        logYou(`spends ${energySpent}🔆 and reshuffles deck`);
+        logYou(`reshuffles deck`);
       } else {
-        logOpp(`spends ${energySpent}🔆 and reshuffles deck`);
+        logOpp(`reshuffles deck`);
       }
       
       // FX: Reconsider effect
@@ -1175,7 +1170,7 @@ export const Game = {
     if (this.you.hp <= 0 || this.opp.hp <= 0) {
       this.over = true; 
       const youWin = this.opp.hp <= 0 && this.you.hp > 0;
-      log(youWin ? 'You win!' : 'AI wins!');
+      if (this.log && typeof this.log === 'function') this.log(youWin ? 'You win!' : 'AI wins!');
       if (youWin) { 
         this.streak++; 
         
@@ -1201,7 +1196,7 @@ export const Game = {
       
       // Record battle results and emit achievement events
       recordBattleResult(youWin ? 'win' : 'loss');
-      recordBattle(youWin ? 'win' : 'loss', this.streak, this.you.hp, this.you.maxHP, 0); // TODO: track turn count
+      recordBattle(youWin ? 'win' : 'loss', this.streak, this.you.hp, this.you.maxHP, this.turnCount);
       recordOpponent(this.persona, youWin, this.oppFeatures?.isEasterEgg || false);
       
       // Auto-submit to leaderboards if player has opted in

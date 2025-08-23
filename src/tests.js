@@ -96,8 +96,8 @@ export function runSelfTests(Game, log, showStart) {
     const originalSetLog = Game.setLogFunction;
     Game.setLogFunction(() => {});
     
-    // Set lastPlayed to Strike
-    me.lastPlayed = CARDS.find(c => c.id === 'swords');
+    // Set lastPlayedThisTurn to Strike (Echo uses lastPlayedThisTurn, not lastPlayed)
+    me.lastPlayedThisTurn = CARDS.find(c => c.id === 'swords');
     foe.hp = 20; // Reset health
     
     // Apply Echo card
@@ -281,16 +281,37 @@ export function runSelfTests(Game, log, showStart) {
 
   // Test Reconsider card mechanics
   {
-    const player = createPlayer(false);
-    const reconsiderCard = { id: 'reconsider', cost: 0 };
+    const me = createPlayer(false);
+    const foe = createPlayer(true);
+    const testGame = Object.create(Game);
+    testGame.you = me;
+    testGame.opp = foe;
+    testGame.turn = 'you';
+    testGame.over = false;
+    testGame.checkWin = () => {};
     
-    player.energy = 7;
-    const canAfford = player.canAfford(reconsiderCard);
-    assertEqual('Reconsider card is always affordable', canAfford, true, log);
+    const originalSetLog = Game.setLogFunction;
+    Game.setLogFunction(() => {});
     
-    const spent = player.spend(0, reconsiderCard);
-    assertEqual('Reconsider spends all energy', spent, 7, log);
-    assertEqual('Player energy is 0 after reconsider', player.energy, 0, log);
+    const reconsiderCard = CARDS.find(c => c.id === 'reconsider');
+    
+    // Test with sufficient energy
+    me.energy = 7;
+    const canAfford = me.canAfford(reconsiderCard);
+    assertEqual('Reconsider card is affordable with 3+ energy', canAfford, true, log);
+    
+    // Test the actual card playing mechanics - should only cost 3 energy
+    // Put Reconsider in hand and play it using playCard like the other tests
+    me.hand = [reconsiderCard];
+    testGame.playCard(me, 0);
+    assertEqual('Reconsider costs 3 energy', me.energy, 4, log); // 7 - 3 = 4
+    
+    // Test with insufficient energy
+    me.energy = 2;
+    const cannotAfford = me.canAfford(reconsiderCard);
+    assertEqual('Reconsider card is not affordable with <3 energy', cannotAfford, false, log);
+    
+    Game.setLogFunction(originalSetLog);
   }
 
   // Test Echo & Zap interaction (regression test) - Now tests last card behavior
@@ -301,9 +322,16 @@ export function runSelfTests(Game, log, showStart) {
     testGame.you = me;
     testGame.opp = foe;
     testGame.isEchoing = false;
+    testGame.checkWin = () => {};
     
-    // Set lastPlayed to Zap
-    me.lastPlayed = CARDS.find(c => c.id === 'bolt');
+    const originalSetLog = Game.setLogFunction;
+    Game.setLogFunction(() => {});
+    
+    // Ensure player has cards in deck to draw from
+    me.deck = [CARDS.find(c => c.id === 'heart'), CARDS.find(c => c.id === 'swords')];
+    
+    // Set lastPlayedThisTurn to Zap (Echo uses lastPlayedThisTurn, not lastPlayed)
+    me.lastPlayedThisTurn = CARDS.find(c => c.id === 'bolt');
     foe.hp = 20;
     const initialHandSize = me.hand.length;
     
@@ -315,6 +343,8 @@ export function runSelfTests(Game, log, showStart) {
     assertEqual('Echo repeats Zap damage', foe.hp, 18, log); // 20 - 2 = 18
     assertEqual('Echo repeats Zap card draw', me.hand.length, initialHandSize + 1, log);
     assertEqual('Echo flag properly managed', testGame.isEchoing, false, log);
+    
+    Game.setLogFunction(originalSetLog);
   }
 
   // Test complete Overload functionality - Overload then play another card
@@ -1299,6 +1329,59 @@ export function runSelfTests(Game, log, showStart) {
     assertEqual('Reap with odd HP rounds down for self', me.hp, 5, log); // 9 - 4 = 5
     
     Game.setLogFunction(originalSetLog);
+  }
+
+  // Test Shield card
+  {
+    const me = createPlayer(false);
+    me.shield = 0;
+    me.energy = 5;
+    
+    const mockGame = {
+      you: me,
+      opp: createPlayer(true),
+      checkWin: () => {}
+    };
+    
+    Game.applyCard.call(mockGame, CARDS.find(c => c.id === 'shield'), me, me, false);
+    assertEqual('Shield adds 3 shield', me.shield, 3, log);
+    assertEqual('Shield costs 1 energy', me.energy, 4, log);
+  }
+
+  // Test Fire (Ignite) card
+  {
+    const me = createPlayer(false);
+    const foe = createPlayer(true);
+    me.energy = 5;
+    foe.status = { burn: 0 };
+    
+    const mockGame = {
+      you: me,
+      opp: foe,
+      checkWin: () => {}
+    };
+    
+    Game.applyCard.call(mockGame, CARDS.find(c => c.id === 'fire'), me, foe, false);
+    assertEqual('Ignite costs 2 energy', me.energy, 3, log);
+    assertEqual('Ignite inflicts 2 burn turns', foe.status.burn, 2, log);
+  }
+
+  // Test Snow (Freeze) card
+  {
+    const me = createPlayer(false);
+    const foe = createPlayer(true);
+    me.energy = 5;
+    foe.status = { freeze: 0 };
+    
+    const mockGame = {
+      you: me,
+      opp: foe,
+      checkWin: () => {}
+    };
+    
+    Game.applyCard.call(mockGame, CARDS.find(c => c.id === 'snow'), me, foe, false);
+    assertEqual('Freeze costs 2 energy', me.energy, 3, log);
+    assertEqual('Freeze inflicts 1 freeze turn', foe.status.freeze, 1, log);
   }
   
   log('Self-tests complete.');

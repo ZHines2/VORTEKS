@@ -95,7 +95,7 @@ export function cardText(c) {
     parts.push('Repeat last non‑Echo, else draw 1.'); 
   }
   if (c.id === 'reconsider') {
-    parts.push('Spend all remaining energy. Reshuffle your deck (discard → deck).');
+    parts.push('Costs 3 energy. Reshuffle your deck (discard → deck).');
   }
   if (c.id === 'curiosity') {
     parts.push('End: If you bank energy, next start draw +1.');

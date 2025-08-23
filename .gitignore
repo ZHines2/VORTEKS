@@ -25,3 +25,12 @@ build/
 *_old.*
 *.bak
 README_old.md
+
+# Architecture safety - prevent accidental commits
+*_conflicted_*
+*_backup_*
+*_duplicate_*
+
+# Test artifacts
+test-results/
+coverage/

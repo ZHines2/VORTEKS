@@ -20,10 +20,11 @@ A modular, browser-based tactical card game built with vanilla JavaScript ES6 mo
 │   └── main.css            # Complete game styling and animations
 ├── data/
 │   ├── icons.js            # Game icons and Unicode symbols
-│   └── cards.js            # 19 card definitions with full metadata
+│   └── cards.js            # 27 total cards: 22 base game + 5 maze explorer (isolated architectures)
 └── src/
     ├── main.js             # App bootstrap and DOM integration (692 lines)
     ├── game.js             # Core game logic and state management (881 lines)
+    ├── metroidvania.js     # Maze Explorer mode with isolated card system
     ├── card-unlock.js      # Progressive unlock system (569 lines)
     ├── face-generator.js   # Procedural opponent face generation (790 lines)
     ├── ai.js               # AI opponent logic and persona decks (120 lines)
@@ -45,11 +46,13 @@ A modular, browser-based tactical card game built with vanilla JavaScript ES6 mo
 - **Turn-Based Combat**: Robust state management and win conditions
 
 ### Content Systems - 100% Complete ✅
-- **Card Database**: 20/20 planned cards implemented (100%)
+- **Base Game Cards**: 22/22 planned cards implemented (100%) with architectural protection
+- **Maze Explorer Cards**: 5/5 maze cards with proper 'maze' prefix isolation (100%)
 - **Unlock Progression**: All achievement and unlock systems functional (100%)
 - **Quirk System**: 8 quirks with diverse gameplay modifications (100%)
 - **AI Personas**: Complete with procedural face generation and ghost variations (100%)
 - **Color Flavor System**: 20 unique UI themes with diverse unlock requirements (100%)
+- **Architectural Separation**: Complete isolation between base game and maze systems (100%)
 
 ### Polish & UX - 90% Complete ✅
 - **UI/UX Design**: Clean Unicode aesthetic with responsive design (95%)
@@ -74,8 +77,16 @@ A modular, browser-based tactical card game built with vanilla JavaScript ES6 mo
 
 ## ✨ Core Features
 
-### Card Battle System
-- **20 Unique Cards**: From basic Strike/Guard to advanced Reconsider/Droid Protocol, plus special Wallop/Overload/Ferriglobin/Impervious/Reap
+### Dual Game Architecture ⚠️
+**VORTEKS features two completely separate game systems:**
+
+- **Base Game System**: Standard card battles (22 core cards) using regular energy
+- **Maze Explorer System**: Metroidvania exploration (5 maze cards) using ghïs energy  
+
+**⚠️ CRITICAL ARCHITECTURAL SEPARATION**: These systems are intentionally isolated to prevent cross-contamination during development. Maze cards use 'maze' prefixes (mazehope, mazezap, etc.) to ensure complete separation from base game mechanics.
+
+### Card Battle System (Base Game)
+- **22 Unique Cards**: From basic Strike/Guard to advanced Reconsider/Droid Protocol, plus special Wallop/Overload/Ferriglobin/Impervious/Reap
 - **3 Card Types**: Attack, Skill, and Power cards with distinct mechanics
 - **Energy Management**: Strategic resource allocation each turn (🔆)
 - **Advanced Mechanics**: Pierce damage, burn stacks, echo effects, energy uncapping, life costs, immunity effects, mutual damage
@@ -129,6 +140,37 @@ The game includes sophisticated edge case detection that monitors for:
 - **Performance Tracking**: Rapid state changes and system stress monitoring
 
 Edge cases are automatically categorized by severity (high/medium/low) and tracked for analysis, enabling proactive game balance and stability improvements.
+
+## 🏗️ Architectural Guidelines
+
+### ⚠️ CRITICAL: Maintaining System Separation
+
+**VORTEKS uses a dual-architecture design that MUST be preserved:**
+
+#### **Base Game System** (Primary)
+- **Location**: `src/game.js`, `src/main.js`, standard UI
+- **Cards**: 22 core cards with standard IDs (heart, swords, shield, etc.)
+- **Energy**: Regular energy system (3-6 energy per turn)
+- **Purpose**: Core card battle experience, AI opponents, multiplayer
+
+#### **Maze Explorer System** (Isolated)  
+- **Location**: `src/metroidvania.js` 
+- **Cards**: 5 maze cards with 'maze' prefix (mazehope, mazezap, mazeignite, mazesurge, mazepierce)
+- **Energy**: Ghïs energy system (separate from regular energy)
+- **Purpose**: Metroidvania exploration, collection mechanics
+
+### 🚨 Development Rules
+1. **NEVER** create cards with duplicate IDs between systems
+2. **ALWAYS** use 'maze' prefix for new maze explorer cards
+3. **NEVER** modify base game cards for maze mode compatibility
+4. **ALWAYS** test both systems separately after changes
+5. **NEVER** import maze cards into base game systems or vice versa
+
+### 🔧 Adding New Cards
+- **Base Game**: Use standard IDs, add to main card pool, test with AI opponents
+- **Maze Mode**: Use 'maze' prefix, add to maze card pool, test in metroidvania.js
+
+This separation prevents "unnecessary recursion" and cross-contamination between game modes.
 
 ## 🎯 How to Play
 
@@ -377,6 +419,8 @@ configureJSONBin({
 - **Reconsider Rebalance**: Fixed cost to 3 energy (previously consumed all energy)
 - **Complete Documentation**: Updated README with Reap card and comprehensive flavor system guide
 - **Flavor Debug Tools**: Full debug panel integration for testing and development
+- **CRITICAL ARCHITECTURAL SEPARATION**: Complete isolation between base game (22 cards) and maze explorer (5 cards) systems
+- **Maze Card Standardization**: All maze cards now use 'maze' prefix to prevent conflicts with base game
 
 ### v2.3 - Strategic Depth & Debug Tools
 - **Echo/Overload Rework**: Echo reverted to repeat LAST card, new Overload card repeats NEXT card
@@ -411,9 +455,28 @@ configureJSONBin({
 
 The modular architecture supports extensive future development including new card mechanics, additional personas, campaign modes, multiplayer features, and visual/audio enhancements.
 
-### 🗡️ Dungeon Crawling & Metroidvania Adaptation
+### 🗡️ Maze Explorer Mode (Metroidvania System)
 
-VORTEKS's card-based mechanics could be brilliantly adapted into a dungeon crawling or metroidvania-style adventure game:
+**VORTEKS includes a complete Metroidvania exploration mode with its own card system:**
+
+#### **Architectural Separation**
+- **Separate Energy System**: Uses ghïs energy instead of regular energy
+- **Separate Card Set**: 5 maze cards (mazehope, mazezap, mazeignite, mazesurge, mazepierce) 
+- **Separate Mechanics**: Collection-based scaling instead of turn-based effects
+- **Isolated Development**: Updates to maze mode cannot affect base game stability
+
+#### **Maze Exploration Features**
+- **Procedural Maze Generation**: Large 50x50 hedge maze with cellular automata
+- **Card Collection System**: Defeat enemies to discover new abilities
+- **Scaling Mechanics**: Cards become more powerful based on collection count
+- **Judge NPC**: Guides player introduction with philosophical dialogue
+- **Battle System**: Strategic combat using collected card abilities
+
+### 🔮 Future Expansion Potential
+
+The modular architecture supports extensive future development including new card mechanics, additional personas, campaign modes, multiplayer features, and visual/audio enhancements.
+
+#### **Expansion Ideas**
 
 #### **Card-as-Ability System**
 - **Equipment Cards**: Transform current attack/defense cards into collectible equipment
