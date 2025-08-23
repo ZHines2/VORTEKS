@@ -1731,7 +1731,13 @@ function setupGlossary() {
           const costText = ` (${renderCost(card)})`;
           const description = getCardDescription(card);
           
-          div.innerHTML = `<strong>${title}${costText}</strong><br/><small>${description}</small>`;
+          // Add note for Zap card to distinguish from maze ability
+          let finalDescription = description;
+          if (card.id === 'bolt') {
+            finalDescription += ' <em>(Note: Maze Explorer uses a different Zap ability that stuns enemies)</em>';
+          }
+          
+          div.innerHTML = `<strong>${title}${costText}</strong><br/><small>${finalDescription}</small>`;
           glossaryGrid.appendChild(div);
         });
       });
@@ -3609,6 +3615,29 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Quit button handler
     document.getElementById('metroidvaniaQuit').onclick = () => {
+      exitMetroidvania();
+    };
+    
+    // Equipment button handler
+    document.getElementById('mazeEquipmentBtn').onclick = () => {
+      if (currentMetroidvaniaGame) {
+        currentMetroidvaniaGame.showEquipmentMenu();
+      }
+    };
+    
+    // Equipment modal close handler
+    document.getElementById('mazeEquipmentCloseBtn').onclick = () => {
+      document.getElementById('mazeEquipmentModal').hidden = true;
+    };
+    
+    // Judge game over modal handlers
+    document.getElementById('judgeRestartBtn').onclick = () => {
+      if (currentMetroidvaniaGame) {
+        currentMetroidvaniaGame.restartExploration();
+      }
+    };
+    
+    document.getElementById('judgeQuitBtn').onclick = () => {
       exitMetroidvania();
     };
     

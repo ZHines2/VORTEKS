@@ -122,7 +122,10 @@
   <div id="metroidvaniaUI" class="metroidvania-container" hidden>
     <div class="metroidvania-header">
       <h2>MAZE EXPLORER</h2>
-      <button id="metroidvaniaQuit" class="btn">RETURN TO MENU</button>
+      <div class="metroidvania-header-buttons">
+        <button id="mazeEquipmentBtn" class="btn">EQUIPMENT</button>
+        <button id="metroidvaniaQuit" class="btn">RETURN TO MENU</button>
+      </div>
     </div>
     
     <!-- Game Canvas -->
@@ -136,10 +139,58 @@
       <div>• Move: WASD keys</div>
       <div>• Battle: Use ↑↓ arrows to select abilities, Enter to confirm</div>
       <div>• Find cards to unlock abilities and increase stats</div>
+      <div>• Press E to open Equipment menu</div>
       <div>• Red squares = enemies, Green square = you</div>
     </div>
   </div>
   
+  <!-- Maze Equipment Modal -->
+  <div class="modal" id="mazeEquipmentModal" hidden>
+    <div class="box" style="width:min(96vw, 700px)">
+      <div style="font-size:18px; color:var(--accent); margin:8px 0 16px; text-align:center"><strong>Equipment & Abilities</strong></div>
+      
+      <!-- Player Stats -->
+      <div id="mazePlayerStats" style="background:rgba(255,255,255,0.1); padding:12px; margin-bottom:16px; border-radius:6px;">
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:8px; font-size:14px;">
+          <div><strong>❤️ HP:</strong> <span id="mazeStatsHP">0/0</span></div>
+          <div><strong>⚡ GHIS:</strong> <span id="mazeStatsGHIS">0/0</span></div>
+          <div><strong>📍 Position:</strong> <span id="mazeStatsPos">0, 0</span></div>
+          <div><strong>🎴 Cards:</strong> <span id="mazeStatsCards">0</span></div>
+        </div>
+      </div>
+      
+      <!-- Abilities List -->
+      <div style="font-size:16px; color:var(--accent); margin:16px 0 8px;"><strong>Available Abilities:</strong></div>
+      <div id="mazeAbilitiesList" style="max-height:300px; overflow-y:auto; background:rgba(0,0,0,0.3); padding:8px; border-radius:4px;">
+        <div style="color:#888; text-align:center; padding:20px;">No abilities unlocked yet. Defeat enemies to find cards!</div>
+      </div>
+      
+      <!-- Collected Cards -->
+      <div style="font-size:16px; color:var(--accent); margin:16px 0 8px;"><strong>Collected Cards:</strong></div>
+      <div id="mazeCardsList" style="max-height:200px; overflow-y:auto; background:rgba(0,0,0,0.3); padding:8px; border-radius:4px;">
+        <div style="color:#888; text-align:center; padding:20px;">No cards collected yet.</div>
+      </div>
+      
+      <div style="display:flex; justify-content:center; margin-top:16px; gap:8px;">
+        <button id="mazeEquipmentCloseBtn" class="btn">CLOSE</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Judge Game Over Modal -->
+  <div class="modal" id="judgeGameOverModal" hidden>
+    <div class="box" style="width:min(96vw, 500px)">
+      <div style="font-size:20px; color:var(--bad); margin:8px 0 16px; text-align:center"><strong>⚖️ THE JUDGE SPEAKS ⚖️</strong></div>
+      <div id="judgeGameOverText" style="font-size:16px; line-height:1.6; margin:16px 0; text-align:center; font-style:italic;">
+        "Your journey ends here, explorer. But knowledge is eternal..."
+      </div>
+      <div style="display:flex; justify-content:center; margin-top:20px; gap:12px;">
+        <button id="judgeRestartBtn" class="btn">RESTART EXPLORATION</button>
+        <button id="judgeQuitBtn" class="btn">RETURN TO MENU</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Start Screen Modal -->
   <div class="modal" id="startModal">
     <div class="start-container">
