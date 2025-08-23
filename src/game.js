@@ -1170,7 +1170,7 @@ export const Game = {
     if (this.you.hp <= 0 || this.opp.hp <= 0) {
       this.over = true; 
       const youWin = this.opp.hp <= 0 && this.you.hp > 0;
-      if (log) log(youWin ? 'You win!' : 'AI wins!');
+      if (this.log && typeof this.log === 'function') this.log(youWin ? 'You win!' : 'AI wins!');
       if (youWin) { 
         this.streak++; 
         
@@ -1196,7 +1196,7 @@ export const Game = {
       
       // Record battle results and emit achievement events
       recordBattleResult(youWin ? 'win' : 'loss');
-      recordBattle(youWin ? 'win' : 'loss', this.streak, this.you.hp, this.you.maxHP, 0); // TODO: track turn count
+      recordBattle(youWin ? 'win' : 'loss', this.streak, this.you.hp, this.you.maxHP, this.turnCount);
       recordOpponent(this.persona, youWin, this.oppFeatures?.isEasterEgg || false);
       
       // Auto-submit to leaderboards if player has opted in

@@ -1330,6 +1330,59 @@ export function runSelfTests(Game, log, showStart) {
     
     Game.setLogFunction(originalSetLog);
   }
+
+  // Test Shield card
+  {
+    const me = createPlayer(false);
+    me.shield = 0;
+    me.energy = 5;
+    
+    const mockGame = {
+      you: me,
+      opp: createPlayer(true),
+      checkWin: () => {}
+    };
+    
+    Game.applyCard.call(mockGame, CARDS.find(c => c.id === 'shield'), me, me, false);
+    assertEqual('Shield adds 3 shield', me.shield, 3, log);
+    assertEqual('Shield costs 1 energy', me.energy, 4, log);
+  }
+
+  // Test Fire (Ignite) card
+  {
+    const me = createPlayer(false);
+    const foe = createPlayer(true);
+    me.energy = 5;
+    foe.status = { burn: 0 };
+    
+    const mockGame = {
+      you: me,
+      opp: foe,
+      checkWin: () => {}
+    };
+    
+    Game.applyCard.call(mockGame, CARDS.find(c => c.id === 'fire'), me, foe, false);
+    assertEqual('Ignite costs 2 energy', me.energy, 3, log);
+    assertEqual('Ignite inflicts 2 burn turns', foe.status.burn, 2, log);
+  }
+
+  // Test Snow (Freeze) card
+  {
+    const me = createPlayer(false);
+    const foe = createPlayer(true);
+    me.energy = 5;
+    foe.status = { freeze: 0 };
+    
+    const mockGame = {
+      you: me,
+      opp: foe,
+      checkWin: () => {}
+    };
+    
+    Game.applyCard.call(mockGame, CARDS.find(c => c.id === 'snow'), me, foe, false);
+    assertEqual('Freeze costs 2 energy', me.energy, 3, log);
+    assertEqual('Freeze inflicts 1 freeze turn', foe.status.freeze, 1, log);
+  }
   
   log('Self-tests complete.');
 }
