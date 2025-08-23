@@ -301,7 +301,9 @@ export function runSelfTests(Game, log, showStart) {
     assertEqual('Reconsider card is affordable with 3+ energy', canAfford, true, log);
     
     // Test the actual card playing mechanics - should only cost 3 energy
-    testGame.applyCard(reconsiderCard, me, foe, false);
+    // Put Reconsider in hand and play it using playCard like the other tests
+    me.hand = [reconsiderCard];
+    testGame.playCard(me, 0);
     assertEqual('Reconsider costs 3 energy', me.energy, 4, log); // 7 - 3 = 4
     
     // Test with insufficient energy
