@@ -263,10 +263,10 @@ export function runSelfTests(Game, log, showStart) {
     const healedHP = Game.applyHeal(player, 5);
     assertEqual('Overheal allows HP beyond maxHP', healedHP, 23, log);
     
-    // Test overheal cap
+    // Test uncapped overheal (no more 150% cap)
     player.hp = 20;
-    const cappedHP = Game.applyHeal(player, 20);
-    assertEqual('Overheal respects 150% cap', cappedHP, 30, log); // 20 * 1.5 = 30
+    const uncappedHP = Game.applyHeal(player, 20);
+    assertEqual('Overheal has no cap (uncapped)', uncappedHP, 40, log); // 20 + 20 = 40
   }
 
   // Test energy uncapping
@@ -1079,7 +1079,7 @@ export function runSelfTests(Game, log, showStart) {
       Game.setLogFunction(() => {});
       
       const initialHandSize = me.hand.length;
-      me.lastPlayed = null; // No last card
+      me.lastPlayedThisTurn = null; // No last card this turn
       
       testGame.applyCard(CARDS.find(c => c.id === 'echo'), me, foe, false);
       
@@ -1103,7 +1103,7 @@ export function runSelfTests(Game, log, showStart) {
       Game.setLogFunction(() => {});
       
       const initialHandSize = me.hand.length;
-      me.lastPlayed = CARDS.find(c => c.id === 'echo'); // Last card was Echo
+      me.lastPlayedThisTurn = CARDS.find(c => c.id === 'echo'); // Last card was Echo this turn
       
       testGame.applyCard(CARDS.find(c => c.id === 'echo'), me, foe, false);
       
@@ -1126,10 +1126,10 @@ export function runSelfTests(Game, log, showStart) {
       const originalSetLog = Game.setLogFunction;
       Game.setLogFunction(() => {});
       
-      // Set up scenario: player has shield, last played was Ferriglobin
+      // Set up scenario: player has shield, last played was Ferriglobin this turn
       me.shield = 5;
       me.hp = 15;
-      me.lastPlayed = CARDS.find(c => c.id === 'ferriglobin');
+      me.lastPlayedThisTurn = CARDS.find(c => c.id === 'ferriglobin');
       
       testGame.applyCard(CARDS.find(c => c.id === 'echo'), me, foe, false);
       
@@ -1278,10 +1278,11 @@ export function runSelfTests(Game, log, showStart) {
     // Play Echo as first card of turn
     me.hand = [CARDS.find(c => c.id === 'echo')];
     me.energy = 3;
-    const initialHandSize = me.hand.length + me.deck.length; // Total cards available
+    const initialHandSize = me.hand.length; // Start with 1 card (echo)
     
     testGame.playCard(me, 0); // Echo with no previous card
-    assertEqual('Echo draws 1 when no previous card', me.hand.length + me.deck.length, initialHandSize, log); // Should be same total (drew 1 to replace played card)
+    // After playing Echo with no lastPlayedThisTurn, it should draw 1 card to replace the echo
+    assertEqual('Echo draws 1 when no previous card', me.hand.length, initialHandSize, log); // Should draw 1 to replace the echo played
     
     Game.setLogFunction(originalSetLog);
   }
@@ -1340,12 +1341,19 @@ export function runSelfTests(Game, log, showStart) {
     const mockGame = {
       you: me,
       opp: createPlayer(true),
+      turn: 'you',
+      over: false,
       checkWin: () => {},
       applyBurn: Game.applyBurn,
-      applyInfect: Game.applyInfect
+      applyInfect: Game.applyInfect,
+      applyHeal: Game.applyHeal,
+      hit: Game.hit,
+      isEchoing: false
     };
     
-    Game.applyCard.call(mockGame, CARDS.find(c => c.id === 'shield'), me, me, false);
+    // Use playCard instead of applyCard to properly handle energy costs
+    me.hand = [CARDS.find(c => c.id === 'shield')];
+    Game.playCard.call(mockGame, me, 0);
     assertEqual('Shield adds 3 shield', me.shield, 3, log);
     assertEqual('Shield costs 1 energy', me.energy, 4, log);
   }
