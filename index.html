@@ -131,6 +131,43 @@
     <!-- Game Canvas -->
     <div class="metroidvania-game">
       <canvas id="metroidvaniaCanvas" width="800" height="600"></canvas>
+      
+      <!-- Combat UI Panel -->
+      <div id="mazeCombatUI" class="maze-combat-panel" hidden>
+        <!-- Enemy Status Header -->
+        <div class="combat-enemy-header">
+          <div class="enemy-info">
+            <span id="combatEnemyName" class="enemy-name">Enemy</span>
+            <div class="enemy-hp-container">
+              <div class="enemy-hp-bar">
+                <div id="combatEnemyHPBar" class="enemy-hp-fill"></div>
+              </div>
+              <span id="combatEnemyHP" class="enemy-hp-text">20/20</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Player Status -->
+        <div class="combat-player-status">
+          <div class="combat-pills">
+            <div class="pill">❤<span id="combatPlayerHP">10/10</span></div>
+            <div class="pill en">🔆<span id="combatPlayerGHIS">3/3</span></div>
+            <div class="pill sh" id="combatPlayerShield" hidden>🛡<span id="combatPlayerShieldValue">0</span></div>
+          </div>
+        </div>
+        
+        <!-- Combat Actions -->
+        <div class="combat-actions">
+          <div id="combatActionButtons" class="combat-buttons">
+            <!-- Action buttons will be generated here -->
+          </div>
+        </div>
+        
+        <!-- Combat Instructions -->
+        <div class="combat-instructions">
+          <span id="combatInstructions">Choose your action</span>
+        </div>
+      </div>
     </div>
     
     <!-- Game Log -->

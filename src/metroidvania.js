@@ -440,7 +440,6 @@ class MetroidvaniaGame {
   
   // Initialize battle menu options
   initializeBattleMenu() {
-    this.battleMenu.visible = true;
     this.battleMenu.selectedOption = 0;
     this.battleMenu.options = [];
     
@@ -619,7 +618,6 @@ class MetroidvaniaGame {
       this.checkBattleEnd();
       if (this.gameState === 'battle') {
         this.currentBattle.battleState = 'enemy_turn';
-        this.battleMenu.visible = false;
         setTimeout(() => {
           this.executeEnemyTurn();
         }, 1000); // Delay for dramatic effect
@@ -845,7 +843,6 @@ class MetroidvaniaGame {
     
     this.gameState = 'exploring';
     this.currentBattle = null;
-    this.battleMenu.visible = false;
     
     // Restore some HP
     this.player.hp = Math.min(this.player.maxHP, this.player.hp + 5);
@@ -855,7 +852,6 @@ class MetroidvaniaGame {
   loseBattle() {
     this.gameState = 'game_over';
     this.currentBattle = null;
-    this.battleMenu.visible = false;
     
     // Show Judge game over modal
     this.showJudgeGameOver();
@@ -1040,7 +1036,6 @@ class MetroidvaniaGame {
     // Reset game state
     this.gameState = 'exploring';
     this.currentBattle = null;
-    this.battleMenu.visible = false;
     this.discovered.clear();
     this.camera = { x: 0, y: 0 };
     
@@ -1198,7 +1193,9 @@ class MetroidvaniaGame {
     
     // Render battle UI if in battle
     if (this.gameState === 'battle') {
-      this.renderBattleUI(ctx, viewportWidth, viewportHeight);
+      this.updateCombatUI();
+    } else {
+      this.hideCombatUI();
     }
   }
   
@@ -1520,9 +1517,10 @@ class MetroidvaniaGame {
     ctx.fillText('Explorer vs. Enemy Sprites', viewportWidth - 230, 90);
   }
   
-  // Render battle UI
+  // Render battle UI (legacy - now mostly handled by HTML)
   renderBattleUI(ctx, viewportWidth, viewportHeight) {
-    if (!this.battleMenu.visible) {
+    // Only show enemy turn banner when not player turn
+    if (this.currentBattle.battleState !== 'player_turn') {
       // Non-intrusive enemy turn notification banner
       const bannerHeight = 60;
       const bannerY = viewportHeight / 2 - bannerHeight / 2;
@@ -1562,130 +1560,112 @@ class MetroidvaniaGame {
       }
       
       ctx.textAlign = 'left';
+    }
+  }
+  
+  // NEW: Update HTML-based combat UI
+  updateCombatUI() {
+    const combatPanel = document.getElementById('mazeCombatUI');
+    if (!combatPanel) return;
+    
+    combatPanel.hidden = false;
+    
+    // Update enemy info
+    const enemy = this.currentBattle.enemy;
+    const enemyName = document.getElementById('combatEnemyName');
+    const enemyHP = document.getElementById('combatEnemyHP');
+    const enemyHPBar = document.getElementById('combatEnemyHPBar');
+    
+    if (enemyName) enemyName.textContent = enemy.persona;
+    if (enemyHP) enemyHP.textContent = `${enemy.hp}/${enemy.maxHP}`;
+    if (enemyHPBar) {
+      const hpPercent = (enemy.hp / enemy.maxHP) * 100;
+      enemyHPBar.style.width = `${hpPercent}%`;
+    }
+    
+    // Update player status
+    const playerHP = document.getElementById('combatPlayerHP');
+    const playerGHIS = document.getElementById('combatPlayerGHIS');
+    const playerShield = document.getElementById('combatPlayerShield');
+    const playerShieldValue = document.getElementById('combatPlayerShieldValue');
+    
+    if (playerHP) playerHP.textContent = `${this.player.hp}/${this.player.maxHP}`;
+    if (playerGHIS) playerGHIS.textContent = `${this.player.ghis}/${this.player.maxGhis}`;
+    if (playerShield && playerShieldValue) {
+      if (this.player.shield > 0) {
+        playerShield.hidden = false;
+        playerShieldValue.textContent = this.player.shield;
+      } else {
+        playerShield.hidden = true;
+      }
+    }
+    
+    // Update combat actions
+    this.updateCombatActions();
+    
+    // Update instructions
+    const instructions = document.getElementById('combatInstructions');
+    if (instructions) {
+      if (this.currentBattle.battleState === 'player_turn') {
+        instructions.textContent = 'Choose your action';
+      } else if (this.currentBattle.battleState === 'enemy_turn') {
+        instructions.textContent = 'Enemy is acting...';
+      }
+    }
+  }
+  
+  // NEW: Update combat action buttons
+  updateCombatActions() {
+    const buttonsContainer = document.getElementById('combatActionButtons');
+    if (!buttonsContainer) return;
+    
+    // Clear existing buttons
+    buttonsContainer.innerHTML = '';
+    
+    // Only show buttons during player turn
+    if (this.currentBattle.battleState !== 'player_turn') {
       return;
     }
     
-    // RPG-style combat menu overlay
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.95)';
-    ctx.fillRect(0, 0, viewportWidth, viewportHeight);
-    
-    // Title
-    ctx.fillStyle = '#ffd700';
-    ctx.font = 'bold 28px serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('⚔️ COMBAT ⚔️', viewportWidth / 2, 60);
-    
-    // Enemy information
-    const enemy = this.currentBattle.enemy;
-    ctx.fillStyle = '#ff6b6b';
-    ctx.font = 'bold 20px serif';
-    ctx.fillText(`${enemy.persona}`, viewportWidth / 2, 120);
-    
-    // Enemy HP bar
-    const enemyHPPercent = enemy.hp / enemy.maxHP;
-    const hpBarWidth = 300;
-    const hpBarHeight = 20;
-    const hpBarX = (viewportWidth - hpBarWidth) / 2;
-    const hpBarY = 140;
-    
-    ctx.fillStyle = '#333';
-    ctx.fillRect(hpBarX, hpBarY, hpBarWidth, hpBarHeight);
-    ctx.fillStyle = '#ff4444';
-    ctx.fillRect(hpBarX, hpBarY, hpBarWidth * enemyHPPercent, hpBarHeight);
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(hpBarX, hpBarY, hpBarWidth, hpBarHeight);
-    
-    ctx.fillStyle = '#fff';
-    ctx.font = '14px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText(`${enemy.hp}/${enemy.maxHP} HP`, viewportWidth / 2, hpBarY + 15);
-    
-    // Player status
-    ctx.fillStyle = '#4ecdc4';
-    ctx.font = '16px serif';
-    ctx.textAlign = 'left';
-    ctx.fillText(`Your HP: ${this.player.hp}/${this.player.maxHP}`, 50, 220);
-    ctx.fillText(`GHIS Energy: ${this.player.ghis}/${this.player.maxGhis}`, 50, 245);
-    if (this.player.shield > 0) {
-      ctx.fillStyle = '#6bb6ff';
-      ctx.fillText(`Shield: ${this.player.shield}`, 50, 270);
-    }
-    
-    // Combat menu
-    const menuStartY = 320;
-    const menuItemHeight = 60;
-    const menuWidth = 600;
-    const menuX = (viewportWidth - menuWidth) / 2;
-    
-    ctx.fillStyle = '#2c3e50';
-    ctx.fillRect(menuX - 20, menuStartY - 20, menuWidth + 40, this.battleMenu.options.length * menuItemHeight + 40);
-    ctx.strokeStyle = '#ffd700';
-    ctx.lineWidth = 3;
-    ctx.strokeRect(menuX - 20, menuStartY - 20, menuWidth + 40, this.battleMenu.options.length * menuItemHeight + 40);
-    
-    // Menu options with touch-friendly styling
+    // Create buttons for each available action
     this.battleMenu.options.forEach((option, index) => {
-      const y = menuStartY + index * menuItemHeight;
-      const isSelected = index === this.battleMenu.selectedOption;
-      const isEnabled = option.enabled;
-      
-      // Touch-friendly button background
-      if (isEnabled) {
-        ctx.fillStyle = isSelected ? 'rgba(255, 215, 0, 0.2)' : 'rgba(76, 175, 80, 0.1)';
-        ctx.fillRect(menuX + 5, y - 5, menuWidth - 10, menuItemHeight - 15);
-        
-        // Button border for touch indication
-        ctx.strokeStyle = isSelected ? '#ffd700' : '#4caf50';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(menuX + 5, y - 5, menuWidth - 10, menuItemHeight - 15);
+      const button = document.createElement('button');
+      button.className = 'combat-action-btn';
+      if (!option.enabled) {
+        button.className += ' combat-btn-disabled';
+        button.disabled = true;
+      }
+      if (index === this.battleMenu.selectedOption) {
+        button.className += ' selected';
       }
       
-      // Selection highlight
-      if (isSelected) {
-        ctx.fillStyle = 'rgba(255, 215, 0, 0.3)';
-        ctx.fillRect(menuX, y - 10, menuWidth, menuItemHeight - 10);
-      }
+      button.innerHTML = `
+        ${option.text}
+        <span class="combat-btn-cost">Cost: ${option.cost} GHIS</span>
+      `;
       
-      // Option text
-      ctx.fillStyle = isEnabled ? (isSelected ? '#ffd700' : '#ecf0f1') : '#7f8c8d';
-      ctx.font = isSelected ? 'bold 18px serif' : '16px serif';
-      ctx.textAlign = 'left';
+      // Add click handler
+      button.addEventListener('click', () => {
+        this.battleMenu.selectedOption = index;
+        this.executeBattleAction();
+      });
       
-      const prefix = isSelected ? '➤ ' : '   ';
-      ctx.fillText(`${prefix}${option.text}`, menuX + 20, y + 15);
+      // Add keyboard hover support
+      button.addEventListener('mouseenter', () => {
+        this.battleMenu.selectedOption = index;
+        this.updateCombatActions(); // Refresh to show selection
+      });
       
-      // Touch indicator for enabled options
-      if (isEnabled && !isSelected) {
-        ctx.fillStyle = '#4caf50';
-        ctx.font = '12px serif';
-        ctx.textAlign = 'right';
-        ctx.fillText('👆', menuX + menuWidth - 30, y + 15);
-      }
-      
-      // Cost and description
-      ctx.font = '14px monospace';
-      ctx.fillStyle = isEnabled ? '#bdc3c7' : '#7f8c8d';
-      ctx.textAlign = 'left';
-      ctx.fillText(`Cost: ${option.cost} GHIS`, menuX + 20, y + 35);
-      ctx.fillText(option.description, menuX + 180, y + 35);
+      buttonsContainer.appendChild(button);
     });
-    
-    // Instructions - show appropriate controls based on device
-    ctx.fillStyle = '#95a5a6';
-    ctx.font = '14px serif';
-    ctx.textAlign = 'center';
-    
-    // Detect if touch device
-    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-    
-    if (isTouchDevice) {
-      ctx.fillText('Tap an option to select it', viewportWidth / 2, viewportHeight - 40);
-    } else {
-      ctx.fillText('Use ↑↓ arrows to select, ENTER to confirm', viewportWidth / 2, viewportHeight - 40);
+  }
+  
+  // NEW: Hide combat UI
+  hideCombatUI() {
+    const combatPanel = document.getElementById('mazeCombatUI');
+    if (combatPanel) {
+      combatPanel.hidden = true;
     }
-    
-    ctx.textAlign = 'left'; // Reset alignment
   }
   
   // Handle input
@@ -1716,15 +1696,17 @@ class MetroidvaniaGame {
         console.log('[DEBUG] Force triggering test battle');
         this.startBattle(testEnemy);
       }
-    } else if (this.gameState === 'battle' && this.battleMenu.visible) {
-      // Menu navigation
-      if (this.keys.has('ArrowUp')) {
+    } else if (this.gameState === 'battle' && this.currentBattle.battleState === 'player_turn') {
+      // Menu navigation with keyboard
+      if (this.keys.has('ArrowUp') || this.keys.has('ArrowLeft')) {
         this.battleMenu.selectedOption = Math.max(0, this.battleMenu.selectedOption - 1);
+        this.updateCombatActions(); // Refresh UI to show selection
       }
-      if (this.keys.has('ArrowDown')) {
+      if (this.keys.has('ArrowDown') || this.keys.has('ArrowRight')) {
         this.battleMenu.selectedOption = Math.min(this.battleMenu.options.length - 1, this.battleMenu.selectedOption + 1);
+        this.updateCombatActions(); // Refresh UI to show selection
       }
-      if (this.keys.has('Enter')) {
+      if (this.keys.has('Enter') || this.keys.has(' ')) {
         this.executeBattleAction();
       }
     }
@@ -1822,10 +1804,8 @@ class MetroidvaniaGame {
       return;
     }
     
-    // Handle battle menu touch interaction
-    if (this.gameState === 'battle' && this.battleMenu.visible) {
-      this.handleBattleTouch(touch.clientX, touch.clientY);
-    }
+    // Handle battle menu touch interaction - now handled by HTML buttons
+    // No longer needed since we use HTML UI
     
     // Swipe will be processed in next update cycle
   }
