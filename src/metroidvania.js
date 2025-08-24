@@ -643,9 +643,13 @@ class MetroidvaniaGame {
     this.enemyTurnPhase = 'thinking';
     this.enemyTurnTimer = 0;
     
+    // Log enemy thinking message
+    this.logBattleAction(`${enemy.persona || 'Enemy'} is thinking...`);
+    
     // Show "Enemy is thinking..." for a brief moment
     setTimeout(() => {
       this.enemyTurnPhase = 'acting';
+      this.logBattleAction(`${enemy.persona || 'Enemy'} takes their turn`);
       this.processEnemyAction(enemy);
     }, 800);
   }
@@ -962,7 +966,22 @@ class MetroidvaniaGame {
   // Log battle actions
   logBattleAction(message) {
     console.log(`[BATTLE] ${message}`);
-    // Could integrate with existing UI logging system
+    
+    // Add to the maze log UI
+    const logContent = document.getElementById('mazeLogContent');
+    if (logContent) {
+      const logEntry = document.createElement('div');
+      logEntry.textContent = `• ${message}`;
+      logContent.appendChild(logEntry);
+      
+      // Auto-scroll to bottom
+      logContent.scrollTop = logContent.scrollHeight;
+      
+      // Keep only last 50 entries to prevent memory issues
+      while (logContent.children.length > 50) {
+        logContent.removeChild(logContent.firstChild);
+      }
+    }
   }
   
   // Show Judge game over modal
@@ -1012,6 +1031,11 @@ class MetroidvaniaGame {
     
     // Generate new maze
     this.generateMaze();
+    this.spawnPlayer();
+    this.populateEnemies();
+    
+    // Give player starting cards from the JUDGE
+    this.giveStartingCards();
     
     // Reset game state
     this.gameState = 'exploring';
@@ -1044,13 +1068,56 @@ class MetroidvaniaGame {
     document.getElementById('mazeStatsPos').textContent = `${this.player.x}, ${this.player.y}`;
     document.getElementById('mazeStatsCards').textContent = this.player.cards.length;
     
-    // Update abilities list
+    // Separate basic actions from GHIS abilities
+    const basicActions = new Set();
+    const ghisAbilities = new Set();
+    
+    // Always include 'wait' as a basic action if player has any abilities
+    if (this.player.abilities.size > 0) {
+      basicActions.add('wait');
+    }
+    
+    for (const ability of this.player.abilities) {
+      const abilityInfo = this.getAbilityInfo(ability);
+      if (abilityInfo.cost === 0) {
+        basicActions.add(ability);
+      } else {
+        ghisAbilities.add(ability);
+      }
+    }
+    
+    // Update basic actions list
+    const basicActionsList = document.getElementById('mazeBasicActionsList');
+    if (basicActions.size === 0) {
+      basicActionsList.innerHTML = '<div style="color:#888; text-align:center; padding:20px;">No basic actions unlocked yet.</div>';
+    } else {
+      let actionsHTML = '';
+      for (const action of basicActions) {
+        const stat = this.player.stats[action] || 0;
+        const abilityInfo = this.getAbilityInfo(action);
+        actionsHTML += `
+          <div class="maze-ability-item">
+            <div>
+              <div class="maze-ability-name">${abilityInfo.icon} ${abilityInfo.name}</div>
+              <div style="font-size:12px; color:#bbb;">${abilityInfo.description}</div>
+            </div>
+            <div style="text-align:right;">
+              <div class="maze-ability-cost">Cost: ${abilityInfo.cost} GHIS</div>
+              <div class="maze-ability-stats">Level: ${stat}</div>
+            </div>
+          </div>
+        `;
+      }
+      basicActionsList.innerHTML = actionsHTML;
+    }
+    
+    // Update GHIS abilities list
     const abilitiesList = document.getElementById('mazeAbilitiesList');
-    if (this.player.abilities.size === 0) {
-      abilitiesList.innerHTML = '<div style="color:#888; text-align:center; padding:20px;">No abilities unlocked yet. Defeat enemies to find cards!</div>';
+    if (ghisAbilities.size === 0) {
+      abilitiesList.innerHTML = '<div style="color:#888; text-align:center; padding:20px;">No GHIS abilities unlocked yet. Defeat enemies to find cards!</div>';
     } else {
       let abilitiesHTML = '';
-      for (const ability of this.player.abilities) {
+      for (const ability of ghisAbilities) {
         const stat = this.player.stats[ability] || 0;
         const abilityInfo = this.getAbilityInfo(ability);
         abilitiesHTML += `
@@ -1092,6 +1159,7 @@ class MetroidvaniaGame {
     const abilityData = {
       strike: { icon: '⚔️', name: 'Strike', description: 'Basic attack', cost: 0 },
       shield: { icon: '🛡️', name: 'Shield', description: 'Block incoming damage', cost: 0 },
+      wait: { icon: '⏳', name: 'Wait', description: 'Regenerate 1 GHIS energy', cost: 0 },
       pierce: { icon: '🗡️', name: 'Pierce', description: 'Piercing attack', cost: 2 },
       hope: { icon: '💚', name: 'Hope', description: 'Heal HP', cost: 1 },
       zap: { icon: '⚡', name: 'Zap', description: 'Chance to stun enemy', cost: 1 },

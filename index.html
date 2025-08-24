@@ -133,14 +133,16 @@
       <canvas id="metroidvaniaCanvas" width="800" height="600"></canvas>
     </div>
     
-    <!-- Game Instructions -->
-    <div class="metroidvania-instructions">
-      <div><strong>Instructions:</strong></div>
-      <div>• Move: WASD keys</div>
-      <div>• Battle: Use ↑↓ arrows to select abilities, Enter to confirm</div>
-      <div>• Find cards to unlock abilities and increase stats</div>
-      <div>• Press E to open Equipment menu</div>
-      <div>• Red squares = enemies, Green square = you</div>
+    <!-- Game Log -->
+    <div class="metroidvania-log">
+      <div><strong>Game Log:</strong></div>
+      <div id="mazeLogContent" class="maze-log-content" aria-live="polite">
+        <div>• Move: WASD keys</div>
+        <div>• Battle: Use ↑↓ arrows to select abilities, Enter to confirm</div>
+        <div>• Find cards to unlock abilities and increase stats</div>
+        <div>• Press E to open Equipment menu</div>
+        <div>• Red squares = enemies, Green square = you</div>
+      </div>
     </div>
   </div>
   
@@ -159,10 +161,16 @@
         </div>
       </div>
       
-      <!-- Abilities List -->
-      <div style="font-size:16px; color:var(--accent); margin:16px 0 8px;"><strong>Available Abilities:</strong></div>
-      <div id="mazeAbilitiesList" style="max-height:300px; overflow-y:auto; background:rgba(0,0,0,0.3); padding:8px; border-radius:4px;">
-        <div style="color:#888; text-align:center; padding:20px;">No abilities unlocked yet. Defeat enemies to find cards!</div>
+      <!-- Basic Actions -->
+      <div style="font-size:16px; color:var(--accent); margin:16px 0 8px;"><strong>Basic Actions:</strong></div>
+      <div id="mazeBasicActionsList" style="max-height:150px; overflow-y:auto; background:rgba(0,0,0,0.3); padding:8px; border-radius:4px;">
+        <div style="color:#888; text-align:center; padding:20px;">No basic actions unlocked yet.</div>
+      </div>
+      
+      <!-- GHIS Abilities -->
+      <div style="font-size:16px; color:var(--accent); margin:16px 0 8px;"><strong>GHIS Abilities:</strong></div>
+      <div id="mazeAbilitiesList" style="max-height:150px; overflow-y:auto; background:rgba(0,0,0,0.3); padding:8px; border-radius:4px;">
+        <div style="color:#888; text-align:center; padding:20px;">No GHIS abilities unlocked yet. Defeat enemies to find cards!</div>
       </div>
       
       <!-- Collected Cards -->

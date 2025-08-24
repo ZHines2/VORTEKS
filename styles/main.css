@@ -1892,18 +1892,23 @@ button.card:disabled {
     height: auto;
   }
   
-  .metroidvania-instructions {
+  .metroidvania-log {
     padding: 8px;
     font-size: 8px;
   }
   
-  .metroidvania-instructions div {
+  .maze-log-content {
+    max-height: 80px;
+    font-size: 8px;
+  }
+
+  .maze-log-content div {
     font-size: 8px;
     margin: 2px 0;
   }
 }
 
-.metroidvania-instructions {
+.metroidvania-log {
   background: var(--panel);
   border: 2px solid var(--border);
   border-radius: 6px;
@@ -1913,14 +1918,19 @@ button.card:disabled {
   box-sizing: border-box;
 }
 
-.metroidvania-instructions div {
-  margin: 4px 0;
+.maze-log-content {
+  max-height: 120px;
+  overflow-y: auto;
   color: var(--ink);
   font-size: 10px;
   line-height: 1.4;
 }
 
-.metroidvania-instructions div:first-child {
+.maze-log-content div {
+  margin: 2px 0;
+}
+
+.metroidvania-log > div:first-child {
   color: var(--accent);
   font-weight: bold;
   margin-bottom: 8px;
