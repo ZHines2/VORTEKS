@@ -440,7 +440,6 @@ class MetroidvaniaGame {
   
   // Initialize battle menu options
   initializeBattleMenu() {
-    this.battleMenu.visible = true;
     this.battleMenu.selectedOption = 0;
     this.battleMenu.options = [];
     
@@ -619,7 +618,6 @@ class MetroidvaniaGame {
       this.checkBattleEnd();
       if (this.gameState === 'battle') {
         this.currentBattle.battleState = 'enemy_turn';
-        this.battleMenu.visible = false;
         setTimeout(() => {
           this.executeEnemyTurn();
         }, 1000); // Delay for dramatic effect
@@ -845,7 +843,6 @@ class MetroidvaniaGame {
     
     this.gameState = 'exploring';
     this.currentBattle = null;
-    this.battleMenu.visible = false;
     
     // Restore some HP
     this.player.hp = Math.min(this.player.maxHP, this.player.hp + 5);
@@ -855,7 +852,6 @@ class MetroidvaniaGame {
   loseBattle() {
     this.gameState = 'game_over';
     this.currentBattle = null;
-    this.battleMenu.visible = false;
     
     // Show Judge game over modal
     this.showJudgeGameOver();
@@ -1040,7 +1036,6 @@ class MetroidvaniaGame {
     // Reset game state
     this.gameState = 'exploring';
     this.currentBattle = null;
-    this.battleMenu.visible = false;
     this.discovered.clear();
     this.camera = { x: 0, y: 0 };
     
@@ -1198,7 +1193,9 @@ class MetroidvaniaGame {
     
     // Render battle UI if in battle
     if (this.gameState === 'battle') {
-      this.renderBattleUI(ctx, viewportWidth, viewportHeight);
+      this.updateCombatUI();
+    } else {
+      this.hideCombatUI();
     }
   }
   
@@ -1336,29 +1333,25 @@ class MetroidvaniaGame {
   
   // Render entities (player, enemies, loot)
   renderEntities(ctx) {
-    // Render player with glow effect
+    // Render player with pixel sprite
     const playerScreenX = this.player.x * this.cellSize - this.camera.x + this.cellSize / 6;
     const playerScreenY = this.player.y * this.cellSize - this.camera.y + this.cellSize / 6;
     const playerSize = this.cellSize * 2/3;
     
-    // Player glow
+    // Player glow effect
     const gradient = ctx.createRadialGradient(
       playerScreenX + playerSize/2, playerScreenY + playerSize/2, 0,
-      playerScreenX + playerSize/2, playerScreenY + playerSize/2, playerSize
+      playerScreenX + playerSize/2, playerScreenY + playerSize/2, playerSize + 6
     );
-    gradient.addColorStop(0, 'rgba(0, 255, 136, 0.8)');
+    gradient.addColorStop(0, 'rgba(0, 255, 136, 0.6)');
     gradient.addColorStop(1, 'rgba(0, 255, 136, 0)');
     ctx.fillStyle = gradient;
-    ctx.fillRect(playerScreenX - 4, playerScreenY - 4, playerSize + 8, playerSize + 8);
+    ctx.fillRect(playerScreenX - 6, playerScreenY - 6, playerSize + 12, playerSize + 12);
     
-    // Player body
-    ctx.fillStyle = '#00ff88';
-    ctx.fillRect(playerScreenX, playerScreenY, playerSize, playerSize);
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(playerScreenX, playerScreenY, playerSize, playerSize);
+    // Draw pixel sprite player
+    this.drawPlayerSprite(ctx, playerScreenX, playerScreenY, playerSize);
     
-    // Render enemies with different styles
+    // Render enemies with unique pixel sprites
     for (const [pos, enemy] of this.enemies) {
       if (enemy.defeated) continue;
       
@@ -1369,39 +1362,29 @@ class MetroidvaniaGame {
       const screenY = y * this.cellSize - this.camera.y + this.cellSize / 6;
       const enemySize = this.cellSize * 2/3;
       
-      // Enemy colors and styles
+      // Enemy data with enhanced colors and characteristics
       const enemyData = {
-        bruiser: { color: '#ff4444', symbol: '◆' },
-        doctor: { color: '#44ff44', symbol: '⚕' }, 
-        trickster: { color: '#ffff44', symbol: '◊' },
-        cat: { color: '#ff44ff', symbol: '◈' },
-        robot: { color: '#4444ff', symbol: '⬟' }
+        bruiser: { color: '#ff4444', glowColor: '#ff6666', accent: '#cc2222' },
+        doctor: { color: '#44ff44', glowColor: '#66ff66', accent: '#22cc22' }, 
+        trickster: { color: '#ffff44', glowColor: '#ffff66', accent: '#cccc22' },
+        cat: { color: '#ff44ff', glowColor: '#ff66ff', accent: '#cc22cc' },
+        robot: { color: '#4444ff', glowColor: '#6666ff', accent: '#2222cc' }
       };
       
-      const data = enemyData[enemy.type] || { color: '#ff0000', symbol: '◼' };
+      const data = enemyData[enemy.type] || { color: '#ff0000', glowColor: '#ff4444', accent: '#cc0000' };
       
       // Enemy glow effect
       const enemyGradient = ctx.createRadialGradient(
         screenX + enemySize/2, screenY + enemySize/2, 0,
-        screenX + enemySize/2, screenY + enemySize/2, enemySize
+        screenX + enemySize/2, screenY + enemySize/2, enemySize + 4
       );
-      enemyGradient.addColorStop(0, data.color + '80');
-      enemyGradient.addColorStop(1, data.color + '00');
+      enemyGradient.addColorStop(0, data.glowColor + '60');
+      enemyGradient.addColorStop(1, data.glowColor + '00');
       ctx.fillStyle = enemyGradient;
-      ctx.fillRect(screenX - 4, screenY - 4, enemySize + 8, enemySize + 8);
+      ctx.fillRect(screenX - 6, screenY - 6, enemySize + 12, enemySize + 12);
       
-      // Enemy body
-      ctx.fillStyle = data.color;
-      ctx.fillRect(screenX, screenY, enemySize, enemySize);
-      ctx.strokeStyle = '#333333';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(screenX, screenY, enemySize, enemySize);
-      
-      // Enemy symbol
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '16px serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(data.symbol, screenX + enemySize/2, screenY + enemySize/2 + 6);
+      // Draw enemy sprite based on type
+      this.drawEnemySprite(ctx, enemy.type, screenX, screenY, enemySize, data);
     }
     
     // Render loot with sparkle effects
@@ -1427,55 +1410,80 @@ class MetroidvaniaGame {
   
   // Render UI overlay
   renderUI(ctx, viewportWidth, viewportHeight) {
+    // Calculate dynamic panel height based on abilities
+    const baseHeight = 115; // Height for basic stats
+    const abilitiesHeight = Math.max(this.player.abilities.size * 18, 20); // 18px per ability, min 20
+    const totalPanelHeight = baseHeight + abilitiesHeight + 10; // 10px padding
+    
     // Player stats panel with more atmospheric styling
-    const panelGradient = ctx.createLinearGradient(10, 10, 10, 140);
+    const panelGradient = ctx.createLinearGradient(10, 10, 10, totalPanelHeight);
     panelGradient.addColorStop(0, 'rgba(15, 15, 35, 0.9)');
     panelGradient.addColorStop(1, 'rgba(10, 10, 25, 0.9)');
     ctx.fillStyle = panelGradient;
-    ctx.fillRect(10, 10, 220, 140);
+    ctx.fillRect(10, 10, 240, totalPanelHeight);
     
     // Panel border
     ctx.strokeStyle = '#4ecdc4';
     ctx.lineWidth = 2;
-    ctx.strokeRect(10, 10, 220, 140);
+    ctx.strokeRect(10, 10, 240, totalPanelHeight);
     
-    // Title
+    // Title - more compact
     ctx.fillStyle = '#ffd700';
-    ctx.font = 'bold 16px serif';
-    ctx.fillText('◈ EXPLORER STATUS ◈', 20, 30);
+    ctx.font = 'bold 14px serif';
+    ctx.fillText('◈ EXPLORER STATUS ◈', 20, 28);
     
-    // Stats with colors
-    ctx.font = '14px monospace';
+    // Stats with colors - more compact layout
+    ctx.font = '12px monospace';
     ctx.fillStyle = '#ff6b6b';
-    ctx.fillText(`♥ HP: ${this.player.hp}/${this.player.maxHP}`, 20, 50);
+    ctx.fillText(`♥ ${this.player.hp}/${this.player.maxHP}`, 20, 48);
     
     ctx.fillStyle = '#4ecdc4';
-    ctx.fillText(`⚡ GHIS: ${this.player.ghis}/${this.player.maxGhis}`, 20, 70);
+    ctx.fillText(`⚡ ${this.player.ghis}/${this.player.maxGhis}`, 100, 48);
     
     ctx.fillStyle = '#95a5a6';
-    ctx.fillText(`📍 Pos: ${this.player.x}, ${this.player.y}`, 20, 90);
+    ctx.fillText(`📍 ${this.player.x}, ${this.player.y}`, 20, 68);
     
     ctx.fillStyle = '#ffd700';
-    ctx.fillText(`🎴 Cards: ${this.player.cards.length}`, 20, 110);
+    ctx.fillText(`🎴 ${this.player.cards.length} cards`, 120, 68);
     
-    // Abilities panel
-    ctx.fillStyle = '#e74c3c';
-    ctx.fillText('⚔️ Abilities:', 20, 130);
-    let abilityY = 150;
-    for (const ability of this.player.abilities) {
-      const stat = this.player.stats[ability] || 0;
-      const abilityIcons = {
-        strike: '⚔️',
-        shield: '🛡️',
-        pierce: '🗡️',
-        surge: '⚡',
-        hope: '🕊️',
-        zap: '⚡',
-        ignite: '🔥'
-      };
-      ctx.fillStyle = '#ffffff';
-      ctx.fillText(`${abilityIcons[ability] || '•'} ${ability}: ${stat}`, 30, abilityY);
-      abilityY += 20;
+    // Abilities panel - more compact
+    if (this.player.abilities.size > 0) {
+      ctx.fillStyle = '#e74c3c';
+      ctx.font = 'bold 12px serif';
+      ctx.fillText('⚔️ Abilities:', 20, 88);
+      
+      let abilityY = 105;
+      let col = 0;
+      const maxCols = 2;
+      const colWidth = 110;
+      
+      for (const ability of this.player.abilities) {
+        const stat = this.player.stats[ability] || 0;
+        const abilityIcons = {
+          strike: '⚔️',
+          shield: '🛡️',
+          pierce: '🗡️',
+          surge: '⚡',
+          hope: '🕊️',
+          zap: '⚡',
+          ignite: '🔥'
+        };
+        
+        const x = 25 + (col * colWidth);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '11px monospace';
+        ctx.fillText(`${abilityIcons[ability] || '•'} ${ability}: ${stat}`, x, abilityY);
+        
+        col++;
+        if (col >= maxCols) {
+          col = 0;
+          abilityY += 18;
+        }
+      }
+    } else {
+      ctx.fillStyle = '#888888';
+      ctx.font = '11px serif';
+      ctx.fillText('No abilities unlocked yet', 20, 100);
     }
     
     // Controls panel with atmospheric styling
@@ -1506,166 +1514,158 @@ class MetroidvaniaGame {
       ctx.fillText('WASD: Move', viewportWidth - 230, 50);
       ctx.fillText('Enter enemies to battle', viewportWidth - 230, 70);
     }
-    ctx.fillText('🔴 = Enemies, 🟢 = You', viewportWidth - 230, 90);
+    ctx.fillText('Explorer vs. Enemy Sprites', viewportWidth - 230, 90);
   }
   
-  // Render battle UI
+  // Render battle UI (legacy - now mostly handled by HTML)
   renderBattleUI(ctx, viewportWidth, viewportHeight) {
-    if (!this.battleMenu.visible) {
-      // Enemy turn or transition state
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
-      ctx.fillRect(0, 0, viewportWidth, viewportHeight);
+    // Only show enemy turn banner when not player turn
+    if (this.currentBattle.battleState !== 'player_turn') {
+      // Non-intrusive enemy turn notification banner
+      const bannerHeight = 60;
+      const bannerY = viewportHeight / 2 - bannerHeight / 2;
       
-      // Show different messages based on enemy turn phase
-      ctx.font = 'bold 24px serif';
+      // Semi-transparent banner background
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+      ctx.fillRect(viewportWidth / 2 - 200, bannerY, 400, bannerHeight);
+      
+      // Banner border
+      ctx.strokeStyle = '#ff6b6b';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(viewportWidth / 2 - 200, bannerY, 400, bannerHeight);
+      
       ctx.textAlign = 'center';
       
       if (this.enemyTurnPhase === 'thinking') {
         ctx.fillStyle = '#ffd700';
-        ctx.fillText('Enemy is thinking...', viewportWidth / 2, viewportHeight / 2 - 20);
+        ctx.font = 'bold 18px serif';
+        ctx.fillText('Enemy is thinking', viewportWidth / 2, bannerY + 25);
         
         // Add thinking animation dots
         const dots = '.'.repeat((Math.floor(Date.now() / 500) % 3) + 1);
         ctx.fillStyle = '#ffffff';
-        ctx.font = '20px serif';
-        ctx.fillText(dots, viewportWidth / 2, viewportHeight / 2 + 10);
+        ctx.font = '16px serif';
+        ctx.fillText(dots, viewportWidth / 2, bannerY + 45);
       } else {
         ctx.fillStyle = '#ff6b6b';
-        ctx.fillText('ENEMY TURN', viewportWidth / 2, viewportHeight / 2 - 20);
+        ctx.font = 'bold 18px serif';
+        ctx.fillText('ENEMY TURN', viewportWidth / 2, bannerY + 25);
         
         // Show enemy name
         if (this.currentBattle && this.currentBattle.enemy) {
           ctx.fillStyle = '#ffffff';
-          ctx.font = '16px serif';
-          ctx.fillText(`${this.currentBattle.enemy.persona} acts!`, viewportWidth / 2, viewportHeight / 2 + 10);
+          ctx.font = '14px serif';
+          ctx.fillText(`${this.currentBattle.enemy.persona} acts!`, viewportWidth / 2, bannerY + 45);
         }
       }
       
       ctx.textAlign = 'left';
+    }
+  }
+  
+  // NEW: Update HTML-based combat UI
+  updateCombatUI() {
+    const combatPanel = document.getElementById('mazeCombatUI');
+    if (!combatPanel) return;
+    
+    combatPanel.hidden = false;
+    
+    // Update enemy info
+    const enemy = this.currentBattle.enemy;
+    const enemyName = document.getElementById('combatEnemyName');
+    const enemyHP = document.getElementById('combatEnemyHP');
+    const enemyHPBar = document.getElementById('combatEnemyHPBar');
+    
+    if (enemyName) enemyName.textContent = enemy.persona;
+    if (enemyHP) enemyHP.textContent = `${enemy.hp}/${enemy.maxHP}`;
+    if (enemyHPBar) {
+      const hpPercent = (enemy.hp / enemy.maxHP) * 100;
+      enemyHPBar.style.width = `${hpPercent}%`;
+    }
+    
+    // Update player status
+    const playerHP = document.getElementById('combatPlayerHP');
+    const playerGHIS = document.getElementById('combatPlayerGHIS');
+    const playerShield = document.getElementById('combatPlayerShield');
+    const playerShieldValue = document.getElementById('combatPlayerShieldValue');
+    
+    if (playerHP) playerHP.textContent = `${this.player.hp}/${this.player.maxHP}`;
+    if (playerGHIS) playerGHIS.textContent = `${this.player.ghis}/${this.player.maxGhis}`;
+    if (playerShield && playerShieldValue) {
+      if (this.player.shield > 0) {
+        playerShield.hidden = false;
+        playerShieldValue.textContent = this.player.shield;
+      } else {
+        playerShield.hidden = true;
+      }
+    }
+    
+    // Update combat actions
+    this.updateCombatActions();
+    
+    // Update instructions
+    const instructions = document.getElementById('combatInstructions');
+    if (instructions) {
+      if (this.currentBattle.battleState === 'player_turn') {
+        instructions.textContent = 'Choose your action';
+      } else if (this.currentBattle.battleState === 'enemy_turn') {
+        instructions.textContent = 'Enemy is acting...';
+      }
+    }
+  }
+  
+  // NEW: Update combat action buttons
+  updateCombatActions() {
+    const buttonsContainer = document.getElementById('combatActionButtons');
+    if (!buttonsContainer) return;
+    
+    // Clear existing buttons
+    buttonsContainer.innerHTML = '';
+    
+    // Only show buttons during player turn
+    if (this.currentBattle.battleState !== 'player_turn') {
       return;
     }
     
-    // RPG-style combat menu overlay
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.95)';
-    ctx.fillRect(0, 0, viewportWidth, viewportHeight);
-    
-    // Title
-    ctx.fillStyle = '#ffd700';
-    ctx.font = 'bold 28px serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('⚔️ COMBAT ⚔️', viewportWidth / 2, 60);
-    
-    // Enemy information
-    const enemy = this.currentBattle.enemy;
-    ctx.fillStyle = '#ff6b6b';
-    ctx.font = 'bold 20px serif';
-    ctx.fillText(`${enemy.persona}`, viewportWidth / 2, 120);
-    
-    // Enemy HP bar
-    const enemyHPPercent = enemy.hp / enemy.maxHP;
-    const hpBarWidth = 300;
-    const hpBarHeight = 20;
-    const hpBarX = (viewportWidth - hpBarWidth) / 2;
-    const hpBarY = 140;
-    
-    ctx.fillStyle = '#333';
-    ctx.fillRect(hpBarX, hpBarY, hpBarWidth, hpBarHeight);
-    ctx.fillStyle = '#ff4444';
-    ctx.fillRect(hpBarX, hpBarY, hpBarWidth * enemyHPPercent, hpBarHeight);
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(hpBarX, hpBarY, hpBarWidth, hpBarHeight);
-    
-    ctx.fillStyle = '#fff';
-    ctx.font = '14px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText(`${enemy.hp}/${enemy.maxHP} HP`, viewportWidth / 2, hpBarY + 15);
-    
-    // Player status
-    ctx.fillStyle = '#4ecdc4';
-    ctx.font = '16px serif';
-    ctx.textAlign = 'left';
-    ctx.fillText(`Your HP: ${this.player.hp}/${this.player.maxHP}`, 50, 220);
-    ctx.fillText(`GHIS Energy: ${this.player.ghis}/${this.player.maxGhis}`, 50, 245);
-    if (this.player.shield > 0) {
-      ctx.fillStyle = '#6bb6ff';
-      ctx.fillText(`Shield: ${this.player.shield}`, 50, 270);
-    }
-    
-    // Combat menu
-    const menuStartY = 320;
-    const menuItemHeight = 60;
-    const menuWidth = 600;
-    const menuX = (viewportWidth - menuWidth) / 2;
-    
-    ctx.fillStyle = '#2c3e50';
-    ctx.fillRect(menuX - 20, menuStartY - 20, menuWidth + 40, this.battleMenu.options.length * menuItemHeight + 40);
-    ctx.strokeStyle = '#ffd700';
-    ctx.lineWidth = 3;
-    ctx.strokeRect(menuX - 20, menuStartY - 20, menuWidth + 40, this.battleMenu.options.length * menuItemHeight + 40);
-    
-    // Menu options with touch-friendly styling
+    // Create buttons for each available action
     this.battleMenu.options.forEach((option, index) => {
-      const y = menuStartY + index * menuItemHeight;
-      const isSelected = index === this.battleMenu.selectedOption;
-      const isEnabled = option.enabled;
-      
-      // Touch-friendly button background
-      if (isEnabled) {
-        ctx.fillStyle = isSelected ? 'rgba(255, 215, 0, 0.2)' : 'rgba(76, 175, 80, 0.1)';
-        ctx.fillRect(menuX + 5, y - 5, menuWidth - 10, menuItemHeight - 15);
-        
-        // Button border for touch indication
-        ctx.strokeStyle = isSelected ? '#ffd700' : '#4caf50';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(menuX + 5, y - 5, menuWidth - 10, menuItemHeight - 15);
+      const button = document.createElement('button');
+      button.className = 'combat-action-btn';
+      if (!option.enabled) {
+        button.className += ' combat-btn-disabled';
+        button.disabled = true;
+      }
+      if (index === this.battleMenu.selectedOption) {
+        button.className += ' selected';
       }
       
-      // Selection highlight
-      if (isSelected) {
-        ctx.fillStyle = 'rgba(255, 215, 0, 0.3)';
-        ctx.fillRect(menuX, y - 10, menuWidth, menuItemHeight - 10);
-      }
+      button.innerHTML = `
+        ${option.text}
+        <span class="combat-btn-cost">Cost: ${option.cost} GHIS</span>
+      `;
       
-      // Option text
-      ctx.fillStyle = isEnabled ? (isSelected ? '#ffd700' : '#ecf0f1') : '#7f8c8d';
-      ctx.font = isSelected ? 'bold 18px serif' : '16px serif';
-      ctx.textAlign = 'left';
+      // Add click handler
+      button.addEventListener('click', () => {
+        this.battleMenu.selectedOption = index;
+        this.executeBattleAction();
+      });
       
-      const prefix = isSelected ? '➤ ' : '   ';
-      ctx.fillText(`${prefix}${option.text}`, menuX + 20, y + 15);
+      // Add keyboard hover support
+      button.addEventListener('mouseenter', () => {
+        this.battleMenu.selectedOption = index;
+        this.updateCombatActions(); // Refresh to show selection
+      });
       
-      // Touch indicator for enabled options
-      if (isEnabled && !isSelected) {
-        ctx.fillStyle = '#4caf50';
-        ctx.font = '12px serif';
-        ctx.textAlign = 'right';
-        ctx.fillText('👆', menuX + menuWidth - 30, y + 15);
-      }
-      
-      // Cost and description
-      ctx.font = '14px monospace';
-      ctx.fillStyle = isEnabled ? '#bdc3c7' : '#7f8c8d';
-      ctx.textAlign = 'left';
-      ctx.fillText(`Cost: ${option.cost} GHIS`, menuX + 20, y + 35);
-      ctx.fillText(option.description, menuX + 180, y + 35);
+      buttonsContainer.appendChild(button);
     });
-    
-    // Instructions - show appropriate controls based on device
-    ctx.fillStyle = '#95a5a6';
-    ctx.font = '14px serif';
-    ctx.textAlign = 'center';
-    
-    // Detect if touch device
-    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-    
-    if (isTouchDevice) {
-      ctx.fillText('Tap an option to select it', viewportWidth / 2, viewportHeight - 40);
-    } else {
-      ctx.fillText('Use ↑↓ arrows to select, ENTER to confirm', viewportWidth / 2, viewportHeight - 40);
+  }
+  
+  // NEW: Hide combat UI
+  hideCombatUI() {
+    const combatPanel = document.getElementById('mazeCombatUI');
+    if (combatPanel) {
+      combatPanel.hidden = true;
     }
-    
-    ctx.textAlign = 'left'; // Reset alignment
   }
   
   // Handle input
@@ -1696,15 +1696,17 @@ class MetroidvaniaGame {
         console.log('[DEBUG] Force triggering test battle');
         this.startBattle(testEnemy);
       }
-    } else if (this.gameState === 'battle' && this.battleMenu.visible) {
-      // Menu navigation
-      if (this.keys.has('ArrowUp')) {
+    } else if (this.gameState === 'battle' && this.currentBattle.battleState === 'player_turn') {
+      // Menu navigation with keyboard
+      if (this.keys.has('ArrowUp') || this.keys.has('ArrowLeft')) {
         this.battleMenu.selectedOption = Math.max(0, this.battleMenu.selectedOption - 1);
+        this.updateCombatActions(); // Refresh UI to show selection
       }
-      if (this.keys.has('ArrowDown')) {
+      if (this.keys.has('ArrowDown') || this.keys.has('ArrowRight')) {
         this.battleMenu.selectedOption = Math.min(this.battleMenu.options.length - 1, this.battleMenu.selectedOption + 1);
+        this.updateCombatActions(); // Refresh UI to show selection
       }
-      if (this.keys.has('Enter')) {
+      if (this.keys.has('Enter') || this.keys.has(' ')) {
         this.executeBattleAction();
       }
     }
@@ -1802,10 +1804,8 @@ class MetroidvaniaGame {
       return;
     }
     
-    // Handle battle menu touch interaction
-    if (this.gameState === 'battle' && this.battleMenu.visible) {
-      this.handleBattleTouch(touch.clientX, touch.clientY);
-    }
+    // Handle battle menu touch interaction - now handled by HTML buttons
+    // No longer needed since we use HTML UI
     
     // Swipe will be processed in next update cycle
   }
@@ -1845,6 +1845,179 @@ class MetroidvaniaGame {
         }
       }
     }
+  }
+
+  // Draw pixel sprite player character
+  drawPlayerSprite(ctx, x, y, size) {
+    const pixelSize = Math.max(2, Math.floor(size / 16)); // Scale pixel size based on cell size
+    const centerX = x + size / 2;
+    const centerY = y + size / 2;
+    
+    // Helper function to draw a pixel
+    const drawPixel = (px, py, color) => {
+      ctx.fillStyle = color;
+      ctx.fillRect(
+        centerX + (px - 8) * pixelSize - pixelSize/2, 
+        centerY + (py - 8) * pixelSize - pixelSize/2, 
+        pixelSize, 
+        pixelSize
+      );
+    };
+    
+    // Explorer sprite design (16x16 grid, centered)
+    // Head/helmet (teal/cyan colors)
+    drawPixel(6, 3, '#4ecdc4'); drawPixel(7, 3, '#4ecdc4'); drawPixel(8, 3, '#4ecdc4'); drawPixel(9, 3, '#4ecdc4');
+    drawPixel(5, 4, '#4ecdc4'); drawPixel(6, 4, '#ffffff'); drawPixel(7, 4, '#4ecdc4'); drawPixel(8, 4, '#4ecdc4'); drawPixel(9, 4, '#ffffff'); drawPixel(10, 4, '#4ecdc4');
+    drawPixel(5, 5, '#4ecdc4'); drawPixel(6, 5, '#ffffff'); drawPixel(7, 5, '#4ecdc4'); drawPixel(8, 5, '#4ecdc4'); drawPixel(9, 5, '#ffffff'); drawPixel(10, 5, '#4ecdc4');
+    drawPixel(6, 6, '#4ecdc4'); drawPixel(7, 6, '#4ecdc4'); drawPixel(8, 6, '#4ecdc4'); drawPixel(9, 6, '#4ecdc4');
+    
+    // Body/armor (green colors)
+    drawPixel(7, 7, '#00ff88'); drawPixel(8, 7, '#00ff88');
+    drawPixel(6, 8, '#00ff88'); drawPixel(7, 8, '#ffffff'); drawPixel(8, 8, '#ffffff'); drawPixel(9, 8, '#00ff88');
+    drawPixel(6, 9, '#00ff88'); drawPixel(7, 9, '#00ff88'); drawPixel(8, 9, '#00ff88'); drawPixel(9, 9, '#00ff88');
+    drawPixel(6, 10, '#00ff88'); drawPixel(7, 10, '#00ff88'); drawPixel(8, 10, '#00ff88'); drawPixel(9, 10, '#00ff88');
+    
+    // Arms (darker green)
+    drawPixel(4, 8, '#00cc66'); drawPixel(5, 8, '#00cc66');
+    drawPixel(4, 9, '#00cc66'); drawPixel(5, 9, '#00cc66');
+    drawPixel(10, 8, '#00cc66'); drawPixel(11, 8, '#00cc66');
+    drawPixel(10, 9, '#00cc66'); drawPixel(11, 9, '#00cc66');
+    
+    // Legs (darker green)
+    drawPixel(6, 11, '#00cc66'); drawPixel(7, 11, '#00cc66'); drawPixel(8, 11, '#00cc66'); drawPixel(9, 11, '#00cc66');
+    drawPixel(6, 12, '#00cc66'); drawPixel(7, 12, '#00cc66'); drawPixel(8, 12, '#00cc66'); drawPixel(9, 12, '#00cc66');
+    
+    // Feet (dark gray)
+    drawPixel(5, 13, '#333333'); drawPixel(6, 13, '#333333'); drawPixel(7, 13, '#333333');
+    drawPixel(8, 13, '#333333'); drawPixel(9, 13, '#333333'); drawPixel(10, 13, '#333333');
+    
+    // Equipment highlights (gold accents)
+    drawPixel(7, 8, '#ffd700'); drawPixel(8, 8, '#ffd700'); // Chest light
+    
+    // Add subtle outline
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x, y, size, size);
+  }
+
+  // Draw enemy sprites based on type
+  drawEnemySprite(ctx, type, x, y, size, colorData) {
+    const pixelSize = Math.max(2, Math.floor(size / 12)); // Slightly larger pixels for enemies
+    const centerX = x + size / 2;
+    const centerY = y + size / 2;
+    
+    // Helper function to draw a pixel
+    const drawPixel = (px, py, color) => {
+      ctx.fillStyle = color;
+      ctx.fillRect(
+        centerX + (px - 6) * pixelSize - pixelSize/2, 
+        centerY + (py - 6) * pixelSize - pixelSize/2, 
+        pixelSize, 
+        pixelSize
+      );
+    };
+    
+    switch(type) {
+      case 'bruiser':
+        // Bulky warrior design (red)
+        // Head
+        drawPixel(4, 1, colorData.color); drawPixel(5, 1, colorData.color); drawPixel(6, 1, colorData.color); drawPixel(7, 1, colorData.color);
+        drawPixel(3, 2, colorData.color); drawPixel(4, 2, '#ffffff'); drawPixel(5, 2, colorData.color); drawPixel(6, 2, colorData.color); drawPixel(7, 2, '#ffffff'); drawPixel(8, 2, colorData.color);
+        drawPixel(4, 3, colorData.color); drawPixel(5, 3, colorData.color); drawPixel(6, 3, colorData.color); drawPixel(7, 3, colorData.color);
+        // Body (broad shoulders)
+        drawPixel(2, 4, colorData.accent); drawPixel(3, 4, colorData.color); drawPixel(4, 4, colorData.color); drawPixel(5, 4, colorData.color); 
+        drawPixel(6, 4, colorData.color); drawPixel(7, 4, colorData.color); drawPixel(8, 4, colorData.color); drawPixel(9, 4, colorData.accent);
+        drawPixel(3, 5, colorData.color); drawPixel(4, 5, colorData.color); drawPixel(5, 5, '#333333'); drawPixel(6, 5, '#333333'); drawPixel(7, 5, colorData.color); drawPixel(8, 5, colorData.color);
+        drawPixel(4, 6, colorData.color); drawPixel(5, 6, colorData.color); drawPixel(6, 6, colorData.color); drawPixel(7, 6, colorData.color);
+        // Legs
+        drawPixel(4, 7, colorData.accent); drawPixel(5, 7, colorData.accent); drawPixel(6, 7, colorData.accent); drawPixel(7, 7, colorData.accent);
+        drawPixel(4, 8, colorData.accent); drawPixel(5, 8, colorData.accent); drawPixel(6, 8, colorData.accent); drawPixel(7, 8, colorData.accent);
+        break;
+        
+      case 'doctor':
+        // Medical personnel design (green)
+        // Head with cross
+        drawPixel(4, 1, colorData.color); drawPixel(5, 1, colorData.color); drawPixel(6, 1, colorData.color); drawPixel(7, 1, colorData.color);
+        drawPixel(4, 2, colorData.color); drawPixel(5, 2, '#ffffff'); drawPixel(6, 2, '#ffffff'); drawPixel(7, 2, colorData.color);
+        drawPixel(4, 3, colorData.color); drawPixel(5, 3, '#ffffff'); drawPixel(6, 3, '#ffffff'); drawPixel(7, 3, colorData.color);
+        // Medical cross on head
+        drawPixel(5, 1, '#ff0000'); drawPixel(6, 1, '#ff0000'); drawPixel(5, 2, '#ff0000'); drawPixel(6, 2, '#ff0000');
+        // Body
+        drawPixel(4, 4, colorData.color); drawPixel(5, 4, '#ffffff'); drawPixel(6, 4, '#ffffff'); drawPixel(7, 4, colorData.color);
+        drawPixel(4, 5, colorData.color); drawPixel(5, 5, colorData.color); drawPixel(6, 5, colorData.color); drawPixel(7, 5, colorData.color);
+        drawPixel(4, 6, colorData.color); drawPixel(5, 6, colorData.color); drawPixel(6, 6, colorData.color); drawPixel(7, 6, colorData.color);
+        // Legs
+        drawPixel(4, 7, colorData.accent); drawPixel(5, 7, colorData.accent); drawPixel(6, 7, colorData.accent); drawPixel(7, 7, colorData.accent);
+        break;
+        
+      case 'trickster':
+        // Sneaky design (yellow)
+        // Head with hat
+        drawPixel(4, 0, colorData.accent); drawPixel(5, 0, colorData.accent); drawPixel(6, 0, colorData.accent); drawPixel(7, 0, colorData.accent);
+        drawPixel(4, 1, colorData.color); drawPixel(5, 1, colorData.color); drawPixel(6, 1, colorData.color); drawPixel(7, 1, colorData.color);
+        drawPixel(4, 2, colorData.color); drawPixel(5, 2, '#000000'); drawPixel(6, 2, '#000000'); drawPixel(7, 2, colorData.color);
+        drawPixel(4, 3, colorData.color); drawPixel(5, 3, colorData.color); drawPixel(6, 3, colorData.color); drawPixel(7, 3, colorData.color);
+        // Body (slim)
+        drawPixel(5, 4, colorData.color); drawPixel(6, 4, colorData.color);
+        drawPixel(4, 5, colorData.color); drawPixel(5, 5, '#333333'); drawPixel(6, 5, '#333333'); drawPixel(7, 5, colorData.color);
+        drawPixel(5, 6, colorData.color); drawPixel(6, 6, colorData.color);
+        // Legs
+        drawPixel(5, 7, colorData.accent); drawPixel(6, 7, colorData.accent);
+        drawPixel(5, 8, colorData.accent); drawPixel(6, 8, colorData.accent);
+        break;
+        
+      case 'cat':
+        // Feline design (magenta)
+        // Head with ears
+        drawPixel(3, 0, colorData.color); drawPixel(8, 0, colorData.color);
+        drawPixel(4, 1, colorData.color); drawPixel(5, 1, colorData.color); drawPixel(6, 1, colorData.color); drawPixel(7, 1, colorData.color);
+        drawPixel(4, 2, colorData.color); drawPixel(5, 2, '#ffffff'); drawPixel(6, 2, '#ffffff'); drawPixel(7, 2, colorData.color);
+        drawPixel(4, 3, colorData.color); drawPixel(5, 3, colorData.color); drawPixel(6, 3, colorData.color); drawPixel(7, 3, colorData.color);
+        // Whiskers
+        drawPixel(2, 2, '#ffffff'); drawPixel(9, 2, '#ffffff');
+        drawPixel(3, 3, '#ffffff'); drawPixel(8, 3, '#ffffff');
+        // Body
+        drawPixel(4, 4, colorData.color); drawPixel(5, 4, colorData.color); drawPixel(6, 4, colorData.color); drawPixel(7, 4, colorData.color);
+        drawPixel(4, 5, colorData.color); drawPixel(5, 5, colorData.accent); drawPixel(6, 5, colorData.accent); drawPixel(7, 5, colorData.color);
+        drawPixel(4, 6, colorData.color); drawPixel(5, 6, colorData.color); drawPixel(6, 6, colorData.color); drawPixel(7, 6, colorData.color);
+        // Legs
+        drawPixel(4, 7, colorData.accent); drawPixel(5, 7, colorData.accent); drawPixel(6, 7, colorData.accent); drawPixel(7, 7, colorData.accent);
+        // Tail
+        drawPixel(8, 5, colorData.color); drawPixel(9, 6, colorData.color);
+        break;
+        
+      case 'robot':
+        // Mechanical design (blue)
+        // Head with antenna
+        drawPixel(5, 0, '#ffffff'); drawPixel(6, 0, '#ffffff');
+        drawPixel(4, 1, colorData.color); drawPixel(5, 1, colorData.color); drawPixel(6, 1, colorData.color); drawPixel(7, 1, colorData.color);
+        drawPixel(4, 2, colorData.color); drawPixel(5, 2, '#ffff00'); drawPixel(6, 2, '#ffff00'); drawPixel(7, 2, colorData.color);
+        drawPixel(4, 3, colorData.color); drawPixel(5, 3, colorData.color); drawPixel(6, 3, colorData.color); drawPixel(7, 3, colorData.color);
+        // Body with circuits
+        drawPixel(3, 4, colorData.color); drawPixel(4, 4, '#333333'); drawPixel(5, 4, colorData.color); drawPixel(6, 4, colorData.color); drawPixel(7, 4, '#333333'); drawPixel(8, 4, colorData.color);
+        drawPixel(4, 5, colorData.color); drawPixel(5, 5, '#333333'); drawPixel(6, 5, '#333333'); drawPixel(7, 5, colorData.color);
+        drawPixel(4, 6, colorData.color); drawPixel(5, 6, colorData.color); drawPixel(6, 6, colorData.color); drawPixel(7, 6, colorData.color);
+        // Legs (blocky)
+        drawPixel(4, 7, colorData.accent); drawPixel(5, 7, colorData.accent); drawPixel(6, 7, colorData.accent); drawPixel(7, 7, colorData.accent);
+        drawPixel(4, 8, '#333333'); drawPixel(5, 8, '#333333'); drawPixel(6, 8, '#333333'); drawPixel(7, 8, '#333333');
+        break;
+        
+      default:
+        // Generic enemy (red square with details)
+        drawPixel(4, 1, colorData.color); drawPixel(5, 1, colorData.color); drawPixel(6, 1, colorData.color); drawPixel(7, 1, colorData.color);
+        drawPixel(4, 2, colorData.color); drawPixel(5, 2, '#ffffff'); drawPixel(6, 2, '#ffffff'); drawPixel(7, 2, colorData.color);
+        drawPixel(4, 3, colorData.color); drawPixel(5, 3, colorData.color); drawPixel(6, 3, colorData.color); drawPixel(7, 3, colorData.color);
+        drawPixel(4, 4, colorData.color); drawPixel(5, 4, colorData.color); drawPixel(6, 4, colorData.color); drawPixel(7, 4, colorData.color);
+        drawPixel(4, 5, colorData.color); drawPixel(5, 5, colorData.accent); drawPixel(6, 5, colorData.accent); drawPixel(7, 5, colorData.color);
+        drawPixel(4, 6, colorData.color); drawPixel(5, 6, colorData.color); drawPixel(6, 6, colorData.color); drawPixel(7, 6, colorData.color);
+        drawPixel(4, 7, colorData.accent); drawPixel(5, 7, colorData.accent); drawPixel(6, 7, colorData.accent); drawPixel(7, 7, colorData.accent);
+        break;
+    }
+    
+    // Add subtle outline
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x, y, size, size);
   }
 }
 
