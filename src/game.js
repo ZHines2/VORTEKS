@@ -433,6 +433,9 @@ export const Game = {
     }
     if (me.status.burnTurns === 0) me.status.burn = 0;
     
+    // Check if game ended due to burn damage
+    if (this.over) return;
+    
     // Handle Infect status: 50% chance to deal 1 damage per stack, 25% chance to cure per turn
     if (me.status.infect && me.status.infect > 0) {
       const actorName = me === this.you ? '[YOU]' : '[OPPONENT]';
@@ -461,6 +464,9 @@ export const Game = {
         }
       }
     }
+    
+    // Check if game ended due to infect damage
+    if (this.over) return;
     this.turn = this.turn === 'you' ? 'opp' : 'you';
     const now = this.turn === 'you' ? this.you : this.opp;
     this.startTurn(now);
