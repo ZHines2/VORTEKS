@@ -223,7 +223,7 @@ export const Game = {
     target.status.infect = existingInfect + newInfectStacks;
   },
 
-  // Helper method for applying heal with overheal support
+  // Helper method for applying heal with overheal support (uncapped)
   applyHeal(player, amount) {
     if (amount <= 0) return player.hp;
     
@@ -234,8 +234,8 @@ export const Game = {
     
     let newHP;
     if (allowOverheal) {
-      const overhealLimit = Math.floor(player.maxHP * OVERHEAL_LIMIT_MULT);
-      newHP = Math.min(player.hp + amount, overhealLimit);
+      // No cap on overheal - allow unlimited healing
+      newHP = player.hp + amount;
       
       // Track overheal stats for player
       if (!player.isAI && newHP > player.maxHP) {
@@ -244,7 +244,7 @@ export const Game = {
         this.stats.peakOverheal = Math.max(this.stats.peakOverheal, overhealAmount);
       }
     } else {
-      // Traditional healing capped at maxHP
+      // Traditional healing capped at maxHP for AI (if disabled)
       newHP = Math.min(player.hp + amount, player.maxHP);
     }
     
@@ -471,7 +471,27 @@ export const Game = {
     const now = this.turn === 'you' ? this.you : this.opp;
     this.startTurn(now);
     if (this.turn === 'opp' && !this.over) { 
-      setTimeout(() => this.ai.aiPlay(), 500);
+      // Add a safety timeout to prevent softlocks if AI fails
+      const aiTimeoutId = setTimeout(() => {
+        console.warn('AI turn timeout - forcing turn end to prevent softlock');
+        if (this.turn === 'opp' && !this.over) {
+          this.endTurn(); // Force turn end if AI gets stuck
+        }
+      }, 10000); // 10 second timeout
+      
+      setTimeout(() => {
+        try {
+          this.ai.aiPlay();
+          clearTimeout(aiTimeoutId); // Cancel timeout if AI completes normally
+        } catch (error) {
+          console.error('AI play failed with error:', error);
+          clearTimeout(aiTimeoutId);
+          // Force turn end if AI throws an exception
+          if (this.turn === 'opp' && !this.over) {
+            this.endTurn();
+          }
+        }
+      }, 500);
     }
   },
   
@@ -1688,8 +1708,8 @@ export const Tournament = {
       you: player,
       opp: target || this.getRandomOpponent(player),
       applyHeal: (p, amount) => {
-        const limit = p.maxHP * OVERHEAL_LIMIT_MULT;
-        const newHP = Math.min(limit, p.hp + amount);
+        // No cap on overheal in tournament mode
+        const newHP = p.hp + amount;
         return newHP;
       },
       applyEnergyGain: (p, amount) => {
@@ -1750,8 +1770,8 @@ export const Tournament = {
     
     // Apply healing
     if (effects.heal && target === caster) {
-      const limit = caster.maxHP * 1.5; // Simple overheal limit
-      caster.hp = Math.min(limit, caster.hp + effects.heal);
+      // No cap on overheal 
+      caster.hp = caster.hp + effects.heal;
       if (log || window.log) {
         const logFn = log || window.log;
         if (typeof logFn === 'function') {
