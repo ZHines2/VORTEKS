@@ -471,7 +471,27 @@ export const Game = {
     const now = this.turn === 'you' ? this.you : this.opp;
     this.startTurn(now);
     if (this.turn === 'opp' && !this.over) { 
-      setTimeout(() => this.ai.aiPlay(), 500);
+      // Add a safety timeout to prevent softlocks if AI fails
+      const aiTimeoutId = setTimeout(() => {
+        console.warn('AI turn timeout - forcing turn end to prevent softlock');
+        if (this.turn === 'opp' && !this.over) {
+          this.endTurn(); // Force turn end if AI gets stuck
+        }
+      }, 10000); // 10 second timeout
+      
+      setTimeout(() => {
+        try {
+          this.ai.aiPlay();
+          clearTimeout(aiTimeoutId); // Cancel timeout if AI completes normally
+        } catch (error) {
+          console.error('AI play failed with error:', error);
+          clearTimeout(aiTimeoutId);
+          // Force turn end if AI throws an exception
+          if (this.turn === 'opp' && !this.over) {
+            this.endTurn();
+          }
+        }
+      }, 500);
     }
   },
   

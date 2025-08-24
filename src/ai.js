@@ -133,81 +133,156 @@ export function createCampaignOpponent(baseOpponent, campaignBooster = 0) {
 export function createAIPlayer(game) {
   return {
     aiPlay(depth = 0) {
-      if (game.over) return;
+      try {
+        if (game.over) return;
+        
+        // Prevent infinite recursion - limit AI to reasonable number of cards per turn
+        if (depth >= 20) {
+          console.warn('AI recursion limit reached, ending turn');
+          game.endTurn();
+          return;
+        }
+        
+        const ai = game.opp; 
+        
+        // Safely calculate playable cards with error handling
+        let playable = [];
+        try {
+          playable = ai.hand.map((c, i) => ({ c, i })).filter(x => {
+            try {
+              return ai.canAfford(x.c);
+            } catch (error) {
+              console.warn('AI: Error checking canAfford for card', x.c?.name || 'unknown', error);
+              return false; // Skip problematic cards
+            }
+          });
+        } catch (error) {
+          console.warn('AI: Error calculating playable cards', error);
+          playable = [];
+        }
+        
+        if (!playable.length) { 
+          game.endTurn(); 
+          return;
+        }
       
-      // Prevent infinite recursion - limit AI to reasonable number of cards per turn
-      if (depth >= 20) {
-        console.warn('AI recursion limit reached, ending turn');
-        game.endTurn();
-        return;
+      // lethal check using interpreter with error handling
+      let lethal = null;
+      try {
+        lethal = playable.find(x => {
+          try {
+            return game.simDamage(ai, game.you, x.c) >= game.you.hp;
+          } catch (error) {
+            console.warn('AI: Error calculating damage for lethal check', x.c?.name || 'unknown', error);
+            return false;
+          }
+        });
+      } catch (error) {
+        console.warn('AI: Error in lethal check', error);
       }
       
-      const ai = game.opp; 
-      const playable = ai.hand.map((c, i) => ({ c, i })).filter(x => ai.canAfford(x.c));
-      if (!playable.length) { 
-        game.endTurn(); 
-        return;
-      }
-      
-      // lethal check using interpreter
-      const lethal = playable.find(x => game.simDamage(ai, game.you, x.c) >= game.you.hp);
       if (lethal) { 
-        game.playCard(ai, lethal.i); 
-        return this.aiPlay(depth + 1); 
+        try {
+          game.playCard(ai, lethal.i); 
+          return this.aiPlay(depth + 1); 
+        } catch (error) {
+          console.warn('AI: Error playing lethal card', error);
+          // Remove the problematic card and try again
+          ai.hand.splice(lethal.i, 1);
+          return this.aiPlay(depth + 1);
+        }
       }
+      
+      // Safe card playing with error handling for all AI moves
+      const safePlayCard = (cardChoice, description = 'card') => {
+        try {
+          game.playCard(ai, cardChoice.i);
+          return this.aiPlay(depth + 1);
+        } catch (error) {
+          console.warn(`AI: Error playing ${description}`, error);
+          // Remove the problematic card to prevent repeated failures
+          try {
+            ai.hand.splice(cardChoice.i, 1);
+          } catch (spliceError) {
+            console.warn('AI: Error removing problematic card', spliceError);
+          }
+          return this.aiPlay(depth + 1);
+        }
+      };
       
       const healLow = ai.hp <= 8 && playable.find(x => x.c.id === 'heart'); 
       if (healLow) { 
-        game.playCard(ai, healLow.i); 
-        return this.aiPlay(depth + 1); 
+        return safePlayCard(healLow, 'heal card');
       }
       
       const surgeEarly = ai.maxEnergy < 5 && playable.find(x => x.c.id === 'loop'); 
       if (surgeEarly) { 
-        game.playCard(ai, surgeEarly.i); 
-        return this.aiPlay(depth + 1); 
+        return safePlayCard(surgeEarly, 'surge card');
       }
       
       // Play curiosity or droid early to showcase the powers
       const setupCard = playable.find(x => x.c.id === 'curiosity' || x.c.id === 'droid');
       if (setupCard) {
-        game.playCard(ai, setupCard.i);
-        return this.aiPlay(depth + 1);
+        return safePlayCard(setupCard, 'setup card');
       }
       
       // Desperate Reap play: only when losing badly (opponent has more than double our HP)
       const reapCard = playable.find(x => x.c.id === 'reap');
       if (reapCard && game.you.hp > ai.hp * 2) {
-        game.playCard(ai, reapCard.i);
-        return this.aiPlay(depth + 1);
+        return safePlayCard(reapCard, 'reap card');
       }
       
-      // prefer highest dmg attack first
-      const attacks = playable
-        .filter(x => x.c.type === 'attack')
-        .sort((a, b) => game.simDamage(ai, game.you, b.c) - game.simDamage(ai, game.you, a.c));
+      // prefer highest dmg attack first with safe damage calculation
+      let attacks = [];
+      try {
+        attacks = playable
+          .filter(x => x.c.type === 'attack')
+          .sort((a, b) => {
+            try {
+              const aDmg = game.simDamage(ai, game.you, a.c);
+              const bDmg = game.simDamage(ai, game.you, b.c);
+              return bDmg - aDmg;
+            } catch (error) {
+              console.warn('AI: Error calculating damage for attack sorting', error);
+              return 0; // Equal priority if calculation fails
+            }
+          });
+      } catch (error) {
+        console.warn('AI: Error sorting attacks', error);
+        attacks = playable.filter(x => x.c.type === 'attack');
+      }
+      
       if (attacks[0]) { 
-        game.playCard(ai, attacks[0].i); 
-        return this.aiPlay(depth + 1); 
+        return safePlayCard(attacks[0], 'attack card');
       }
       
       const prio = ['fire', 'snow', 'star', 'shield', 'echo'];
       for (const id of prio) { 
         const pick = playable.find(x => x.c.id === id); 
         if (pick) { 
-          game.playCard(ai, pick.i); 
-          return this.aiPlay(depth + 1); 
+          return safePlayCard(pick, `priority card ${id}`);
         } 
       }
       
       // Fallback: play first affordable card, but be extra careful about infinite loops
       if (playable.length > 0) {
-        game.playCard(ai, playable[0].i); 
-        return this.aiPlay(depth + 1);
+        return safePlayCard(playable[0], 'fallback card');
       }
       
       // If we somehow get here with no playable cards, end turn
       game.endTurn();
+      
+      } catch (outerError) {
+        // Ultimate fallback: if anything goes wrong in the entire AI logic, end turn
+        console.error('AI: Critical error in aiPlay, ending turn', outerError);
+        try {
+          game.endTurn();
+        } catch (endTurnError) {
+          console.error('AI: Failed to end turn after error', endTurnError);
+          // Last resort: force turn switch if endTurn fails
+          game.turn = game.turn === 'you' ? 'opp' : 'you';
+        }
+      }
     }
   };
 }
