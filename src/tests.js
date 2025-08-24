@@ -1068,6 +1068,10 @@ export function runSelfTests(Game, log, showStart) {
     {
       const me = createPlayer(false);
       const foe = createPlayer(true);
+      
+      // Set up deck so draw can work
+      me.deck = [CARDS.find(c => c.id === 'swords'), CARDS.find(c => c.id === 'heart')];
+      
       const testGame = Object.create(Game);
       testGame.you = me;
       testGame.opp = foe;
@@ -1093,6 +1097,10 @@ export function runSelfTests(Game, log, showStart) {
     {
       const me = createPlayer(false);
       const foe = createPlayer(true);
+      
+      // Set up deck so draw can work
+      me.deck = [CARDS.find(c => c.id === 'swords'), CARDS.find(c => c.id === 'heart')];
+      
       const testGame = Object.create(Game);
       testGame.you = me;
       testGame.opp = foe;
@@ -1275,6 +1283,9 @@ export function runSelfTests(Game, log, showStart) {
     // Start turn to reset lastPlayedThisTurn
     testGame.startTurn(me);
     
+    // Set up deck so draw can work
+    me.deck = [CARDS.find(c => c.id === 'swords'), CARDS.find(c => c.id === 'heart')];
+    
     // Play Echo as first card of turn
     me.hand = [CARDS.find(c => c.id === 'echo')];
     me.energy = 3;
@@ -1347,8 +1358,14 @@ export function runSelfTests(Game, log, showStart) {
       applyBurn: Game.applyBurn,
       applyInfect: Game.applyInfect,
       applyHeal: Game.applyHeal,
+      applyCard: Game.applyCard,
       hit: Game.hit,
-      isEchoing: false
+      isEchoing: false,
+      turnTypes: new Set(),
+      playerTurnEnergySpent: 0,
+      playerTurnCardsDrawn: 0,
+      stats: { maxBurnAmount: 0 },
+      log: () => {} // Mock log function
     };
     
     // Use playCard instead of applyCard to properly handle energy costs
