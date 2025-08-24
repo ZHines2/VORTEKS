@@ -1517,7 +1517,7 @@ class MetroidvaniaGame {
       ctx.fillText('WASD: Move', viewportWidth - 230, 50);
       ctx.fillText('Enter enemies to battle', viewportWidth - 230, 70);
     }
-    ctx.fillText('🔴 = Enemies, 🟢 = You', viewportWidth - 230, 90);
+    ctx.fillText('Explorer vs. Enemy Sprites', viewportWidth - 230, 90);
   }
   
   // Render battle UI
