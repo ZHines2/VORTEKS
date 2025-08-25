@@ -15,6 +15,15 @@ html,body {
   font-family: 'Press Start 2P', monospace; 
   font-size: 12px; 
   color: var(--ink);
+  /* Enhanced mobile browser compatibility */
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  /* Prevent bounce scrolling on iOS */
+  overscroll-behavior: none;
+  /* Fix height on mobile browsers */
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
 }
 
 /* Button header container */
@@ -48,8 +57,8 @@ html,body {
   color: var(--accent);
   border: 2px solid var(--border);
   border-radius: 6px;
-  width: 40px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   font-size: 18px;
   font-weight: bold;
   cursor: pointer;
@@ -59,6 +68,11 @@ html,body {
   align-items: center;
   justify-content: center;
   margin-left: auto;
+  /* Enhanced touch accessibility */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .menu-toggle:hover,
@@ -73,8 +87,8 @@ html,body {
   color: var(--accent);
   border: 2px solid var(--border);
   border-radius: 6px;
-  width: 40px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   font-size: 18px;
   font-weight: bold;
   cursor: pointer;
@@ -84,6 +98,11 @@ html,body {
   align-items: center;
   justify-content: center;
   display: none; /* Hidden on desktop by default */
+  /* Enhanced touch accessibility */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .help-button:hover,
@@ -390,7 +409,19 @@ button.card:disabled {
   color:var(--ink); 
   border:2px solid var(--border); 
   padding:6px 10px; 
-  cursor:pointer; 
+  cursor:pointer;
+  /* Enhanced mobile touch accessibility */
+  min-height: 44px;
+  min-width: 44px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  font-family: 'Press Start 2P', monospace;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
 }
 
 .btn:disabled{ 
@@ -1860,6 +1891,11 @@ button.card:disabled {
   background: #1a1a2e;
   touch-action: none; /* Prevent scrolling and zooming on touch */
   user-select: none; /* Prevent text selection */
+  -webkit-user-select: none;
+  /* Ensure proper scaling on all devices */
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
 }
 
 /* Mobile-specific metroidvania styles */
@@ -1875,10 +1911,23 @@ button.card:disabled {
   
   .metroidvania-header {
     margin-bottom: 10px;
+    /* Ensure header is accessible on mobile */
+    padding: 0 8px;
   }
   
   .metroidvania-header h2 {
     font-size: 14px;
+  }
+  
+  .metroidvania-header-buttons {
+    gap: 12px;
+  }
+  
+  .metroidvania-header-buttons .btn {
+    /* Ensure adequate touch targets for header buttons */
+    min-height: 48px;
+    padding: 8px 12px;
+    font-size: 10px;
   }
   
   .metroidvania-game {
@@ -1890,6 +1939,9 @@ button.card:disabled {
     /* Ensure canvas is responsive on mobile */
     max-width: 100%;
     height: auto;
+    /* Additional mobile browser optimization */
+    width: 100%;
+    object-fit: contain;
   }
   
   .metroidvania-log {
@@ -2185,5 +2237,111 @@ button.card:disabled {
   .combat-instructions {
     font-size: 10px;
     margin-top: 8px;
+  }
+}
+
+/* Safari and iOS specific optimizations */
+@supports (-webkit-appearance: none) {
+  /* Safari-specific fixes */
+  body {
+    /* Fix for Safari's "bouncy" scrolling */
+    -webkit-overflow-scrolling: touch;
+    /* Improve Safari rendering performance */
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+  }
+  
+  /* Fix Safari button appearance */
+  button {
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  
+  /* Improve Safari input handling */
+  input, select, textarea {
+    -webkit-appearance: none;
+    -webkit-border-radius: 0;
+    border-radius: 0;
+  }
+  
+  /* Fix Safari canvas rendering */
+  canvas {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+  }
+}
+
+/* iOS Safari specific fixes */
+@media screen and (-webkit-min-device-pixel-ratio: 1) {
+  /* Fix iOS Safari viewport height issues */
+  .metroidvania-container,
+  .tournament-container {
+    height: 100vh;
+    height: -webkit-fill-available;
+  }
+  
+  /* Ensure proper touch handling on iOS */
+  .btn, .combat-action-btn, .card, .target-btn {
+    cursor: pointer;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* Fix iOS Safari modal issues */
+  .modal {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Prevent iOS zoom on input focus */
+  input[type="text"], input[type="number"], select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Instagram in-app browser specific fixes */
+@media screen and (max-width: 768px) {
+  /* Ensure proper display in Instagram's browser */
+  html {
+    -webkit-text-size-adjust: none;
+    text-size-adjust: none;
+  }
+  
+  /* Fix for social media app browsers */
+  .metroidvania-container,
+  .tournament-container {
+    /* Force proper height calculation in embedded browsers */
+    min-height: 100vh;
+    min-height: calc(100vh - env(keyboard-inset-height, 0px));
+  }
+  
+  /* Ensure buttons are always accessible */
+  .button-header {
+    /* Prevent header from being hidden by browser UI */
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 10000;
+  }
+  
+  /* Adjust content for fixed header */
+  .metroidvania-container,
+  .tournament-container {
+    padding-top: 60px;
+  }
+}
+
+/* Progressive Web App optimizations */
+@media (display-mode: standalone) {
+  /* When added to home screen */
+  .button-header {
+    /* Account for system UI in PWA mode */
+    padding-top: max(8px, env(safe-area-inset-top, 20px));
+  }
+  
+  /* Hide browser-specific elements in PWA mode */
+  .help-button {
+    display: none;
   }
 }
