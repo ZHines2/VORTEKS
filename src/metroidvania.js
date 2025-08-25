@@ -1764,29 +1764,53 @@ class MetroidvaniaGame {
 
   // Touch event handlers
   onTouchStart(event) {
-    event.preventDefault();
     const touch = event.touches[0];
     this.touchState.startX = touch.clientX;
     this.touchState.startY = touch.clientY;
     this.touchState.isActive = true;
+    
+    // Check if touch target is a combat button - if so, don't prevent default
+    const target = event.target;
+    if (target && (target.classList.contains('combat-action-btn') || target.closest('.combat-action-btn'))) {
+      // Let the button handle the touch normally
+      return;
+    }
+    
+    // Only prevent default for canvas interactions, not UI buttons
+    event.preventDefault();
   }
 
   onTouchMove(event) {
-    event.preventDefault();
     if (!this.touchState.isActive) return;
     
+    // Check if touch target is a combat button - if so, don't prevent default
+    const target = event.target;
+    if (target && (target.classList.contains('combat-action-btn') || target.closest('.combat-action-btn'))) {
+      return;
+    }
+    
+    event.preventDefault();
     const touch = event.touches[0];
     this.touchState.endX = touch.clientX;
     this.touchState.endY = touch.clientY;
   }
 
   onTouchEnd(event) {
-    event.preventDefault();
     if (!this.touchState.isActive) return;
 
     const touch = event.changedTouches[0];
     this.touchState.endX = touch.clientX;
     this.touchState.endY = touch.clientY;
+    
+    // Check if touch target is a combat button - if so, don't prevent default
+    const target = event.target;
+    if (target && (target.classList.contains('combat-action-btn') || target.closest('.combat-action-btn'))) {
+      // Let the button handle the click normally
+      return;
+    }
+    
+    // Only prevent default for canvas interactions, not UI buttons
+    event.preventDefault();
     
     // Handle JUDGE dialogue touch interaction
     if (this.gameState === 'judge_intro') {
