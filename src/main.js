@@ -3684,6 +3684,13 @@ document.addEventListener('DOMContentLoaded', () => {
       exitMetroidvania();
     };
     
+    // Judge skip button handler
+    document.getElementById('judgeSkipBtn').onclick = () => {
+      if (currentMetroidvaniaGame && currentMetroidvaniaGame.gameState === 'judge_intro') {
+        currentMetroidvaniaGame.skipJudgeDialogue();
+      }
+    };
+    
     // Store references for cleanup
     currentMetroidvaniaGame.keyHandlers = {
       keydown: handleKeyDown,
