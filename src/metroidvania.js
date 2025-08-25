@@ -1665,9 +1665,17 @@ class MetroidvaniaGame {
       `;
       
       // Add click handler
-      button.addEventListener('click', () => {
+      const handleAction = () => {
         this.battleMenu.selectedOption = index;
         this.executeBattleAction();
+      };
+      
+      button.addEventListener('click', handleAction);
+      
+      // Add touch support for mobile - ensure touch events trigger the action
+      button.addEventListener('touchend', (e) => {
+        e.preventDefault(); // Prevent duplicate click event
+        handleAction();
       });
       
       // Add keyboard hover support
