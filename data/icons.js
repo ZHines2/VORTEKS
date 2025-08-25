@@ -19,11 +19,5 @@ export const icons = {
   overload: '📿',
   reap: '💀',
   hope: '🕊',
-  infect: '🦠',
-  
-  // Maze Reconstruction System Icons
-  bridge: '🌉',
-  terraform: '🏔️',
-  sanctify: '⛪',
-  vortex: '🌀'
+  infect: '🦠'
 };

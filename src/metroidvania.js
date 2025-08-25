@@ -37,13 +37,6 @@ class MetroidvaniaGame {
     this.loot = new Map(); // Position -> loot data
     this.discovered = new Set(); // Discovered cell positions
     
-    // EXPERIMENTAL: Maze Reconstruction System
-    this.mazeModifications = new Map(); // Position -> modification data
-    this.reconstructionMode = false; // Whether player is in reconstruction mode
-    this.selectedReconstructionCard = null; // Card selected for reconstruction
-    this.reconstructionRange = 0; // Range of current reconstruction effect
-    this.resonanceEffects = new Map(); // Track resonance effects by area
-    
     // Check if player has seen Judge dialogue before
     const hasSeenJudge = localStorage.getItem('vorteks-judge-seen') === 'true';
     
@@ -138,13 +131,6 @@ class MetroidvaniaGame {
         this.addCardToPlayer(card);
       }
     });
-    
-    // EXPERIMENTAL: Give one starting reconstruction card for testing
-    const reconstructionCard = CARDS.find(c => c.id === 'bridge');
-    if (reconstructionCard) {
-      this.addCardToPlayer(reconstructionCard);
-      this.logBattleAction("🌟 EXPERIMENTAL: You also receive a Bridge card - press R to enter Reconstruction Mode!");
-    }
     
     this.logBattleAction("The JUDGE grants you three essential cards to begin your journey.");
   }
@@ -370,67 +356,18 @@ class MetroidvaniaGame {
     const newX = this.player.x + dx;
     const newY = this.player.y + dy;
     
-    // Check bounds and walls (also allow special terrain types 2, 3, 4)
+    // Check bounds and walls
     if (newX >= 0 && newX < this.mazeSize && 
         newY >= 0 && newY < this.mazeSize && 
-        (this.maze[newX][newY] === 0 || this.maze[newX][newY] === 2 || 
-         this.maze[newX][newY] === 3 || this.maze[newX][newY] === 4)) {
+        this.maze[newX][newY] === 0) {
       
       this.player.x = newX;
       this.player.y = newY;
       this.discoverArea(newX, newY);
       this.updateCamera();
       
-      // EXPERIMENTAL: Check for special terrain effects
-      this.checkTerrainEffects();
-      
       // Check for encounters
       this.checkEncounters();
-    }
-  }
-  
-  // EXPERIMENTAL: Check for special terrain effects when player moves
-  checkTerrainEffects() {
-    const terrainType = this.maze[this.player.x][this.player.y];
-    
-    switch (terrainType) {
-      case 2: // Terraformed beneficial terrain
-        // Small energy regeneration
-        if (this.player.ghis < this.player.maxGhis) {
-          this.player.ghis = Math.min(this.player.maxGhis, this.player.ghis + 1);
-          this.logBattleAction("🏔️ The terraformed ground energizes you! +1 GHIS");
-        }
-        break;
-      
-      case 3: // Sanctified healing ground
-        // Healing effect
-        if (this.player.hp < this.player.maxHP) {
-          const healAmount = 2;
-          this.player.hp = Math.min(this.player.maxHP, this.player.hp + healAmount);
-          this.logBattleAction(`⛪ The sanctuary's holy light heals you! +${healAmount} HP`);
-        }
-        break;
-      
-      case 4: // Vortex rift chaotic space
-        // Random chaotic effect
-        const chaosRoll = Math.random();
-        if (chaosRoll < 0.3) {
-          // Positive effect - energy burst
-          this.player.ghis = Math.min(this.player.maxGhis, this.player.ghis + 2);
-          this.logBattleAction("🌀 The vortex rift surges with energy! +2 GHIS");
-        } else if (chaosRoll < 0.6) {
-          // Neutral effect - just a visual
-          this.logBattleAction("🌀 Reality warps around you... but nothing happens.");
-        } else {
-          // Negative effect - small damage
-          if (this.player.hp > 1) {
-            this.player.hp -= 1;
-            this.logBattleAction("🌀 The chaotic energies burn you! -1 HP");
-          } else {
-            this.logBattleAction("🌀 The vortex rift crackles ominously...");
-          }
-        }
-        break;
     }
   }
   
@@ -528,49 +465,42 @@ class MetroidvaniaGame {
     }
     
     if (this.player.abilities.has('pierce')) {
-      const pierceCost = this.getResonanceEnergyCost(2); // Apply vortex rift discount
       this.battleMenu.options.push({
         text: `Pierce Attack`,
         action: 'pierce',
-        cost: pierceCost,
-        enabled: this.player.ghis >= pierceCost,
-        description: `Deal ${1 + this.player.stats.pierce} piercing damage${pierceCost < 2 ? ' (Vortex discount!)' : ''}`
+        cost: 2,
+        enabled: this.player.ghis >= 2,
+        description: `Deal ${1 + this.player.stats.pierce} piercing damage`
       });
     }
     
     if (this.player.abilities.has('hope')) {
-      const hopeCost = this.getResonanceEnergyCost(1); // Apply vortex rift discount
-      this.battleMenu.options.push({
-    if (this.player.abilities.has('hope')) {
-      const hopeCost = this.getResonanceEnergyCost(1); // Apply vortex rift discount
       this.battleMenu.options.push({
         text: `Hope (Heal)`,
         action: 'mazehope',
-        cost: hopeCost,
-        enabled: this.player.ghis >= hopeCost,
-        description: `Heal ${1 + this.player.stats.hope} HP${hopeCost < 1 ? ' (Vortex discount!)' : ''}`
+        cost: 1,
+        enabled: this.player.ghis >= 1,
+        description: `Heal ${1 + this.player.stats.hope} HP`
       });
     }
     
     if (this.player.abilities.has('zap')) {
-      const zapCost = this.getResonanceEnergyCost(1); // Apply vortex rift discount
       this.battleMenu.options.push({
         text: `Zap (Stun)`,
         action: 'mazezap',
-        cost: zapCost,
-        enabled: this.player.ghis >= zapCost,
-        description: `${10 + (this.player.stats.zap * 10)}% chance to stun enemy${zapCost < 1 ? ' (Vortex discount!)' : ''}`
+        cost: 1,
+        enabled: this.player.ghis >= 1,
+        description: `${10 + (this.player.stats.zap * 10)}% chance to stun enemy`
       });
     }
     
     if (this.player.abilities.has('ignite')) {
-      const igniteCost = this.getResonanceEnergyCost(2); // Apply vortex rift discount
       this.battleMenu.options.push({
         text: `Ignite (Burn)`,
         action: 'mazeignite',
-        cost: igniteCost,
-        enabled: this.player.ghis >= igniteCost,
-        description: `Deal 2 damage + burn for ${2 + this.player.stats.ignite} turns${igniteCost < 2 ? ' (Vortex discount!)' : ''}`
+        cost: 2,
+        enabled: this.player.ghis >= 2,
+        description: `Deal 2 damage + burn for ${2 + this.player.stats.ignite} turns`
       });
     }
     
@@ -600,79 +530,46 @@ class MetroidvaniaGame {
     switch (selectedOption.action) {
       case 'strike':
         if (this.player.abilities.has('strike')) {
-          let damage = 3 + this.player.stats.strike;
-          
-          // EXPERIMENTAL: Apply resonance effects
-          const resonanceEffect = this.applyResonanceToCard({ type: 'attack' }, damage, 0, 0);
-          damage = resonanceEffect.damage;
-          
+          const damage = 3 + this.player.stats.strike;
           this.currentBattle.enemy.hp -= damage;
           // Strike costs no ghis - removed ghis consumption
           success = true;
-          
-          // Show resonance bonus if applicable
-          const resonance = this.getLocationResonance(this.player.x, this.player.y);
-          const resonanceText = resonance && resonance.bonusDamage ? ` (+${resonance.bonusDamage} resonance)` : '';
-          this.logBattleAction(`You strike for ${damage} damage!${resonanceText}`);
+          this.logBattleAction(`You strike for ${damage} damage!`);
         }
         break;
         
       case 'shield':
         if (this.player.abilities.has('shield')) {
-          let shieldAmount = 5 + this.player.stats.shield;
-          
-          // EXPERIMENTAL: Apply resonance effects
-          const resonanceEffect = this.applyResonanceToCard({ type: 'skill' }, 0, shieldAmount, 0);
-          shieldAmount = resonanceEffect.shield;
-          
+          const shieldAmount = 5 + this.player.stats.shield;
           this.player.shield = (this.player.shield || 0) + shieldAmount;
           // Shield costs no ghis - removed ghis consumption
           success = true;
-          
-          // Show resonance bonus if applicable
-          const resonance = this.getLocationResonance(this.player.x, this.player.y);
-          const resonanceText = resonance && resonance.bonusShield ? ` (+${resonance.bonusShield} resonance)` : '';
-          this.logBattleAction(`You gain ${shieldAmount} shield!${resonanceText}`);
+          this.logBattleAction(`You gain ${shieldAmount} shield!`);
         }
         break;
         
       case 'pierce':
-        const pierceCost = this.getResonanceEnergyCost(2);
-        if (this.player.abilities.has('pierce') && this.player.ghis >= pierceCost) {
+        if (this.player.abilities.has('pierce') && this.player.ghis >= 2) {
           const damage = 1 + this.player.stats.pierce;
           this.currentBattle.enemy.hp -= damage;
-          this.player.ghis -= pierceCost;
+          this.player.ghis -= 2;
           success = true;
-          
-          const discountText = pierceCost < 2 ? ' (Vortex discount!)' : '';
-          this.logBattleAction(`You pierce for ${damage} damage (ignores armor)!${discountText}`);
+          this.logBattleAction(`You pierce for ${damage} damage (ignores armor)!`);
         }
         break;
         
       case 'mazehope':
-        const hopeCost = this.getResonanceEnergyCost(1);
-        if (this.player.abilities.has('hope') && this.player.ghis >= hopeCost) {
-          let healAmount = 1 + this.player.stats.hope;
-          
-          // EXPERIMENTAL: Apply resonance effects
-          const resonanceEffect = this.applyResonanceToCard({ type: 'heal' }, 0, 0, healAmount);
-          healAmount = resonanceEffect.heal;
-          
+        if (this.player.abilities.has('hope') && this.player.ghis >= 1) {
+          const healAmount = 1 + this.player.stats.hope;
           this.player.hp = Math.min(this.player.maxHP, this.player.hp + healAmount);
-          this.player.ghis -= hopeCost;
+          this.player.ghis -= 1;
           success = true;
-          
-          // Show resonance bonus if applicable
-          const resonance = this.getLocationResonance(this.player.x, this.player.y);
-          const resonanceText = resonance && resonance.bonusHeal ? ` (+${resonance.bonusHeal} resonance)` : '';
-          const discountText = hopeCost < 1 ? ' (Vortex discount!)' : '';
-          this.logBattleAction(`You use Hope to heal ${healAmount} HP!${resonanceText}${discountText}`);
+          this.logBattleAction(`You use Hope to heal ${healAmount} HP!`);
         }
         break;
         
       case 'mazezap':
-        const zapCost = this.getResonanceEnergyCost(1);
-        if (this.player.abilities.has('zap') && this.player.ghis >= zapCost) {
+        if (this.player.abilities.has('zap') && this.player.ghis >= 1) {
           const stunChance = 10 + (this.player.stats.zap * 10);
           const stunSuccess = Math.random() * 100 < stunChance;
           
@@ -687,21 +584,13 @@ class MetroidvaniaGame {
           
           // Small damage regardless
           this.currentBattle.enemy.hp -= 1;
-          this.player.ghis -= zapCost;
+          this.player.ghis -= 1;
           success = true;
-          
-          const discountText = zapCost < 1 ? ' (Vortex discount!)' : '';
-          if (stunSuccess) {
-            this.logBattleAction(`You zap the enemy! They are stunned and will lose their next turn!${discountText}`);
-          } else {
-            this.logBattleAction(`You zap the enemy, but they resist the stun effect.${discountText}`);
-          }
         }
         break;
         
       case 'mazeignite':
-        const igniteCost = this.getResonanceEnergyCost(2);
-        if (this.player.abilities.has('ignite') && this.player.ghis >= igniteCost) {
+        if (this.player.abilities.has('ignite') && this.player.ghis >= 2) {
           const damage = 2;
           const burnTurns = 2 + this.player.stats.ignite;
           
@@ -712,11 +601,9 @@ class MetroidvaniaGame {
           this.currentBattle.enemy.status.burn = (this.currentBattle.enemy.status.burn || 0) + 1;
           this.currentBattle.enemy.status.burnTurns = (this.currentBattle.enemy.status.burnTurns || 0) + burnTurns;
           
-          this.player.ghis -= igniteCost;
+          this.player.ghis -= 2;
           success = true;
-          
-          const discountText = igniteCost < 2 ? ' (Vortex discount!)' : '';
-          this.logBattleAction(`You ignite the enemy for ${damage} damage + burn for ${burnTurns} turns!${discountText}`);
+          this.logBattleAction(`You ignite the enemy for ${damage} damage + burn for ${burnTurns} turns!`);
         }
         break;
         
@@ -973,29 +860,17 @@ class MetroidvaniaGame {
   // Generate loot from defeated enemy
   generateLoot(enemy) {
     const lootCards = [];
-    // Include maze explorer cards in the loot pool + EXPERIMENTAL reconstruction cards
+    // Include maze explorer cards in the loot pool
     const cardPool = CARDS.filter(card => 
       ['heart', 'swords', 'shield', 'mazesurge', 'mazepierce', 'mazehope', 'mazezap', 'mazeignite'].includes(card.id)
-    );
-    
-    // EXPERIMENTAL: Small chance for reconstruction cards from higher level enemies
-    const reconstructionPool = CARDS.filter(card => 
-      ['bridge', 'terraform', 'sanctify', 'vortexrift'].includes(card.id)
     );
     
     // Number of cards based on enemy level (ensure at least 1 card drops)
     const numCards = Math.max(1, enemy.level);
     
     for (let i = 0; i < numCards; i++) {
-      // Small chance for reconstruction card if enemy level 2+
-      if (enemy.level >= 2 && Math.random() < 0.3) {
-        const reconstructionCard = reconstructionPool[Math.floor(Math.random() * reconstructionPool.length)];
-        lootCards.push(reconstructionCard);
-        this.logBattleAction(`🌟 RARE DISCOVERY: You found a ${reconstructionCard.name} reconstruction card!`);
-      } else {
-        const card = cardPool[Math.floor(Math.random() * cardPool.length)];
-        lootCards.push(card);
-      }
+      const card = cardPool[Math.floor(Math.random() * cardPool.length)];
+      lootCards.push(card);
     }
     
     return lootCards;
@@ -1418,9 +1293,6 @@ class MetroidvaniaGame {
         
         // Only render discovered areas
         if (this.discovered.has(`${x},${y}`)) {
-          // Check for maze modifications first
-          const modification = this.mazeModifications.get(`${x},${y}`);
-          
           if (this.maze[x][y] === 1) {
             // Wall - more atmospheric stone texture effect
             const gradient = ctx.createLinearGradient(screenX, screenY, screenX + this.cellSize, screenY + this.cellSize);
@@ -1434,58 +1306,14 @@ class MetroidvaniaGame {
             ctx.fillStyle = 'rgba(100, 100, 120, 0.3)';
             ctx.fillRect(screenX + 2, screenY + 2, 4, 4);
             ctx.fillRect(screenX + this.cellSize - 6, screenY + this.cellSize - 6, 4, 4);
-          } else if (this.maze[x][y] === 2) {
-            // EXPERIMENTAL: Terraformed beneficial terrain
-            const gradient = ctx.createLinearGradient(screenX, screenY, screenX + this.cellSize, screenY + this.cellSize);
-            gradient.addColorStop(0, '#4a6a3a');
-            gradient.addColorStop(0.5, '#3a5a2a');
-            gradient.addColorStop(1, '#2a4a1a');
-            ctx.fillStyle = gradient;
-            ctx.fillRect(screenX, screenY, this.cellSize, this.cellSize);
-            
-            // Glowing resonance effect
-            ctx.fillStyle = 'rgba(100, 255, 100, 0.3)';
-            ctx.fillRect(screenX + 4, screenY + 4, this.cellSize - 8, this.cellSize - 8);
-          } else if (this.maze[x][y] === 3) {
-            // EXPERIMENTAL: Sanctified healing ground
-            const gradient = ctx.createRadialGradient(
-              screenX + this.cellSize/2, screenY + this.cellSize/2, 0,
-              screenX + this.cellSize/2, screenY + this.cellSize/2, this.cellSize/2
-            );
-            gradient.addColorStop(0, '#5a5aaa');
-            gradient.addColorStop(0.5, '#4a4a8a');
-            gradient.addColorStop(1, '#3a3a6a');
-            ctx.fillStyle = gradient;
-            ctx.fillRect(screenX, screenY, this.cellSize, this.cellSize);
-            
-            // Healing aura
-            ctx.fillStyle = 'rgba(100, 100, 255, 0.4)';
-            ctx.fillRect(screenX + 2, screenY + 2, this.cellSize - 4, this.cellSize - 4);
-          } else if (this.maze[x][y] === 4) {
-            // EXPERIMENTAL: Vortex rift chaotic space
-            const time = Date.now() * 0.001;
-            const intensity = Math.sin(time * 2) * 0.3 + 0.7;
-            ctx.fillStyle = `rgba(${100 * intensity}, ${50 * intensity}, ${150 * intensity}, 0.8)`;
-            ctx.fillRect(screenX, screenY, this.cellSize, this.cellSize);
-            
-            // Chaotic energy swirls
-            ctx.fillStyle = `rgba(200, 100, 255, ${0.5 * intensity})`;
-            const swirl1X = screenX + (Math.sin(time * 3) * this.cellSize/4) + this.cellSize/2;
-            const swirl1Y = screenY + (Math.cos(time * 3) * this.cellSize/4) + this.cellSize/2;
-            ctx.fillRect(swirl1X - 2, swirl1Y - 2, 4, 4);
           } else {
-            // Regular floor - darker, more atmospheric
+            // Floor - darker, more atmospheric
             ctx.fillStyle = '#1a1a2e';
             ctx.fillRect(screenX, screenY, this.cellSize, this.cellSize);
             
             // Subtle floor pattern
             ctx.fillStyle = 'rgba(50, 50, 70, 0.5)';
             ctx.fillRect(screenX + this.cellSize/2 - 1, screenY + this.cellSize/2 - 1, 2, 2);
-          }
-          
-          // EXPERIMENTAL: Show reconstruction effects overlay
-          if (modification) {
-            this.renderReconstructionEffect(ctx, screenX, screenY, modification);
           }
         } else {
           // Undiscovered - deeper darkness
@@ -1500,52 +1328,6 @@ class MetroidvaniaGame {
           ctx.strokeRect(screenX, screenY, this.cellSize, this.cellSize);
         }
       }
-    }
-  }
-  
-  // EXPERIMENTAL: Render special effects for reconstructed areas
-  renderReconstructionEffect(ctx, screenX, screenY, modification) {
-    if (!modification) return;
-    
-    const time = Date.now() * 0.001;
-    
-    switch (modification.type) {
-      case 'bridge':
-        // Shimmer effect for bridges
-        ctx.fillStyle = `rgba(119, 255, 221, ${0.2 + Math.sin(time * 2) * 0.1})`;
-        ctx.fillRect(screenX + 2, screenY + 2, this.cellSize - 4, this.cellSize - 4);
-        break;
-      
-      case 'terraform':
-        // Pulsing green energy for terraformed areas
-        const greenIntensity = 0.3 + Math.sin(time * 1.5) * 0.1;
-        ctx.fillStyle = `rgba(100, 255, 100, ${greenIntensity})`;
-        ctx.fillRect(screenX + 4, screenY + 4, this.cellSize - 8, this.cellSize - 8);
-        break;
-      
-      case 'sanctify':
-        // Holy light effect for sanctuaries
-        const holyIntensity = 0.4 + Math.sin(time * 1) * 0.2;
-        ctx.fillStyle = `rgba(200, 200, 255, ${holyIntensity})`;
-        ctx.fillRect(screenX + 1, screenY + 1, this.cellSize - 2, this.cellSize - 2);
-        break;
-      
-      case 'vortexrift':
-        // Chaotic energy swirls
-        const chaosIntensity = Math.sin(time * 3) * 0.3 + 0.5;
-        ctx.fillStyle = `rgba(255, 100, 255, ${chaosIntensity})`;
-        const centerX = screenX + this.cellSize / 2;
-        const centerY = screenY + this.cellSize / 2;
-        
-        // Draw swirling energy
-        for (let i = 0; i < 3; i++) {
-          const angle = (time * 2) + (i * Math.PI * 2 / 3);
-          const radius = this.cellSize / 4;
-          const x = centerX + Math.cos(angle) * radius;
-          const y = centerY + Math.sin(angle) * radius;
-          ctx.fillRect(x - 1, y - 1, 2, 2);
-        }
-        break;
     }
   }
   
@@ -1908,31 +1690,6 @@ class MetroidvaniaGame {
         this.showEquipmentMenu();
       }
       
-      // EXPERIMENTAL: Reconstruction mode toggle (R key)
-      if (this.keys.has('r') || this.keys.has('R')) {
-        this.toggleReconstructionMode();
-      }
-      
-      // EXPERIMENTAL: Reconstruction mode interactions
-      if (this.reconstructionMode) {
-        // Number keys 1-4 to select reconstruction cards
-        for (let i = 1; i <= 4; i++) {
-          if (this.keys.has(i.toString())) {
-            this.selectReconstructionCard(i - 1);
-          }
-        }
-        
-        // Space or Enter to place reconstruction
-        if (this.keys.has(' ') || this.keys.has('Enter')) {
-          this.placeReconstruction();
-        }
-        
-        // Escape to cancel reconstruction mode
-        if (this.keys.has('Escape')) {
-          this.cancelReconstructionMode();
-        }
-      }
-      
       // DEBUG: Press 'B' to force trigger a battle for testing
       if (this.keys.has('b') || this.keys.has('B')) {
         const testEnemy = { type: 'bruiser', level: 1, defeated: false };
@@ -2285,277 +2042,6 @@ class MetroidvaniaGame {
     ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
     ctx.lineWidth = 1;
     ctx.strokeRect(x, y, size, size);
-  }
-  
-  // ========================================
-  // EXPERIMENTAL: MAZE RECONSTRUCTION SYSTEM
-  // ========================================
-  
-  // Toggle reconstruction mode
-  toggleReconstructionMode() {
-    if (this.gameState !== 'exploring') return;
-    
-    this.reconstructionMode = !this.reconstructionMode;
-    this.selectedReconstructionCard = null;
-    this.reconstructionRange = 0;
-    
-    if (this.reconstructionMode) {
-      this.logBattleAction("🌟 RECONSTRUCTION MODE ACTIVATED! Use 1-4 keys to select cards, SPACE to place, ESC to cancel.");
-      this.showReconstructionCards();
-    } else {
-      this.logBattleAction("Reconstruction mode deactivated.");
-    }
-  }
-  
-  // Cancel reconstruction mode
-  cancelReconstructionMode() {
-    this.reconstructionMode = false;
-    this.selectedReconstructionCard = null;
-    this.reconstructionRange = 0;
-    this.logBattleAction("Reconstruction mode cancelled.");
-  }
-  
-  // Show available reconstruction cards
-  showReconstructionCards() {
-    const reconstructionCards = this.getReconstructionCards();
-    if (reconstructionCards.length === 0) {
-      this.logBattleAction("No reconstruction cards available. Find Bridge, Terraform, Sanctify, or Vortex Rift cards!");
-      this.cancelReconstructionMode();
-      return;
-    }
-    
-    reconstructionCards.forEach((card, index) => {
-      const cost = card.cost || 0;
-      const canAfford = this.player.ghis >= cost;
-      const status = canAfford ? "" : " (INSUFFICIENT GHIS)";
-      this.logBattleAction(`${index + 1}. ${card.sym} ${card.name} (${cost} GHIS)${status} - ${card.environmental.description}`);
-    });
-  }
-  
-  // Get player's reconstruction cards
-  getReconstructionCards() {
-    return this.player.cards.filter(card => 
-      card.environmental && 
-      ['bridge', 'terraform', 'sanctify', 'vortexrift'].includes(card.environmental.type)
-    );
-  }
-  
-  // Select a reconstruction card by index
-  selectReconstructionCard(index) {
-    const reconstructionCards = this.getReconstructionCards();
-    if (index < 0 || index >= reconstructionCards.length) return;
-    
-    const card = reconstructionCards[index];
-    const cost = card.cost || 0;
-    
-    if (this.player.ghis < cost) {
-      this.logBattleAction(`❌ Insufficient GHIS! Need ${cost}, have ${this.player.ghis}.`);
-      return;
-    }
-    
-    this.selectedReconstructionCard = card;
-    this.reconstructionRange = card.environmental.range || 1;
-    this.logBattleAction(`🎯 Selected ${card.sym} ${card.name}. Move to target location and press SPACE to place.`);
-  }
-  
-  // Place reconstruction at current player position
-  placeReconstruction() {
-    if (!this.selectedReconstructionCard || !this.reconstructionMode) return;
-    
-    const card = this.selectedReconstructionCard;
-    const cost = card.cost || 0;
-    
-    // Check if we can afford it
-    if (this.player.ghis < cost) {
-      this.logBattleAction(`❌ Insufficient GHIS! Need ${cost}, have ${this.player.ghis}.`);
-      return;
-    }
-    
-    // Check if location is valid for reconstruction
-    if (!this.isValidReconstructionLocation(this.player.x, this.player.y, card)) {
-      this.logBattleAction(`❌ Cannot place ${card.name} here! ${this.getReconstructionLocationError(card)}`);
-      return;
-    }
-    
-    // Consume GHIS
-    this.player.ghis -= cost;
-    
-    // Apply the reconstruction
-    this.applyReconstruction(this.player.x, this.player.y, card);
-    
-    // Remove card from player's hand (consumed)
-    const cardIndex = this.player.cards.findIndex(c => c.id === card.id);
-    if (cardIndex !== -1) {
-      this.player.cards.splice(cardIndex, 1);
-    }
-    
-    this.logBattleAction(`✨ ${card.sym} ${card.name} placed! The maze bends to your will...`);
-    
-    // Exit reconstruction mode
-    this.cancelReconstructionMode();
-  }
-  
-  // Check if location is valid for reconstruction
-  isValidReconstructionLocation(x, y, card) {
-    switch (card.environmental.type) {
-      case 'bridge':
-        // Bridge can be placed on walls to create paths
-        return this.maze[x] && this.maze[x][y] === 1;
-      
-      case 'terraform':
-        // Terraform can be placed on walls to make them beneficial
-        return this.maze[x] && this.maze[x][y] === 1;
-      
-      case 'sanctify':
-        // Sanctify can be placed on open ground
-        return this.maze[x] && this.maze[x][y] === 0;
-      
-      case 'vortexrift':
-        // Vortex rifts can be placed anywhere
-        return this.maze[x] && this.maze[x][y] !== undefined;
-      
-      default:
-        return false;
-    }
-  }
-  
-  // Get error message for invalid reconstruction placement
-  getReconstructionLocationError(card) {
-    switch (card.environmental.type) {
-      case 'bridge':
-        return "Bridges can only be built through walls!";
-      case 'terraform':
-        return "Terraform can only transform walls!";
-      case 'sanctify':
-        return "Sanctuaries can only be created on open ground!";
-      case 'vortexrift':
-        return "Vortex rifts cannot be placed here!";
-      default:
-        return "Invalid placement!";
-    }
-  }
-  
-  // Apply reconstruction effect to the maze
-  applyReconstruction(x, y, card) {
-    const range = card.environmental.range || 1;
-    const modification = {
-      type: card.environmental.type,
-      card: card,
-      range: range,
-      persistent: card.environmental.persistent || false,
-      placedAt: Date.now(),
-      resonance: card.environmental.resonance || null
-    };
-    
-    // Apply effect in range around the target position
-    for (let dx = -range; dx <= range; dx++) {
-      for (let dy = -range; dy <= range; dy++) {
-        const targetX = x + dx;
-        const targetY = y + dy;
-        
-        if (targetX >= 0 && targetX < this.mazeSize && 
-            targetY >= 0 && targetY < this.mazeSize) {
-          
-          const distance = Math.abs(dx) + Math.abs(dy); // Manhattan distance
-          if (distance <= range) {
-            this.applyReconstructionToCell(targetX, targetY, modification);
-          }
-        }
-      }
-    }
-    
-    // Store the modification for persistence and resonance tracking
-    const key = `${x},${y}`;
-    this.mazeModifications.set(key, modification);
-  }
-  
-  // Apply reconstruction effect to a single cell
-  applyReconstructionToCell(x, y, modification) {
-    switch (modification.type) {
-      case 'bridge':
-        // Convert walls to paths
-        if (this.maze[x][y] === 1) {
-          this.maze[x][y] = 0; // Convert to open path
-        }
-        break;
-      
-      case 'terraform':
-        // Convert walls to beneficial terrain (special value 2)
-        if (this.maze[x][y] === 1) {
-          this.maze[x][y] = 2; // Beneficial terrain
-        }
-        break;
-      
-      case 'sanctify':
-        // Create healing sanctuary (special value 3)
-        if (this.maze[x][y] === 0) {
-          this.maze[x][y] = 3; // Sanctuary
-        }
-        break;
-      
-      case 'vortexrift':
-        // Create chaotic vortex area (special value 4)
-        this.maze[x][y] = 4; // Vortex rift
-        break;
-    }
-    
-    // Mark area as modified for visual feedback
-    const key = `${x},${y}`;
-    this.mazeModifications.set(key, modification);
-  }
-  
-  // Check for resonance effects at player's current location
-  getLocationResonance(x, y) {
-    const key = `${x},${y}`;
-    const modification = this.mazeModifications.get(key);
-    return modification ? modification.resonance : null;
-  }
-  
-  // Apply resonance effects to card usage (called during battle)
-  applyResonanceToCard(card, damage, shield, heal) {
-    const resonance = this.getLocationResonance(this.player.x, this.player.y);
-    if (!resonance) return { damage, shield, heal };
-    
-    let modifiedDamage = damage;
-    let modifiedShield = shield;
-    let modifiedHeal = heal;
-    
-    if (resonance.bonusDamage) {
-      modifiedDamage += resonance.bonusDamage;
-    }
-    
-    if (resonance.bonusShield) {
-      modifiedShield += resonance.bonusShield;
-    }
-    
-    if (resonance.bonusHeal) {
-      modifiedHeal += resonance.bonusHeal;
-    }
-    
-    return { 
-      damage: modifiedDamage, 
-      shield: modifiedShield, 
-      heal: modifiedHeal 
-    };
-  }
-  
-  // Get energy cost discount from vortex rifts
-  getResonanceEnergyCost(originalCost) {
-    const resonance = this.getLocationResonance(this.player.x, this.player.y);
-    if (resonance && resonance.energyDiscount) {
-      return Math.max(1, originalCost - resonance.energyDiscount);
-    }
-    return originalCost;
-  }
-  
-  // Check if player is in a sanctuary (for automatic healing)
-  isInSanctuary() {
-    return this.maze[this.player.x] && this.maze[this.player.x][this.player.y] === 3;
-  }
-  
-  // Check if player is in a vortex rift (for chaotic effects)
-  isInVortexRift() {
-    return this.maze[this.player.x] && this.maze[this.player.x][this.player.y] === 4;
   }
 }
 
