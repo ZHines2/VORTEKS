@@ -3580,6 +3580,9 @@ document.addEventListener('DOMContentLoaded', () => {
       // Set up event listeners
       setupMetroidvaniaControls();
       
+      // Initialize game instructions based on device type
+      initializeMazeInstructions();
+      
       // Start game loop
       function gameLoop(timestamp) {
         if (currentMetroidvaniaGame) {
@@ -3700,6 +3703,43 @@ document.addEventListener('DOMContentLoaded', () => {
       touchmove: handleTouchMove,
       touchend: handleTouchEnd
     };
+  }
+  
+  function initializeMazeInstructions() {
+    const logContent = document.getElementById('mazeLogContent');
+    if (!logContent) return;
+    
+    // Clear existing content
+    logContent.innerHTML = '';
+    
+    // Detect if user is on mobile device
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                    ('ontouchstart' in window) || 
+                    (navigator.maxTouchPoints > 0) ||
+                    window.innerWidth <= 768; // Also consider small screens as mobile
+    
+    // Create appropriate instructions based on device type
+    const instructions = isMobile ? [
+      '• Move: Swipe in any direction on the game area',
+      '• Battle: Tap the action buttons when in combat',
+      '• Dialogue: Tap the screen to continue',
+      '• Equipment: Tap the EQUIPMENT button',
+      '• Find cards to unlock abilities and increase stats',
+      '• Unique pixel sprites for explorer and each enemy type'
+    ] : [
+      '• Move: WASD keys',
+      '• Battle: Use ↑↓ arrows to select abilities, Enter to confirm',
+      '• Find cards to unlock abilities and increase stats',
+      '• Press E to open Equipment menu',
+      '• Unique pixel sprites for explorer and each enemy type'
+    ];
+    
+    // Add instructions to the log
+    instructions.forEach(instruction => {
+      const div = document.createElement('div');
+      div.textContent = instruction;
+      logContent.appendChild(div);
+    });
   }
   
   function exitMetroidvania() {
