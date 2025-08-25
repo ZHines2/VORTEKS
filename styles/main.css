@@ -711,6 +711,10 @@ button.card:disabled {
   justify-content: center;
 }
 
+.button-group .btn {
+  font-size: 10px;
+}
+
 .debug-group {
   display: flex;
   justify-content: center;

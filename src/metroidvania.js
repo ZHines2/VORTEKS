@@ -40,9 +40,9 @@ class MetroidvaniaGame {
     // Check if player has seen Judge dialogue before
     const hasSeenJudge = localStorage.getItem('vorteks-judge-seen') === 'true';
     
-    this.gameState = hasSeenJudge ? 'exploring' : 'judge_intro'; // Skip intro if seen before
+    this.gameState = 'judge_intro'; // Always show intro, but show skip button if seen before
     this.judgeDialogue = {
-      visible: !hasSeenJudge,
+      visible: true,
       currentStep: 0,
       hasSeenBefore: hasSeenJudge,
       steps: [
@@ -86,11 +86,7 @@ class MetroidvaniaGame {
     this.generateMaze();
     this.spawnPlayer();
     
-    // If skipping judge intro, set up the game immediately
-    if (this.judgeDialogue.hasSeenBefore) {
-      this.giveStartingCards();
-      this.populateEnemies();
-    }
+    // Don't auto-give starting cards or populate enemies - wait for judge intro to complete
   }
   
   // Handle JUDGE introduction sequence
@@ -1179,7 +1175,10 @@ class MetroidvaniaGame {
     // Render JUDGE dialogue if in intro state
     if (this.gameState === 'judge_intro') {
       this.renderJudgeDialogue(ctx, viewportWidth, viewportHeight);
+      this.updateSkipButton(); // Show/hide skip button as needed
       return;
+    } else {
+      this.hideSkipButton(); // Hide skip button when not in judge intro
     }
     
     // Render maze
@@ -1196,6 +1195,27 @@ class MetroidvaniaGame {
       this.updateCombatUI();
     } else {
       this.hideCombatUI();
+    }
+  }
+  
+  // Update skip button visibility and state
+  updateSkipButton() {
+    const skipBtn = document.getElementById('judgeSkipBtn');
+    if (skipBtn) {
+      // Show skip button only if player has seen judge dialogue before
+      if (this.judgeDialogue.hasSeenBefore) {
+        skipBtn.style.display = 'block';
+      } else {
+        skipBtn.style.display = 'none';
+      }
+    }
+  }
+  
+  // Hide skip button
+  hideSkipButton() {
+    const skipBtn = document.getElementById('judgeSkipBtn');
+    if (skipBtn) {
+      skipBtn.style.display = 'none';
     }
   }
   
@@ -1773,6 +1793,7 @@ class MetroidvaniaGame {
     const target = event.target;
     if (target && (target.classList.contains('combat-action-btn') || target.closest('.combat-action-btn'))) {
       // Let the button handle the touch normally
+      this.touchState.isActive = false; // Don't treat this as a swipe gesture
       return;
     }
     
@@ -1806,6 +1827,7 @@ class MetroidvaniaGame {
     const target = event.target;
     if (target && (target.classList.contains('combat-action-btn') || target.closest('.combat-action-btn'))) {
       // Let the button handle the click normally
+      this.touchState.isActive = false;
       return;
     }
     
