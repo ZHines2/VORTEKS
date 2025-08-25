@@ -1276,7 +1276,7 @@ class MetroidvaniaGame {
     ctx.textAlign = 'center';
     
     // Detect touch device
-    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0 || window.innerWidth <= 768;
     
     if (isTouchDevice) {
       ctx.fillText('Tap to continue...', viewportWidth / 2, viewportHeight - 60);
