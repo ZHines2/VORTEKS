@@ -1773,6 +1773,7 @@ class MetroidvaniaGame {
     const target = event.target;
     if (target && (target.classList.contains('combat-action-btn') || target.closest('.combat-action-btn'))) {
       // Let the button handle the touch normally
+      this.touchState.isActive = false; // Don't treat this as a swipe gesture
       return;
     }
     
@@ -1806,6 +1807,7 @@ class MetroidvaniaGame {
     const target = event.target;
     if (target && (target.classList.contains('combat-action-btn') || target.closest('.combat-action-btn'))) {
       // Let the button handle the click normally
+      this.touchState.isActive = false;
       return;
     }
     
