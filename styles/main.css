@@ -1989,6 +1989,11 @@ button.card:disabled {
   padding: 15px;
   z-index: 100;
   animation: slideUp 0.3s ease-out;
+  /* Ensure panel respects safe areas on mobile */
+  padding-bottom: max(15px, env(safe-area-inset-bottom));
+  /* Prevent content from being cut off */
+  max-height: 50vh;
+  overflow-y: auto;
 }
 
 @keyframes slideUp {
@@ -2138,17 +2143,34 @@ button.card:disabled {
 /* Mobile responsive combat UI */
 @media (max-width: 768px) {
   .maze-combat-panel {
-    padding: 10px;
+    padding: 12px;
+    /* Ensure panel is above any canvas touch handling */
+    z-index: 200;
   }
   
   .combat-buttons {
-    gap: 6px;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
   }
   
   .combat-action-btn {
-    min-width: 70px;
-    padding: 6px 8px;
+    /* Improved touch targets for mobile - 44px minimum recommended */
+    min-width: 90px;
+    min-height: 44px;
+    padding: 12px 16px;
+    font-size: 9px;
+    line-height: 1.2;
+    /* Ensure buttons are easily tappable */
+    touch-action: manipulation;
+    /* Prevent text selection on mobile */
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  
+  .combat-btn-cost {
     font-size: 7px;
+    margin-top: 4px;
   }
   
   .enemy-hp-bar {
@@ -2158,5 +2180,10 @@ button.card:disabled {
   
   .enemy-name {
     font-size: 12px;
+  }
+  
+  .combat-instructions {
+    font-size: 10px;
+    margin-top: 8px;
   }
 }
