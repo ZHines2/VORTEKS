@@ -2993,13 +2993,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Setup Campaign functionality
   function setupCampaign() {
-    // Load existing campaign and show continue button if active
-    if (Campaign.load()) {
-      const continueBtn = document.getElementById('campaignContinueBtn');
-      if (continueBtn) {
-        continueBtn.hidden = false;
-      }
-    }
+    // We no longer automatically show the continue button on the main screen
+    // Instead, we'll handle it in the campaign modal
   }
 
   // Start screen logic
@@ -3080,12 +3075,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Campaign button handlers
     document.getElementById('campaignBtn').onclick = () => {
       modal.hidden = true;
-      startNewCampaign();
+      showCampaignModeModal();
     };
     
-    document.getElementById('campaignContinueBtn').onclick = () => {
-      modal.hidden = true;
-      continueCampaign();
+    // Instagram button handler
+    document.getElementById('instagramBtn').onclick = () => {
+      window.open('https://instagram.com/zhines2', '_blank', 'noopener,noreferrer');
     };
     
     // Tournament button handler
@@ -3131,6 +3126,54 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('No campaign to continue');
       showStart();
     }
+  }
+  
+  function showCampaignModeModal() {
+    const modal = document.getElementById('campaignModeModal');
+    const continueBtn = document.getElementById('campaignContinueBtn');
+    const newBtn = document.getElementById('campaignNewBtn');
+    const statusInfo = document.getElementById('campaignStatusInfo');
+    
+    // Check if there's an existing campaign
+    const hasExistingCampaign = Campaign.load();
+    
+    if (hasExistingCampaign) {
+      continueBtn.disabled = false;
+      continueBtn.style.opacity = '1';
+      statusInfo.innerHTML = `
+        <strong>📊 Active Campaign Found</strong><br>
+        Victories: ${Campaign.victories} | Booster Level: ${Campaign.boosterLevel}<br>
+        Cards in Deck: ${Campaign.deck.length} | Cards Collected: ${Campaign.collection.length}
+      `;
+      statusInfo.style.background = 'rgba(0, 255, 153, 0.2)';
+      statusInfo.style.color = 'var(--good)';
+    } else {
+      continueBtn.disabled = true;
+      continueBtn.style.opacity = '0.5';
+      statusInfo.innerHTML = 'No active campaign found. Start a new campaign to begin your journey!';
+      statusInfo.style.background = 'rgba(0, 0, 0, 0.3)';
+      statusInfo.style.color = 'var(--ink)';
+    }
+    
+    modal.hidden = false;
+    
+    // Set up button handlers
+    newBtn.onclick = () => {
+      modal.hidden = true;
+      startNewCampaign();
+    };
+    
+    continueBtn.onclick = () => {
+      if (!continueBtn.disabled) {
+        modal.hidden = true;
+        continueCampaign();
+      }
+    };
+    
+    document.getElementById('campaignModeBackBtn').onclick = () => {
+      modal.hidden = true;
+      showStart();
+    };
   }
 
   function initCampaignBattle() {
