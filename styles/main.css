@@ -714,6 +714,7 @@ button.card:disabled {
 .debug-group {
   display: flex;
   justify-content: center;
+  gap: 12px;
 }
 
 .debug-btn {
@@ -722,13 +723,6 @@ button.card:disabled {
   padding: 4px 8px;
 }
 
-.social-group {
-  position: fixed;
-  bottom: 15px;
-  right: 15px;
-  z-index: 5;
-  pointer-events: none; /* Allow clicks to pass through the container */
-}
 
 .social-btn {
   font-size: 11px;
@@ -743,7 +737,7 @@ button.card:disabled {
   border-radius: 8px;
   text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
   box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-  pointer-events: auto; /* Re-enable clicks on the button itself */
+  cursor: pointer;
 }
 
 .social-btn:hover {
@@ -777,11 +771,6 @@ button.card:disabled {
   .button-group {
     flex-direction: column;
     gap: 8px;
-  }
-  
-  .social-group {
-    bottom: 8px;
-    right: 8px;
   }
   
   .social-btn {
