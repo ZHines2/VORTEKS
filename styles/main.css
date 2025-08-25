@@ -724,7 +724,7 @@ button.card:disabled {
 
 .social-group {
   position: absolute;
-  top: 20px;
+  bottom: 20px;
   right: 20px;
   z-index: 10;
 }
@@ -778,7 +778,7 @@ button.card:disabled {
   }
   
   .social-group {
-    top: 10px;
+    bottom: 10px;
     right: 10px;
   }
   
