@@ -2,7 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="format-detection" content="telephone=no"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
   <title>VORTEKS — Unicode Card Battler</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%234b2366'/><path d='M8 6 L16 24 L24 6 L20 6 L16 18 L12 6 Z' fill='%2377ffdd'/></svg>" type="image/svg+xml">
@@ -248,18 +252,43 @@
         <div class="button-group">
           <button id="startBtn" class="btn" title="Choose your cards and quirk">BUILD DECK</button>
           <button id="quickBtn" class="btn" title="Jump straight into battle with a random deck">QUICK START</button>
-          <button id="campaignBtn" class="btn" title="Start a new campaign run">CAMPAIGN</button>
-          <button id="campaignContinueBtn" class="btn" title="Continue your current campaign run" hidden>CONTINUE CAMPAIGN</button>
+          <button id="campaignBtn" class="btn" title="Play campaign mode">CAMPAIGN</button>
           <button id="tournamentBtn" class="btn" title="Battle 9 AI opponents in a tournament until only one remains">TOURNAMENT</button>
           <button id="metroidvaniaBtn" class="btn" title="Explore a procedural maze, start with no cards, and collect abilities by defeating enemies">MAZE EXPLORER</button>
         </div>
         <div class="debug-group">
           <button id="selfTest" class="btn debug-btn" title="Run built-in tests">DEBUG</button>
           <button id="resetAllDataBtn" class="btn" style="background:var(--bad); color:white; border-color:var(--bad);" title="Reset all game data including unlocks, progress, companion, and analytics">⚠️ RESET ALL DATA</button>
+          <button id="instagramBtn" class="btn social-btn" title="Follow @zhines2 on Instagram">📷 hit me up!</button>
         </div>
       </div>
     </div>
   </div>
+  
+  <!-- Campaign Mode Selection Modal -->
+  <div class="modal" id="campaignModeModal" hidden>
+    <div class="box" style="width:min(96vw, 480px)">
+      <div style="font-size:18px; color:var(--accent); margin:8px 0 16px; text-align:center"><strong>🏛️ Campaign Mode</strong></div>
+      <div style="margin-bottom:16px; text-align:center; color:var(--ink); line-height:1.5;">
+        Choose how you want to experience the campaign:
+      </div>
+      <div style="display:flex; flex-direction:column; gap:12px; margin-bottom:16px;">
+        <button id="campaignNewBtn" class="btn" style="background:var(--good); color:black; font-weight:bold; padding:16px; font-size:16px;" title="Start a fresh campaign run">
+          🌟 START NEW CAMPAIGN
+        </button>
+        <button id="campaignContinueBtn" class="btn" style="background:var(--accent); color:black; font-weight:bold; padding:16px; font-size:16px;" title="Continue your current campaign run" disabled>
+          ⚡ CONTINUE CAMPAIGN
+        </button>
+      </div>
+      <div id="campaignStatusInfo" style="background:rgba(0,0,0,0.3); padding:12px; border-radius:4px; margin-bottom:16px; font-size:12px; color:var(--ink); opacity:0.8; text-align:center;">
+        No active campaign found. Start a new campaign to begin your journey!
+      </div>
+      <div style="display:flex; justify-content:center; gap:8px;">
+        <button id="campaignModeBackBtn" class="btn">BACK</button>
+      </div>
+    </div>
+  </div>
+  
   <!-- Deck Builder Modal -->
   <div class="modal" id="deckModal" hidden>
     <div class="box">
