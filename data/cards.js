@@ -355,5 +355,18 @@ export const CARDS = [
     status: { target: { burn: { amount: 1, turns: 2 } }, self: { nextPlus: 0, maxEnergyDelta: 0, energyNowDelta: 0, cleanse: false } }, 
     scaling: { igniteBurn: true }, 
     ai: { role: 'attrition', pri: 70 } 
+  },
+  { 
+    id: 'mazereap', 
+    sym: icons.reap, 
+    name: 'Reap', 
+    description: 'Deal damage equal to half your current health to enemy. Take the same damage yourself.',
+    cost: 3, 
+    type: 'attack', 
+    tags: ['reap', 'life-cost', 'maze'],
+    effects: { damage: 0, pierce: false, heal: 0, shield: 0, draw: 0, reap: true }, 
+    status: { target: { burn: null, freezeEnergy: 0 }, self: { nextPlus: 0, maxEnergyDelta: 0, energyNowDelta: 0, cleanse: false } }, 
+    scaling: {}, 
+    ai: { role: 'finisher', pri: 45 } 
   }
 ];

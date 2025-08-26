@@ -25,7 +25,8 @@ class MetroidvaniaGame {
         pierce: 0,
         hope: 0,
         zap: 0,
-        ignite: 0
+        ignite: 0,
+        reap: 0
       }
     };
     
@@ -35,6 +36,7 @@ class MetroidvaniaGame {
     this.camera = { x: 0, y: 0 };
     this.enemies = new Map(); // Position -> enemy data
     this.loot = new Map(); // Position -> loot data
+    this.savePoints = new Map(); // Position -> save point data
     this.discovered = new Set(); // Discovered cell positions
     
     // Check if player has seen Judge dialogue before
@@ -307,7 +309,7 @@ class MetroidvaniaGame {
   
   // Populate maze with enemies and loot
   populateEnemies() {
-    const enemyTypes = ['bruiser', 'doctor', 'trickster', 'cat', 'robot'];
+    const enemyTypes = ['bruiser', 'doctor', 'trickster', 'cat', 'robot', 'shadow', 'elemental', 'guardian', 'wraith', 'berserker'];
     const numEnemies = Math.floor(this.mazeSize * this.mazeSize * 0.05); // 5% density
     
     for (let i = 0; i < numEnemies; i++) {
@@ -327,6 +329,34 @@ class MetroidvaniaGame {
           type: enemyType,
           level: Math.floor(Math.random() * 3) + 1,
           defeated: false
+        });
+      }
+    }
+    
+    // Populate save points
+    this.populateSavePoints();
+  }
+  
+  // Populate maze with save points for mystery dungeon feel
+  populateSavePoints() {
+    const numSavePoints = Math.max(3, Math.floor(this.mazeSize * this.mazeSize * 0.01)); // 1% density, minimum 3
+    
+    for (let i = 0; i < numSavePoints; i++) {
+      let x, y;
+      let attempts = 0;
+      
+      do {
+        x = Math.floor(Math.random() * this.mazeSize);
+        y = Math.floor(Math.random() * this.mazeSize);
+        attempts++;
+      } while ((this.maze[x][y] === 1 || this.enemies.has(`${x},${y}`) || 
+                this.savePoints.has(`${x},${y}`) ||
+                (x === this.player.x && y === this.player.y)) && attempts < 50);
+      
+      if (attempts < 50) {
+        this.savePoints.set(`${x},${y}`, {
+          id: `save_${x}_${y}`,
+          used: false
         });
       }
     }
@@ -371,6 +401,14 @@ class MetroidvaniaGame {
   checkEncounters() {
     const pos = `${this.player.x},${this.player.y}`;
     
+    // Save point interaction
+    if (this.savePoints.has(pos)) {
+      const savePoint = this.savePoints.get(pos);
+      if (!savePoint.used) {
+        this.showSavePointDialog(savePoint);
+      }
+    }
+    
     // Enemy encounter
     if (this.enemies.has(pos)) {
       const enemy = this.enemies.get(pos);
@@ -387,6 +425,20 @@ class MetroidvaniaGame {
     }
   }
   
+  // Show save point dialog
+  showSavePointDialog(savePoint) {
+    // Simple confirm dialog for now - could be enhanced with custom UI later
+    const message = "You found a save point! Would you like to save your progress?";
+    if (confirm(message)) {
+      if (this.saveGameState()) {
+        savePoint.used = true;
+        alert("Game saved successfully! You can continue from this point if you die.");
+      } else {
+        alert("Failed to save game state.");
+      }
+    }
+  }
+  
   // Create enemy stats based on type and level
   createEnemyStats(type, level) {
     const baseStats = {
@@ -394,7 +446,12 @@ class MetroidvaniaGame {
       doctor: { hp: 12, persona: 'Mystic Doctor', color: '#44ff44' },
       trickster: { hp: 10, persona: 'Cunning Trickster', color: '#ffff44' },
       cat: { hp: 8, persona: 'Feral Cat', color: '#ff44ff' },
-      robot: { hp: 18, persona: 'Steel Automaton', color: '#4444ff' }
+      robot: { hp: 18, persona: 'Steel Automaton', color: '#4444ff' },
+      shadow: { hp: 11, persona: 'Shadow Stalker', color: '#444444' },
+      elemental: { hp: 13, persona: 'Fire Elemental', color: '#ff8800' },
+      guardian: { hp: 25, persona: 'Ancient Guardian', color: '#996633' },
+      wraith: { hp: 9, persona: 'Spectral Wraith', color: '#9999ff' },
+      berserker: { hp: 16, persona: 'Mad Berserker', color: '#cc0000' }
     };
     
     const enemyBase = baseStats[type] || baseStats.bruiser;
@@ -497,6 +554,17 @@ class MetroidvaniaGame {
         cost: 2,
         enabled: this.player.ghis >= 2,
         description: `Deal 2 damage + burn for ${2 + this.player.stats.ignite} turns`
+      });
+    }
+    
+    if (this.player.abilities.has('reap')) {
+      const reapDamage = Math.floor(this.player.hp / 2);
+      this.battleMenu.options.push({
+        text: `Reap (Life Cost)`,
+        action: 'mazereap',
+        cost: 3,
+        enabled: this.player.ghis >= 3 && this.player.hp > 1,
+        description: `Deal ${reapDamage} damage to both you and enemy`
       });
     }
     
@@ -603,6 +671,22 @@ class MetroidvaniaGame {
         }
         break;
         
+      case 'mazereap':
+        if (this.player.ghis >= 3 && this.player.hp > 1) {
+          const reapDamage = Math.floor(this.player.hp / 2);
+          
+          // Deal damage to enemy
+          enemy.hp = Math.max(0, enemy.hp - reapDamage);
+          
+          // Deal damage to self (leave at least 1 HP)
+          this.player.hp = Math.max(1, this.player.hp - reapDamage);
+          
+          this.player.ghis -= 3;
+          success = true;
+          this.logBattleAction(`You reap souls for ${reapDamage} damage to both fighters!`);
+        }
+        break;
+        
       case 'wait':
         this.player.ghis = Math.min(this.player.maxGhis, this.player.ghis + 1);
         success = true;
@@ -701,6 +785,30 @@ class MetroidvaniaGame {
           actions.push({ type: 'power_attack', damage: this.getEnemyAttackDamage(enemy) * 1.5, priority: 80 });
         }
         break;
+      case 'shadow':
+        if (Math.random() < 0.4) {
+          actions.push({ type: 'shadow_strike', damage: this.getEnemyAttackDamage(enemy), priority: 75 });
+        }
+        break;
+      case 'elemental':
+        actions.push({ type: 'fire_blast', damage: 2, priority: 70 });
+        break;
+      case 'guardian':
+        if (enemy.hp < enemy.maxHP * 0.3) {
+          actions.push({ type: 'defensive_stance', priority: 85 });
+        }
+        break;
+      case 'wraith':
+        if (Math.random() < 0.3) {
+          actions.push({ type: 'phase_attack', damage: this.getEnemyAttackDamage(enemy), priority: 70 });
+        }
+        break;
+      case 'berserker':
+        if (enemy.hp < enemy.maxHP * 0.5) {
+          const rageBonus = Math.floor((enemy.maxHP - enemy.hp) / 3);
+          actions.push({ type: 'rage_attack', damage: this.getEnemyAttackDamage(enemy) + rageBonus, priority: 95 });
+        }
+        break;
     }
     
     return actions;
@@ -741,22 +849,52 @@ class MetroidvaniaGame {
           this.logBattleAction(`${enemy.persona} tries to confuse you, but you resist!`);
         }
         break;
+      case 'shadow_strike':
+        this.logBattleAction(`${enemy.persona} strikes from the shadows!`);
+        this.performEnemyAttack(action.damage, enemy, true); // Piercing attack
+        break;
+      case 'fire_blast':
+        this.logBattleAction(`${enemy.persona} casts a fire blast!`);
+        this.performEnemyAttack(action.damage, enemy);
+        // Add burn effect
+        this.player.burnTurns = (this.player.burnTurns || 0) + 2;
+        break;
+      case 'defensive_stance':
+        enemy.defensiveStance = true;
+        this.logBattleAction(`${enemy.persona} takes a defensive stance!`);
+        break;
+      case 'phase_attack':
+        this.logBattleAction(`${enemy.persona} phases through your defenses!`);
+        this.performEnemyAttack(action.damage, enemy, true); // Ignores shields
+        break;
+      case 'rage_attack':
+        this.logBattleAction(`${enemy.persona} enters a berserker rage!`);
+        this.performEnemyAttack(action.damage, enemy);
+        break;
     }
   }
   
   // Perform enemy attack
-  performEnemyAttack(damage, enemy) {
+  performEnemyAttack(damage, enemy, piercing = false) {
     let actualDamage = damage;
     
-    if (this.player.shield > 0) {
-      const shieldBlock = Math.min(this.player.shield, damage);
+    // Apply defensive stance reduction
+    if (enemy.defensiveStance) {
+      actualDamage = Math.floor(actualDamage * 0.5);
+      enemy.defensiveStance = false; // One-time use
+    }
+    
+    // Apply shield protection unless piercing
+    if (!piercing && this.player.shield > 0) {
+      const shieldBlock = Math.min(this.player.shield, actualDamage);
       this.player.shield -= shieldBlock;
       actualDamage -= shieldBlock;
       this.logBattleAction(`Your shield blocks ${shieldBlock} damage!`);
     }
     
     this.player.hp -= Math.max(0, actualDamage);
-    this.logBattleAction(`${enemy.persona} attacks for ${actualDamage} damage!`);
+    const attackType = piercing ? "piercing attack" : "attack";
+    this.logBattleAction(`${enemy.persona} ${attackType} for ${actualDamage} damage!`);
   }
   
   // Get enemy attack damage based on type and level
@@ -849,6 +987,18 @@ class MetroidvaniaGame {
     this.gameState = 'game_over';
     this.currentBattle = null;
     
+    // Check if there's a saved game
+    const hasSave = localStorage.getItem('vorteks-maze-save') !== null;
+    
+    if (hasSave) {
+      const choice = confirm("You have fallen! Would you like to load your last save point? (Cancel to restart from beginning)");
+      if (choice && this.loadGameState()) {
+        this.gameState = 'exploring';
+        alert("Loaded from save point!");
+        return;
+      }
+    }
+    
     // Show Judge game over modal
     this.showJudgeGameOver();
   }
@@ -858,7 +1008,7 @@ class MetroidvaniaGame {
     const lootCards = [];
     // Include maze explorer cards in the loot pool
     const cardPool = CARDS.filter(card => 
-      ['heart', 'swords', 'shield', 'mazesurge', 'mazepierce', 'mazehope', 'mazezap', 'mazeignite'].includes(card.id)
+      ['heart', 'swords', 'shield', 'mazesurge', 'mazepierce', 'mazehope', 'mazezap', 'mazeignite', 'mazereap'].includes(card.id)
     );
     
     // Number of cards based on enemy level (ensure at least 1 card drops)
@@ -918,6 +1068,11 @@ class MetroidvaniaGame {
         this.player.abilities.add('ignite');
         this.player.stats.ignite++;
         break;
+        
+      case 'mazereap': // Reap cards for life-cost damage
+        this.player.abilities.add('reap');
+        this.player.stats.reap++;
+        break;
     }
     
     recordCardPlayed(card.id);
@@ -953,6 +1108,65 @@ class MetroidvaniaGame {
       }
     }
     return true;
+  }
+  
+  // Save game state at current position
+  saveGameState() {
+    const saveData = {
+      player: {
+        x: this.player.x,
+        y: this.player.y,
+        hp: this.player.hp,
+        maxHP: this.player.maxHP,
+        ghis: this.player.ghis,
+        maxGhis: this.player.maxGhis,
+        cards: [...this.player.cards],
+        abilities: Array.from(this.player.abilities),
+        stats: { ...this.player.stats }
+      },
+      discoveredCells: Array.from(this.discovered),
+      defeatedEnemies: Array.from(this.enemies.entries()).filter(([pos, enemy]) => enemy.defeated)
+    };
+    
+    localStorage.setItem('vorteks-maze-save', JSON.stringify(saveData));
+    return true;
+  }
+  
+  // Load game state from save point
+  loadGameState() {
+    try {
+      const saveDataRaw = localStorage.getItem('vorteks-maze-save');
+      if (!saveDataRaw) return false;
+      
+      const saveData = JSON.parse(saveDataRaw);
+      
+      // Restore player state
+      this.player.x = saveData.player.x;
+      this.player.y = saveData.player.y;
+      this.player.hp = saveData.player.hp;
+      this.player.maxHP = saveData.player.maxHP;
+      this.player.ghis = saveData.player.ghis;
+      this.player.maxGhis = saveData.player.maxGhis;
+      this.player.cards = saveData.player.cards;
+      this.player.abilities = new Set(saveData.player.abilities);
+      this.player.stats = saveData.player.stats;
+      
+      // Restore discovered areas
+      this.discovered = new Set(saveData.discoveredCells);
+      
+      // Mark defeated enemies
+      saveData.defeatedEnemies.forEach(([pos, enemyData]) => {
+        if (this.enemies.has(pos)) {
+          this.enemies.get(pos).defeated = true;
+        }
+      });
+      
+      this.updateCamera();
+      return true;
+    } catch (error) {
+      console.warn('Failed to load save state:', error);
+      return false;
+    }
   }
   
   // Log battle actions
@@ -1017,7 +1231,8 @@ class MetroidvaniaGame {
         pierce: 0,
         hope: 0,
         zap: 0,
-        ignite: 0
+        ignite: 0,
+        reap: 0
       }
     };
     
@@ -1033,6 +1248,8 @@ class MetroidvaniaGame {
     this.gameState = 'exploring';
     this.currentBattle = null;
     this.discovered.clear();
+    this.savePoints.clear();
+    this.savePoints.clear();
     this.camera = { x: 0, y: 0 };
     
     // Hide game over modal
@@ -1388,7 +1605,12 @@ class MetroidvaniaGame {
         doctor: { color: '#44ff44', glowColor: '#66ff66', accent: '#22cc22' }, 
         trickster: { color: '#ffff44', glowColor: '#ffff66', accent: '#cccc22' },
         cat: { color: '#ff44ff', glowColor: '#ff66ff', accent: '#cc22cc' },
-        robot: { color: '#4444ff', glowColor: '#6666ff', accent: '#2222cc' }
+        robot: { color: '#4444ff', glowColor: '#6666ff', accent: '#2222cc' },
+        shadow: { color: '#444444', glowColor: '#666666', accent: '#222222' },
+        elemental: { color: '#ff8800', glowColor: '#ffaa44', accent: '#cc6600' },
+        guardian: { color: '#996633', glowColor: '#bb8855', accent: '#774422' },
+        wraith: { color: '#9999ff', glowColor: '#bbbbff', accent: '#7777cc' },
+        berserker: { color: '#cc0000', glowColor: '#ff4444', accent: '#990000' }
       };
       
       const data = enemyData[enemy.type] || { color: '#ff0000', glowColor: '#ff4444', accent: '#cc0000' };
@@ -1423,6 +1645,39 @@ class MetroidvaniaGame {
       
       ctx.fillStyle = '#ffaa00';
       ctx.fillRect(screenX, screenY, this.cellSize / 2, this.cellSize / 2);
+    }
+    
+    // Render save points with distinctive appearance
+    for (const [pos, savePoint] of this.savePoints) {
+      const [x, y] = pos.split(',').map(Number);
+      if (!this.discovered.has(pos)) continue;
+      
+      const screenX = x * this.cellSize - this.camera.x + this.cellSize / 4;
+      const screenY = y * this.cellSize - this.camera.y + this.cellSize / 4;
+      
+      // Different appearance based on whether it's been used
+      if (savePoint.used) {
+        // Used save point - dimmer blue
+        ctx.fillStyle = 'rgba(100, 149, 237, 0.6)';
+      } else {
+        // Unused save point - bright blue with pulsing effect
+        const time = Date.now() * 0.003;
+        const pulse = Math.sin(time) * 0.3 + 0.7;
+        ctx.fillStyle = `rgba(100, 149, 237, ${pulse})`;
+      }
+      
+      // Outer glow
+      ctx.fillRect(screenX - 3, screenY - 3, this.cellSize / 2 + 6, this.cellSize / 2 + 6);
+      
+      // Inner crystal
+      ctx.fillStyle = savePoint.used ? '#6495ed' : '#add8e6';
+      ctx.fillRect(screenX, screenY, this.cellSize / 2, this.cellSize / 2);
+      
+      // Add save symbol
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '12px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('💾', screenX + this.cellSize / 4, screenY + this.cellSize / 3);
     }
     
     ctx.textAlign = 'left'; // Reset alignment
