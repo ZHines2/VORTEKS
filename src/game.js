@@ -1366,7 +1366,7 @@ export const Game = {
       this.barcodeData = null;
     }
     
-    setOpponentName(this.persona, this.oppFeatures);
+    setOpponentName(this.persona, this.oppFeatures, barcodeOpponent);
     
     // Reset opponent stats  
     this.opp.hp = this.opp.maxHP;

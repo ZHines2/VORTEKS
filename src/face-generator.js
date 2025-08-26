@@ -981,9 +981,14 @@ function drawRegularFace() {
   };
 }
 
-export function setOpponentName(persona, features = {}) {
+export function setOpponentName(persona, features = {}, barcodeOpponent = null) {
   if (nameEl) {
-    if (features.isEasterEgg) {
+    if (barcodeOpponent && barcodeOpponent.name) {
+      // Use barcode-generated name for scanned opponents
+      nameEl.textContent = barcodeOpponent.name + (persona ? ' the ' + persona : '');
+      nameEl.style.color = '';
+      nameEl.title = 'Scanned opponent from barcode';
+    } else if (features.isEasterEgg) {
       // Special naming for easter egg faces
       nameEl.textContent = `${randomName()} the ${persona}`;
       nameEl.style.color = getRarityColor(features.rarity);
