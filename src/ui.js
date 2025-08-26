@@ -283,7 +283,19 @@ export function createRenderFunction(Game) {
           b.classList.add('stolen');
         }
         
-        if (!b.disabled) b.onclick = () => { Game.playCard(Game.you, idx); };
+        if (!b.disabled) b.onclick = () => { 
+          // Enhanced card play animation
+          if (window.fxCardPlaySpectacular) {
+            window.fxCardPlaySpectacular(b);
+          }
+          
+          // Add magic circle for high-cost cards
+          if (card.cost >= 3 && window.fxMagicCircle) {
+            window.fxMagicCircle(b);
+          }
+          
+          Game.playCard(Game.you, idx); 
+        };
         handEl.appendChild(b);
       });
     }
@@ -386,6 +398,155 @@ export function fxStrike(target) {
   if (!panel) return;
   panel.classList.add('impact-flash');
   setTimeout(() => panel.classList.remove('impact-flash'), 350);
+}
+
+// ===== ENHANCED VISUAL EXCITEMENT FUNCTIONS =====
+
+// Screen shake for impactful moments
+export function fxScreenShake() {
+  document.body.classList.add('screen-shake');
+  setTimeout(() => document.body.classList.remove('screen-shake'), 400);
+}
+
+// Enhanced card play animation
+export function fxCardPlaySpectacular(cardElement) {
+  if (!cardElement) return;
+  cardElement.classList.add('card-play-spectacular');
+  setTimeout(() => cardElement.classList.remove('card-play-spectacular'), 800);
+}
+
+// Particle burst effect
+export function fxParticleBurst(element) {
+  if (!element) return;
+  element.classList.add('particle-burst');
+  setTimeout(() => element.classList.remove('particle-burst'), 600);
+}
+
+// Victory celebration animation
+export function fxVictoryCelebration(element = null) {
+  const target = element || document.querySelector('.wrap') || document.body;
+  target.classList.add('victory-celebration');
+  setTimeout(() => target.classList.remove('victory-celebration'), 2000);
+}
+
+// Floating damage numbers
+export function fxFloatingDamage(amount, element, isHealing = false) {
+  if (!element || !amount) return;
+  
+  const floater = document.createElement('div');
+  floater.className = isHealing ? 'heal-float' : 'damage-float';
+  floater.textContent = isHealing ? `+${amount}` : `-${amount}`;
+  
+  const rect = element.getBoundingClientRect();
+  floater.style.position = 'fixed';
+  floater.style.left = rect.left + rect.width / 2 + 'px';
+  floater.style.top = rect.top + 'px';
+  floater.style.transform = 'translateX(-50%)';
+  
+  document.body.appendChild(floater);
+  setTimeout(() => {
+    if (floater.parentNode) floater.parentNode.removeChild(floater);
+  }, 1200);
+}
+
+// Energy transfer animation
+export function fxEnergyTransfer(element) {
+  if (!element) return;
+  element.classList.add('energy-transfer');
+  setTimeout(() => element.classList.remove('energy-transfer'), 600);
+}
+
+// Dynamic combat background intensity
+export function fxCombatIntensity(level = 1) {
+  const wrap = document.querySelector('.wrap');
+  if (!wrap) return;
+  
+  // Remove existing intensity classes
+  wrap.classList.remove('combat-intensity-1', 'combat-intensity-2', 'combat-intensity-3');
+  
+  // Add new intensity level
+  if (level > 0 && level <= 3) {
+    wrap.classList.add(`combat-intensity-${level}`);
+  }
+}
+
+// Magic circle effect for special cards
+export function fxMagicCircle(element) {
+  if (!element) return;
+  element.classList.add('magic-circle');
+  setTimeout(() => element.classList.remove('magic-circle'), 3000);
+}
+
+// Enhanced status effects
+export function fxBurnEnhanced(target) {
+  const panel = target.isAI ? $('#oppPanel') : $('#youPanel');
+  if (!panel) return;
+  
+  // Apply both original and enhanced effects
+  panel.classList.add('ignite', 'burn-enhanced');
+  setTimeout(() => {
+    panel.classList.remove('ignite', 'burn-enhanced');
+  }, 1000);
+}
+
+export function fxFreezeEnhanced(target) {
+  const panel = target.isAI ? $('#oppPanel') : $('#youPanel');
+  if (!panel) return;
+  
+  // Apply both original and enhanced effects
+  panel.classList.add('freeze', 'freeze-enhanced');
+  setTimeout(() => {
+    panel.classList.remove('freeze', 'freeze-enhanced');
+  }, 1200);
+}
+
+// Enhanced attack with screen shake and particles
+export function fxPowerfulAttack(target, damage) {
+  // Screen shake for powerful attacks (damage >= 5)
+  if (damage >= 5) {
+    fxScreenShake();
+  }
+  
+  // Enhanced strike effect
+  fxStrike(target);
+  
+  // Particle burst
+  const panel = target.isAI ? $('#oppPanel') : $('#youPanel');
+  if (panel && damage >= 3) {
+    fxParticleBurst(panel);
+  }
+  
+  // Floating damage number
+  const hpElement = target.isAI ? $('#oppHP') : $('#youHP');
+  if (hpElement) {
+    fxFloatingDamage(damage, hpElement, false);
+  }
+}
+
+// Enhanced healing with celebratory effects
+export function fxPowerfulHeal(player, amount) {
+  // Original heal effect
+  fxHeal(player);
+  
+  // Enhanced effects for significant healing
+  if (amount >= 5) {
+    const panel = player.isAI ? $('#oppPanel') : $('#youPanel');
+    if (panel) {
+      fxParticleBurst(panel);
+    }
+  }
+  
+  // Floating heal number
+  const hpElement = player.isAI ? $('#oppHP') : $('#youHP');
+  if (hpElement) {
+    fxFloatingDamage(amount, hpElement, true);
+  }
+}
+
+// Enhanced energy effects
+export function fxPowerfulEnergy(player) {
+  fxSurge(player);
+  fxEnergyTransfer(player.isAI ? $('#oppEN') : $('#youEN'));
 }
 
 // Tournament UI Functions

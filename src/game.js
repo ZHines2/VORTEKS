@@ -663,13 +663,32 @@ export const Game = {
     }
     if (dmg > 0) { 
       target.hp = Math.max(0, target.hp - dmg); 
-      if (!simulate && window.bumpHP) window.bumpHP(target); 
+      if (!simulate && window.bumpHP) window.bumpHP(target);
+      
+      // Enhanced visual effects for damage
+      if (!simulate && window.fxPowerfulAttack) {
+        window.fxPowerfulAttack(target, dmg);
+      }
     }
     
     // Log damage and track for achievements
     if (!simulate && originalDmg > 0) {
       const attackerIsPlayer = (atk === this.you);
       const targetIsPlayer = (target === this.you);
+      
+      // Dynamic combat intensity based on damage and HP
+      if (window.fxCombatIntensity && dmg > 0) {
+        const healthRatio = Math.min(this.you.hp / this.you.maxHP, this.opp.hp / this.opp.maxHP);
+        const damageIntensity = Math.min(dmg / 5, 1); // Scale damage intensity
+        
+        if (healthRatio < 0.3 || dmg >= 7) {
+          window.fxCombatIntensity(3); // High intensity
+        } else if (healthRatio < 0.6 || dmg >= 4) {
+          window.fxCombatIntensity(2); // Medium intensity
+        } else if (dmg >= 2) {
+          window.fxCombatIntensity(1); // Low intensity
+        }
+      }
       
       // Track player damage for achievements
       if (attackerIsPlayer && dmg > 0) {
@@ -787,8 +806,12 @@ export const Game = {
         logOpp(`heals ${effects.heal}`);
       }
       state.me.hp = this.applyHeal(state.me, effects.heal); 
-      // FX: Healing effect
-      if (window.fxHeal) window.fxHeal(state.me);
+      // Enhanced FX: Powerful healing effect
+      if (window.fxPowerfulHeal) {
+        window.fxPowerfulHeal(state.me, effects.heal);
+      } else if (window.fxHeal) {
+        window.fxHeal(state.me);
+      }
     }
     if (effects.shield && !simulate) { 
       const isPlayer = (state.me === this.you);
@@ -962,8 +985,12 @@ export const Game = {
         logOpp(`applies Burn (${burnObj.amount})`);
       }
       this.applyBurn(state.them, burnObj.amount, burnObj.turns);
-      // FX: Burn effect
-      if (window.fxBurn) window.fxBurn(state.them);
+      // Enhanced FX: Burn effect
+      if (window.fxBurnEnhanced) {
+        window.fxBurnEnhanced(state.them);
+      } else if (window.fxBurn) {
+        window.fxBurn(state.them);
+      }
     }
     if (status.target && status.target.infectStatus && !simulate) {
       const isPlayer = (state.me === this.you);
@@ -984,14 +1011,22 @@ export const Game = {
         logOpp(`freezes opponent`);
       }
       state.them.status.frozenNext = (state.them.status.frozenNext || 0) + status.target.freezeEnergy;
-      // FX: Freeze effect
-      if (window.fxFreeze) window.fxFreeze(state.them);
+      // Enhanced FX: Freeze effect
+      if (window.fxFreezeEnhanced) {
+        window.fxFreezeEnhanced(state.them);
+      } else if (window.fxFreeze) {
+        window.fxFreeze(state.them);
+      }
     }
     if (status.self) {
       if (status.self.nextPlus) { 
         state.me.status.nextPlus = (state.me.status.nextPlus || 0) + status.self.nextPlus;
-        // FX: Focus effect
-        if (!simulate && window.fxFocus) window.fxFocus(state.me);
+        // Enhanced FX: Powerful Focus effect
+        if (!simulate && window.fxPowerfulEnergy) {
+          window.fxPowerfulEnergy(state.me);
+        } else if (!simulate && window.fxFocus) {
+          window.fxFocus(state.me);
+        }
       }
       if (status.self.maxEnergyDelta) { 
         state.me.maxEnergy = Math.max(state.me.maxEnergy + status.self.maxEnergyDelta, 1); // Remove cap
@@ -1199,6 +1234,18 @@ export const Game = {
       if (this.log && typeof this.log === 'function') this.log(youWin ? 'You win!' : 'AI wins!');
       if (youWin) { 
         this.streak++; 
+        
+        // Enhanced Victory Visual Effects!
+        if (window.fxVictoryCelebration) {
+          window.fxVictoryCelebration();
+        }
+        if (window.fxScreenShake) {
+          setTimeout(() => window.fxScreenShake(), 300);
+        }
+        // Clear combat intensity on victory
+        if (window.fxCombatIntensity) {
+          setTimeout(() => window.fxCombatIntensity(0), 500);
+        }
         
         // Track perfect win (win at full HP)
         if (this.you.hp === this.you.maxHP && !this.stats.firstPerfectWin) {
