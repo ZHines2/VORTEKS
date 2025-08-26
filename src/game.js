@@ -1,6 +1,6 @@
 import { clamp, $, shuffle } from './utils.js';
 import { createPlayer } from './player.js';
-import { drawOppFace, setOpponentName } from './face-generator.js';
+import { drawOppFace, setOpponentName, drawBarcodeOpponent } from './face-generator.js';
 import { makePersonaDeck, createAIPlayer } from './ai.js';
 import { checkAchievementUnlocks, checkPersonaDefeatUnlocks, recordBattleResult, getUnlockableCardsInfo, STARTER_CARDS } from './card-unlock.js';
 import { recordBattle, recordCardPlayed, recordCombat, recordTurn, recordQuirk, recordOpponent } from './telemetry.js';
@@ -1349,11 +1349,23 @@ export const Game = {
   },
 
   // Generate new opponent with different face and deck
-  generateNewOpponent() {
+  generateNewOpponent(barcodeOpponent = null) {
     // Generate new face and persona
-    const faceInfo = drawOppFace();
-    this.persona = faceInfo.persona;
-    this.oppFeatures = faceInfo.features;
+    let faceInfo;
+    if (barcodeOpponent) {
+      // Use barcode-generated opponent
+      faceInfo = drawBarcodeOpponent(barcodeOpponent);
+      this.persona = barcodeOpponent.persona;
+      this.oppFeatures = faceInfo.features;
+      this.barcodeData = barcodeOpponent;
+    } else {
+      // Generate random opponent as usual
+      faceInfo = drawOppFace();
+      this.persona = faceInfo.persona;
+      this.oppFeatures = faceInfo.features;
+      this.barcodeData = null;
+    }
+    
     setOpponentName(this.persona, this.oppFeatures);
     
     // Reset opponent stats  
@@ -1372,6 +1384,8 @@ export const Game = {
     let msg = 'New opponent: ' + this.persona + ' appears!';
     if (this.oppFeatures.isEasterEgg) {
       msg = `✨ RARE OPPONENT! ${this.oppFeatures.easterEggType} ${this.persona} appears! ✨ [${this.oppFeatures.rarity.toUpperCase()}]`;
+    } else if (this.oppFeatures.isScanned) {
+      msg = `📊 SCANNED OPPONENT! ${barcodeOpponent.name} appears! [BARCODE: ${barcodeOpponent.hash.toUpperCase()}]`;
     }
     logMessage(msg);
   },

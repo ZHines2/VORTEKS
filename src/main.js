@@ -2,13 +2,21 @@ import { Game, setLogFunction, Tournament } from './game.js';
 import { createRenderFunction, bump, bumpHP, bumpShield, fxBurn, fxFreeze, fxZap, fxFocus, fxSlash, fxSurge, fxEcho, fxReconsider, cardText, renderCost } from './ui.js';
 import { openDeckBuilder, buildRandomDeck } from './deck-builder.js';
 import { runSelfTests } from './tests.js';
-import { initFaceGenerator, drawOppFace, setOpponentName } from './face-generator.js';
+import { initFaceGenerator, drawOppFace, setOpponentName, drawBarcodeOpponent } from './face-generator.js';
 import { makePersonaDeck, createAIPlayer, createCampaignOpponent } from './ai.js';
 import { createPlayer } from './player.js';
 import { MOTTOS } from './mottos.js';
 import { CARDS } from '../data/cards.js';
 import { Campaign } from './campaign.js';
 import { MetroidvaniaGame } from './metroidvania.js';
+import { 
+  initBarcodeScanner, 
+  scanBarcode, 
+  isCameraAvailable, 
+  createOpponentFromBarcode, 
+  saveScannedOpponent, 
+  getSavedOpponents 
+} from './barcode-scanner.js';
 import { 
   getUnlockedCards, 
   isCardUnlocked, 
@@ -2641,6 +2649,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize face generator
   initFaceGenerator();
   
+  // Initialize barcode scanner
+  initBarcodeScanner();
+  
   // Initialize VORTEK generator
   initVortekGenerator();
 
@@ -2812,6 +2823,134 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.log) window.log(logMessage);
     if (window.render) window.render();
   };
+
+  // Barcode Scanner button handler
+  document.getElementById('scanBarcode').onclick = async () => {
+    try {
+      // Check if camera is available
+      const hasCamera = await isCameraAvailable();
+      if (!hasCamera) {
+        alert('Camera not available. You can still create barcode opponents by entering data manually.');
+      }
+      
+      // Show saved opponents option first
+      const savedOpponents = getSavedOpponents();
+      if (savedOpponents.length > 0) {
+        const showSaved = confirm(`You have ${savedOpponents.length} saved scanned opponents. Would you like to use one of them instead of scanning a new barcode?`);
+        if (showSaved) {
+          showSavedOpponentsModal(savedOpponents);
+          return;
+        }
+      }
+      
+      // Start barcode scanning
+      const scannedOpponent = await scanBarcode();
+      if (scannedOpponent) {
+        // Save the scanned opponent
+        saveScannedOpponent(scannedOpponent);
+        
+        // Generate the opponent in the game
+        Game.generateNewOpponent(scannedOpponent);
+        
+        // Update UI
+        if (window.render) window.render();
+        
+        // Show success message
+        const message = `Successfully created ${scannedOpponent.name}! This unique opponent has been saved and can be recalled later.`;
+        if (window.log) window.log(message);
+      }
+    } catch (error) {
+      console.error('Barcode scanning error:', error);
+      if (error.message.includes('cancelled')) {
+        if (window.log) window.log('Barcode scanning cancelled.');
+      } else {
+        alert('Barcode scanning failed: ' + error.message);
+      }
+    }
+  };
+
+  // Function to show saved scanned opponents
+  function showSavedOpponentsModal(savedOpponents) {
+    // Create modal for saved opponents
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.style.display = 'block';
+    modal.innerHTML = `
+      <div class="box" style="width:min(96vw, 600px);">
+        <div style="font-size:18px; color:var(--accent); margin:8px 0 16px; text-align:center">
+          <strong>📊 Saved Scanned Opponents</strong>
+        </div>
+        <div style="margin-bottom:16px; max-height:300px; overflow-y:auto;">
+          ${savedOpponents.map((opp, index) => `
+            <div class="qcard" style="margin-bottom:8px; cursor:pointer; display:flex; justify-content:space-between; align-items:center;" data-opponent-index="${index}">
+              <div>
+                <div style="font-weight:bold; color:${opp.features.baseColor || '#77ffdd'};">${opp.name}</div>
+                <div style="font-size:12px; opacity:0.8;">${opp.persona} • Hash: ${opp.hash.substring(0, 8).toUpperCase()}</div>
+                <div style="font-size:10px; opacity:0.6;">Scanned: ${new Date(opp.createdAt).toLocaleDateString()}</div>
+              </div>
+              <div style="color:var(--accent);">▶</div>
+            </div>
+          `).join('')}
+        </div>
+        <div style="display:flex; gap:8px; justify-content:center;">
+          <button id="closeSavedModal" class="btn">CANCEL</button>
+          <button id="scanNewBarcode" class="btn" style="background:var(--accent); color:black;">📷 SCAN NEW</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Handle opponent selection
+    modal.querySelectorAll('[data-opponent-index]').forEach(card => {
+      card.addEventListener('click', () => {
+        const index = parseInt(card.dataset.opponentIndex);
+        const selectedOpponent = savedOpponents[index];
+        
+        // Update last used timestamp
+        selectedOpponent.lastUsed = Date.now();
+        saveScannedOpponent(selectedOpponent);
+        
+        // Generate the opponent in the game
+        Game.generateNewOpponent(selectedOpponent);
+        
+        // Update UI
+        if (window.render) window.render();
+        
+        // Close modal
+        document.body.removeChild(modal);
+        
+        if (window.log) window.log(`Recalled ${selectedOpponent.name} from saved opponents.`);
+      });
+    });
+    
+    // Handle close button
+    modal.querySelector('#closeSavedModal').addEventListener('click', () => {
+      document.body.removeChild(modal);
+    });
+    
+    // Handle scan new button
+    modal.querySelector('#scanNewBarcode').addEventListener('click', async () => {
+      document.body.removeChild(modal);
+      
+      try {
+        const scannedOpponent = await scanBarcode();
+        if (scannedOpponent) {
+          saveScannedOpponent(scannedOpponent);
+          Game.generateNewOpponent(scannedOpponent);
+          if (window.render) window.render();
+          
+          const message = `Successfully created ${scannedOpponent.name}! This unique opponent has been saved.`;
+          if (window.log) window.log(message);
+        }
+      } catch (error) {
+        console.error('Barcode scanning error:', error);
+        if (!error.message.includes('cancelled')) {
+          alert('Barcode scanning failed: ' + error.message);
+        }
+      }
+    });
+  }
 
   // Quirk grid rendering
   function renderQuirkGrid() {
