@@ -1006,3 +1006,251 @@ function getRarityColor(rarity) {
     default: return '#ffffff';         // White
   }
 }
+
+// Generate barcode-based opponent face
+export function drawBarcodeOpponent(opponentData) {
+  if (!faceCanvas || !fctx) {
+    console.error('Face generator not initialized');
+    return null;
+  }
+
+  const S = 6;
+  fctx.clearRect(0, 0, faceCanvas.width, faceCanvas.height);
+  const px = (x, y, c) => { fctx.fillStyle = c; fctx.fillRect(x * S, y * S, S, S); };
+
+  // Use opponent features to generate deterministic appearance
+  const { features, persona, name } = opponentData;
+  const { hue, saturation, lightness, pattern } = features;
+
+  // Create HSL-based color palette from barcode data
+  const baseColor = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+  const darkColor = `hsl(${hue}, ${saturation}%, ${Math.max(lightness - 30, 10)}%)`;
+  const lightColor = `hsl(${hue}, ${Math.max(saturation - 20, 20)}%, ${Math.min(lightness + 20, 80)}%)`;
+  const accentColor = `hsl(${(hue + 180) % 360}, ${saturation}%, ${lightness}%)`;
+  
+  const black = '#000000';
+  const white = '#ffffff';
+
+  // Background with barcode pattern inspiration
+  for (let y = 0; y < 16; y++) {
+    for (let x = 0; x < 16; x++) {
+      // Create subtle barcode-like background pattern
+      const patternIndex = (x + y) % pattern.length;
+      const patternChar = pattern[patternIndex];
+      const isBarcodeLine = (parseInt(patternChar, 16) || 0) % 3 === 0;
+      px(x, y, isBarcodeLine ? darkColor : black);
+    }
+  }
+
+  // Draw face based on persona but with barcode-influenced colors
+  if (persona === 'robot') {
+    drawBarcodeRobot(px, baseColor, lightColor, accentColor, pattern);
+  } else if (persona === 'ghost') {
+    drawBarcodeGhost(px, baseColor, lightColor, accentColor, pattern);
+  } else if (persona === 'cat') {
+    drawBarcodeCat(px, baseColor, lightColor, accentColor, pattern);
+  } else {
+    drawBarcodeHuman(px, baseColor, lightColor, accentColor, darkColor, pattern);
+  }
+
+  // Update opponent name with barcode indicator
+  if (nameEl) {
+    nameEl.textContent = `${name} 📊`;
+    nameEl.style.color = baseColor;
+    nameEl.title = `Scanned opponent - Hash: ${opponentData.hash}`;
+  }
+
+  return {
+    persona,
+    features: {
+      ...features,
+      isScanned: true,
+      baseColor,
+      accentColor
+    }
+  };
+}
+
+// Barcode-styled robot face
+function drawBarcodeRobot(px, baseColor, lightColor, accentColor, pattern) {
+  const black = '#000000';
+  
+  // Robot head with barcode-pattern body
+  for (let y = 4; y <= 11; y++) { 
+    for (let x = 5; x <= 10; x++) {
+      const patternIndex = (x + y) % pattern.length;
+      const patternValue = parseInt(pattern[patternIndex], 16) || 0;
+      const useAccent = patternValue % 2 === 0;
+      px(x, y, useAccent ? accentColor : baseColor); 
+    } 
+  }
+  
+  // Digital eyes with pattern-based glow
+  const eyePattern = parseInt(pattern[0], 16) || 0;
+  const eyeColor = eyePattern % 2 === 0 ? accentColor : lightColor;
+  px(6, 6, eyeColor); px(7, 6, eyeColor);
+  px(9, 6, eyeColor); px(10, 6, eyeColor);
+  px(6, 7, black); px(7, 7, black);
+  px(9, 7, black); px(10, 7, black);
+  
+  // Barcode-style mouth
+  for (let x = 6; x <= 9; x++) {
+    const shouldDraw = parseInt(pattern[x % pattern.length], 16) % 3 === 0;
+    if (shouldDraw) px(x, 9, black);
+  }
+  
+  // Border
+  for (let x = 5; x <= 10; x++) { 
+    px(x, 4, black); px(x, 11, black); 
+  }
+  for (let y = 4; y <= 11; y++) { 
+    px(5, y, black); px(10, y, black); 
+  }
+}
+
+// Barcode-styled ghost face
+function drawBarcodeGhost(px, baseColor, lightColor, accentColor, pattern) {
+  const black = '#000000';
+  
+  // Spectral body with pattern-based transparency
+  for (let y = 4; y <= 10; y++) { 
+    for (let x = 5; x <= 10; x++) {
+      const patternIndex = (x + y) % pattern.length;
+      const patternValue = parseInt(pattern[patternIndex], 16) || 0;
+      // Create ghostly transparency effect based on pattern
+      if (patternValue % 3 !== 0) {
+        px(x, y, patternValue % 2 === 0 ? lightColor : baseColor); 
+      }
+    } 
+  }
+  
+  // Wavy bottom with pattern
+  const wavePattern = [5, 7, 9].map(x => parseInt(pattern[x % pattern.length], 16) % 2);
+  wavePattern.forEach((shouldDraw, i) => {
+    if (shouldDraw) px(5 + i * 2, 11, baseColor);
+  });
+  
+  // Glowing eyes based on pattern
+  const eyeGlow = parseInt(pattern[1], 16) % 2 === 0 ? accentColor : lightColor;
+  px(6, 6, black); px(7, 6, black);
+  px(9, 6, black); px(10, 6, black);
+  px(6, 7, eyeGlow); px(9, 7, eyeGlow);
+  
+  // Hollow mouth
+  px(7, 9, black); px(8, 9, black);
+}
+
+// Barcode-styled cat face
+function drawBarcodeCat(px, baseColor, lightColor, accentColor, pattern) {
+  const black = '#000000';
+  
+  // Cat head with pattern-based fur
+  for (let y = 5; y <= 11; y++) { 
+    for (let x = 5; x <= 10; x++) {
+      const patternIndex = (x + y) % pattern.length;
+      const patternValue = parseInt(pattern[patternIndex], 16) || 0;
+      const furColor = patternValue % 3 === 0 ? accentColor : 
+                      patternValue % 2 === 0 ? lightColor : baseColor;
+      px(x, y, furColor); 
+    } 
+  }
+  
+  // Cat ears with pattern
+  const earPattern = parseInt(pattern[0], 16) % 2;
+  px(5, 4, earPattern ? accentColor : baseColor);
+  px(6, 4, earPattern ? accentColor : baseColor);
+  px(9, 4, earPattern ? accentColor : baseColor);
+  px(10, 4, earPattern ? accentColor : baseColor);
+  
+  // Cat eyes - always bright
+  px(6, 7, accentColor); px(9, 7, accentColor);
+  px(6, 8, black); px(9, 8, black); // pupils
+  
+  // Nose and mouth
+  px(7, 9, black); px(8, 9, black);
+  px(7, 10, black); px(8, 10, black);
+  
+  // Whiskers based on pattern
+  if (parseInt(pattern[2], 16) % 2 === 0) {
+    px(4, 8, black); px(11, 8, black);
+    px(4, 9, black); px(11, 9, black);
+  }
+  
+  // Border
+  for (let x = 5; x <= 10; x++) { 
+    px(x, 5, black); px(x, 11, black); 
+  }
+  for (let y = 5; y <= 11; y++) { 
+    px(5, y, black); px(10, y, black); 
+  }
+}
+
+// Barcode-styled human face
+function drawBarcodeHuman(px, baseColor, lightColor, accentColor, darkColor, pattern) {
+  const black = '#000000';
+  const white = '#ffffff';
+  
+  // Head with pattern-based skin tone variation
+  for (let y = 3; y <= 12; y++) { 
+    for (let x = 4; x <= 11; x++) {
+      const patternIndex = (x + y) % pattern.length;
+      const patternValue = parseInt(pattern[patternIndex], 16) || 0;
+      // Subtle skin tone variation based on pattern
+      const skinTone = patternValue % 4 === 0 ? lightColor : baseColor;
+      px(x, y, skinTone); 
+    } 
+  }
+  
+  // Pattern-based hair
+  for (let y = 2; y <= 4; y++) { 
+    for (let x = 4; x <= 11; x++) {
+      const patternIndex = x % pattern.length;
+      const hairColor = parseInt(pattern[patternIndex], 16) % 2 === 0 ? darkColor : accentColor;
+      px(x, y, hairColor); 
+    } 
+  }
+  
+  // Eyes with pattern-based features
+  px(6, 7, white); px(7, 7, white);
+  px(9, 7, white); px(10, 7, white);
+  px(6, 7, black); px(9, 7, black); // pupils
+  
+  // Pattern-based eyebrows
+  const browPattern = parseInt(pattern[1], 16) % 2;
+  if (browPattern) {
+    px(6, 6, black); px(7, 6, black);
+    px(9, 6, black); px(10, 6, black);
+  }
+  
+  // Nose
+  px(8, 9, black);
+  
+  // Pattern-based mouth style
+  const mouthStyle = parseInt(pattern[2], 16) % 3;
+  if (mouthStyle === 0) {
+    for (let x = 6; x <= 9; x++) px(x, 11, accentColor);
+  } else if (mouthStyle === 1) {
+    px(7, 11, accentColor); px(8, 11, accentColor);
+  } else {
+    for (let x = 6; x <= 9; x++) px(x, 11, black);
+  }
+  
+  // Pattern-based accessories
+  const hasHat = parseInt(pattern[3], 16) % 3 === 0;
+  if (hasHat) {
+    for (let x = 5; x <= 10; x++) px(x, 2, accentColor);
+  }
+  
+  const hasMustache = parseInt(pattern[4], 16) % 4 === 0;
+  if (hasMustache) {
+    for (let x = 6; x <= 9; x++) px(x, 10, darkColor);
+  }
+  
+  // Border
+  for (let x = 4; x <= 11; x++) { 
+    px(x, 3, black); px(x, 12, black); 
+  }
+  for (let y = 3; y <= 12; y++) { 
+    px(4, y, black); px(11, y, black); 
+  }
+}
