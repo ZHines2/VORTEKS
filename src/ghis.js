@@ -120,7 +120,10 @@ export class GhisGame {
       touchShooting: false,
       touchMoveX: 0,
       touchMoveY: 0,
-      isMobile: false
+      isMobile: false,
+      // Analog stick input
+      moveStick: { x: 0, y: 0, active: false },
+      aimStick: { x: 0, y: 0, active: false, worldX: 0, worldY: 0 }
     };
     
     // Initialize
@@ -290,68 +293,210 @@ export class GhisGame {
       mobileControls.id = 'ghisMobileControls';
       mobileControls.className = 'ghis-mobile-controls';
       
-      // Movement pad (left side)
-      const movementPad = document.createElement('div');
-      movementPad.className = 'mobile-movement-pad';
+      // Movement stick (left side) - analog joystick
+      const movementStick = document.createElement('div');
+      movementStick.className = 'mobile-movement-stick';
       
-      // Create directional buttons
-      const directions = [
-        { name: 'up', symbol: '▲', class: 'move-up' },
-        { name: 'down', symbol: '▼', class: 'move-down' },
-        { name: 'left', symbol: '◀', class: 'move-left' },
-        { name: 'right', symbol: '▶', class: 'move-right' }
-      ];
+      // Stick container (outer ring)
+      const stickContainer = document.createElement('div');
+      stickContainer.className = 'stick-container';
       
-      directions.forEach(dir => {
-        const btn = document.createElement('button');
-        btn.className = `mobile-move-btn ${dir.class}`;
-        btn.innerHTML = dir.symbol;
-        btn.setAttribute('data-direction', dir.name);
+      // Stick knob (inner circle)
+      const stickKnob = document.createElement('div');
+      stickKnob.className = 'stick-knob';
+      
+      stickContainer.appendChild(stickKnob);
+      movementStick.appendChild(stickContainer);
+      
+      // Touch events for movement stick
+      let moveStickActive = false;
+      let moveStickRect = null;
+      
+      const updateMoveStick = (clientX, clientY) => {
+        if (!moveStickRect) return;
         
-        // Touch events for movement buttons
-        btn.addEventListener('touchstart', (e) => {
-          e.preventDefault();
-          this.input[dir.name] = true;
-          btn.classList.add('active');
-        });
+        const centerX = moveStickRect.left + moveStickRect.width / 2;
+        const centerY = moveStickRect.top + moveStickRect.height / 2;
+        const radius = Math.min(moveStickRect.width, moveStickRect.height) / 2 - 10;
         
-        btn.addEventListener('touchend', (e) => {
-          e.preventDefault();
-          this.input[dir.name] = false;
-          btn.classList.remove('active');
-        });
+        let deltaX = clientX - centerX;
+        let deltaY = clientY - centerY;
+        const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
         
-        // Prevent context menu
-        btn.addEventListener('contextmenu', e => e.preventDefault());
+        if (distance > radius) {
+          deltaX = (deltaX / distance) * radius;
+          deltaY = (deltaY / distance) * radius;
+        }
         
-        movementPad.appendChild(btn);
+        this.input.moveStick.x = deltaX / radius;
+        this.input.moveStick.y = deltaY / radius;
+        this.input.moveStick.active = true;
+        
+        // Update visual position
+        stickKnob.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+        stickContainer.classList.add('active');
+      };
+      
+      const resetMoveStick = () => {
+        this.input.moveStick.x = 0;
+        this.input.moveStick.y = 0;
+        this.input.moveStick.active = false;
+        stickKnob.style.transform = 'translate(0px, 0px)';
+        stickContainer.classList.remove('active');
+      };
+      
+      stickContainer.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        moveStickActive = true;
+        moveStickRect = stickContainer.getBoundingClientRect();
+        updateMoveStick(e.touches[0].clientX, e.touches[0].clientY);
+        
+        // Add haptic feedback
+        if (navigator.vibrate) {
+          navigator.vibrate(50);
+        }
       });
       
-      // Shooting area (right side) - entire right side is shoot area
-      const shootArea = document.createElement('div');
-      shootArea.className = 'mobile-shoot-area';
-      shootArea.innerHTML = '<div class="shoot-text">HOLD TO SHOOT</div>';
-      
-      // Touch events for shooting
-      shootArea.addEventListener('touchstart', (e) => {
+      stickContainer.addEventListener('touchmove', (e) => {
         e.preventDefault();
-        this.input.shoot = true;
-        this.input.touchShooting = true;
-        shootArea.classList.add('active');
+        if (moveStickActive) {
+          updateMoveStick(e.touches[0].clientX, e.touches[0].clientY);
+        }
       });
       
-      shootArea.addEventListener('touchend', (e) => {
+      stickContainer.addEventListener('touchend', (e) => {
         e.preventDefault();
+        moveStickActive = false;
+        resetMoveStick();
+      });
+      
+      stickContainer.addEventListener('touchcancel', (e) => {
+        e.preventDefault();
+        moveStickActive = false;
+        resetMoveStick();
+      });
+      
+      // Aim/Shoot stick (right side) - analog aim and shoot
+      const aimStick = document.createElement('div');
+      aimStick.className = 'mobile-aim-stick';
+      
+      // Aim stick container
+      const aimContainer = document.createElement('div');
+      aimContainer.className = 'aim-container';
+      
+      // Aim stick knob
+      const aimKnob = document.createElement('div');
+      aimKnob.className = 'aim-knob';
+      
+      // Aim text
+      const aimText = document.createElement('div');
+      aimText.className = 'aim-text';
+      aimText.innerHTML = 'AIM & FIRE';
+      
+      aimContainer.appendChild(aimKnob);
+      aimContainer.appendChild(aimText);
+      aimStick.appendChild(aimContainer);
+      
+      // Touch events for aim stick
+      let aimStickActive = false;
+      let aimStickRect = null;
+      
+      const updateAimStick = (clientX, clientY) => {
+        if (!aimStickRect) return;
+        
+        const centerX = aimStickRect.left + aimStickRect.width / 2;
+        const centerY = aimStickRect.top + aimStickRect.height / 2;
+        const radius = Math.min(aimStickRect.width, aimStickRect.height) / 2 - 10;
+        
+        let deltaX = clientX - centerX;
+        let deltaY = clientY - centerY;
+        const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+        
+        if (distance > radius) {
+          deltaX = (deltaX / distance) * radius;
+          deltaY = (deltaY / distance) * radius;
+        }
+        
+        this.input.aimStick.x = deltaX / radius;
+        this.input.aimStick.y = deltaY / radius;
+        this.input.aimStick.active = true;
+        
+        // Calculate world coordinates for aiming
+        const aimRange = 200; // Range of aim
+        this.input.aimStick.worldX = this.player.x + (deltaX / radius) * aimRange;
+        this.input.aimStick.worldY = this.player.y + (deltaY / radius) * aimRange;
+        
+        // Update visual position
+        aimKnob.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+        aimContainer.classList.add('active');
+        
+        // Auto-shoot when aiming (if far enough from center)
+        this.input.shoot = distance > radius * 0.2; // Start shooting when 20% from center
+      };
+      
+      const resetAimStick = () => {
+        this.input.aimStick.x = 0;
+        this.input.aimStick.y = 0;
+        this.input.aimStick.active = false;
         this.input.shoot = false;
-        this.input.touchShooting = false;
-        shootArea.classList.remove('active');
+        aimKnob.style.transform = 'translate(0px, 0px)';
+        aimContainer.classList.remove('active');
+      };
+      
+      aimContainer.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        aimStickActive = true;
+        aimStickRect = aimContainer.getBoundingClientRect();
+        updateAimStick(e.touches[0].clientX, e.touches[0].clientY);
+        
+        // Add haptic feedback
+        if (navigator.vibrate) {
+          navigator.vibrate([50, 30, 50]);
+        }
       });
       
-      // Prevent context menu
-      shootArea.addEventListener('contextmenu', e => e.preventDefault());
+      aimContainer.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        if (aimStickActive) {
+          updateAimStick(e.touches[0].clientX, e.touches[0].clientY);
+        }
+      });
       
-      mobileControls.appendChild(movementPad);
-      mobileControls.appendChild(shootArea);
+      aimContainer.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        aimStickActive = false;
+        resetAimStick();
+      });
+      
+      aimContainer.addEventListener('touchcancel', (e) => {
+        e.preventDefault();
+        aimStickActive = false;
+        resetAimStick();
+      });
+      
+      // Prevent context menu on both sticks
+      [stickContainer, aimContainer].forEach(element => {
+        element.addEventListener('contextmenu', e => e.preventDefault());
+      });
+      
+      // Restart button (hidden by default, shown during game over)
+      const restartButton = document.createElement('button');
+      restartButton.id = 'ghisRestartBtn';
+      restartButton.className = 'ghis-restart-button';
+      restartButton.textContent = 'RESTART GAME';
+      restartButton.style.display = 'none'; // Hidden by default
+      
+      // Restart button handler
+      restartButton.addEventListener('click', () => {
+        // Call the global restart function from main.js
+        if (window.restartGhis) {
+          window.restartGhis();
+        }
+      });
+      
+      mobileControls.appendChild(movementStick);
+      mobileControls.appendChild(aimStick);
+      mobileControls.appendChild(restartButton);
       
       // Insert after the game canvas
       ghisGame.parentNode.insertBefore(mobileControls, ghisGame.nextSibling);
@@ -406,19 +551,72 @@ export class GhisGame {
       y = Math.random() * this.world.height;
     } while (this.getDistance(x, y, this.player.x, this.player.y) < 300); // Spawn farther away
     
+    // Define different enemy types with unique characteristics
+    const enemyTypes = [
+      {
+        type: 'scout',
+        hp: 2,
+        speed: 0.5,
+        shootRate: 2500,
+        size: 5,
+        color: '#ff6666',
+        accent: '#ff9999'
+      },
+      {
+        type: 'bruiser',
+        hp: 4,
+        speed: 0.2,
+        shootRate: 1500,
+        size: 8,
+        color: '#ff4444',
+        accent: '#ff7777'
+      },
+      {
+        type: 'sniper',
+        hp: 1,
+        speed: 0.1,
+        shootRate: 3000,
+        size: 4,
+        color: '#4444ff',
+        accent: '#7777ff'
+      },
+      {
+        type: 'drone',
+        hp: 3,
+        speed: 0.4,
+        shootRate: 2000,
+        size: 6,
+        color: '#44ff44',
+        accent: '#77ff77'
+      },
+      {
+        type: 'interceptor',
+        hp: 2,
+        speed: 0.6,
+        shootRate: 1800,
+        size: 7,
+        color: '#ffff44',
+        accent: '#ffff77'
+      }
+    ];
+    
+    // Select random enemy type
+    const enemyTemplate = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
+    
     const enemy = {
       x: x,
       y: y,
-      vx: (Math.random() - 0.5) * 1, // Slower movement
+      vx: (Math.random() - 0.5) * 1,
       vy: (Math.random() - 0.5) * 1,
-      hp: 2, // Less HP so they die easier
-      maxHP: 2,
-      size: 6,
-      type: 'basic',
+      hp: enemyTemplate.hp,
+      maxHP: enemyTemplate.hp,
+      size: enemyTemplate.size,
+      type: enemyTemplate.type,
       lastShot: 0,
-      shootRate: 2000,
-      speed: 0.3, // Slower enemy speed
-      color: '#ff4444'
+      shootRate: enemyTemplate.shootRate,
+      speed: enemyTemplate.speed,
+      color: enemyTemplate.color,
+      accent: enemyTemplate.accent
     };
     
     this.enemies.push(enemy);
@@ -464,17 +662,25 @@ export class GhisGame {
     const maxSpeed = 4 * this.player.speed;
     const friction = 0.95;
     
-    if (this.input.up) {
-      this.player.vy -= acceleration;
-    }
-    if (this.input.down) {
-      this.player.vy += acceleration;
-    }
-    if (this.input.left) {
-      this.player.vx -= acceleration;
-    }
-    if (this.input.right) {
-      this.player.vx += acceleration;
+    // Use analog stick input if active (mobile), otherwise use keyboard
+    if (this.input.moveStick.active) {
+      // Analog movement from mobile stick
+      this.player.vx += this.input.moveStick.x * acceleration;
+      this.player.vy += this.input.moveStick.y * acceleration;
+    } else {
+      // Digital movement from keyboard
+      if (this.input.up) {
+        this.player.vy -= acceleration;
+      }
+      if (this.input.down) {
+        this.player.vy += acceleration;
+      }
+      if (this.input.left) {
+        this.player.vx -= acceleration;
+      }
+      if (this.input.right) {
+        this.player.vx += acceleration;
+      }
     }
     
     // Apply friction
@@ -970,10 +1176,16 @@ export class GhisGame {
   }
   
   renderPlayer(ctx) {
-    // Calculate player angle based on mouse position
-    const mouseWorldX = this.input.mouseX + this.camera.x;
-    const mouseWorldY = this.input.mouseY + this.camera.y;
-    this.player.angle = Math.atan2(mouseWorldY - this.player.y, mouseWorldX - this.player.x);
+    // Calculate player angle based on aim stick or mouse position
+    if (this.input.aimStick.active) {
+      // Use aim stick for aiming on mobile
+      this.player.angle = Math.atan2(this.input.aimStick.y, this.input.aimStick.x);
+    } else {
+      // Use mouse position for aiming on desktop
+      const mouseWorldX = this.input.mouseX + this.camera.x;
+      const mouseWorldY = this.input.mouseY + this.camera.y;
+      this.player.angle = Math.atan2(mouseWorldY - this.player.y, mouseWorldX - this.player.x);
+    }
     
     // Invulnerability flashing effect
     if (this.player.invulnerable > 0) {
@@ -999,6 +1211,30 @@ export class GhisGame {
       ctx.beginPath();
       ctx.arc(this.player.x, this.player.y, this.player.size + 4, 0, Math.PI * 2);
       ctx.fill();
+    }
+    
+    // Draw aim indicator when using aim stick
+    if (this.input.aimStick.active && this.input.isMobile) {
+      ctx.save();
+      ctx.translate(-this.camera.x, -this.camera.y);
+      
+      // Draw aim line
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([5, 5]);
+      ctx.beginPath();
+      ctx.moveTo(this.player.x, this.player.y);
+      ctx.lineTo(this.input.aimStick.worldX, this.input.aimStick.worldY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      
+      // Draw aim target
+      ctx.fillStyle = 'rgba(255, 0, 0, 0.7)';
+      ctx.beginPath();
+      ctx.arc(this.input.aimStick.worldX, this.input.aimStick.worldY, 8, 0, Math.PI * 2);
+      ctx.fill();
+      
+      ctx.restore();
     }
   }
   
@@ -1172,9 +1408,8 @@ export class GhisGame {
   
   renderEnemies(ctx) {
     for (const enemy of this.enemies) {
-      // Simple enemy rendering
-      ctx.fillStyle = enemy.color;
-      ctx.fillRect(enemy.x - enemy.size, enemy.y - enemy.size, enemy.size * 2, enemy.size * 2);
+      // Draw enemy sprite instead of simple rectangle
+      this.drawEnemySprite(ctx, enemy);
       
       // Health bar
       if (enemy.hp < enemy.maxHP) {
@@ -1188,6 +1423,109 @@ export class GhisGame {
         ctx.fillStyle = '#ff4444';
         ctx.fillRect(enemy.x - barWidth/2, enemy.y - enemy.size - 8, barWidth * healthPercent, barHeight);
       }
+    }
+  }
+  
+  drawEnemySprite(ctx, enemy) {
+    const pixelSize = Math.max(1, Math.floor(enemy.size / 6)); // Scale pixels with enemy size
+    const centerX = enemy.x;
+    const centerY = enemy.y;
+    
+    // Helper function to draw a pixel
+    const drawPixel = (px, py, color) => {
+      ctx.fillStyle = color;
+      ctx.fillRect(
+        centerX + (px - 6) * pixelSize - pixelSize/2, 
+        centerY + (py - 6) * pixelSize - pixelSize/2, 
+        pixelSize, 
+        pixelSize
+      );
+    };
+    
+    const colorData = {
+      color: enemy.color,
+      accent: enemy.accent || enemy.color
+    };
+    
+    switch(enemy.type) {
+      case 'scout':
+        // Fast, agile enemy design
+        // Head/cockpit
+        drawPixel(5, 2, colorData.color); drawPixel(6, 2, colorData.color);
+        drawPixel(4, 3, colorData.accent); drawPixel(5, 3, '#ffffff'); drawPixel(6, 3, '#ffffff'); drawPixel(7, 3, colorData.accent);
+        drawPixel(5, 4, colorData.color); drawPixel(6, 4, colorData.color);
+        // Wings/body
+        drawPixel(3, 5, colorData.accent); drawPixel(4, 5, colorData.color); drawPixel(5, 5, colorData.color); drawPixel(6, 5, colorData.color); drawPixel(7, 5, colorData.color); drawPixel(8, 5, colorData.accent);
+        drawPixel(4, 6, colorData.accent); drawPixel(5, 6, colorData.accent); drawPixel(6, 6, colorData.accent); drawPixel(7, 6, colorData.accent);
+        // Engine trail
+        drawPixel(5, 7, '#ffaa00'); drawPixel(6, 7, '#ffaa00');
+        break;
+        
+      case 'bruiser':
+        // Heavy, armored enemy design
+        // Thick armor plating
+        drawPixel(4, 1, colorData.accent); drawPixel(5, 1, colorData.accent); drawPixel(6, 1, colorData.accent); drawPixel(7, 1, colorData.accent);
+        drawPixel(3, 2, colorData.color); drawPixel(4, 2, colorData.color); drawPixel(5, 2, '#ffffff'); drawPixel(6, 2, '#ffffff'); drawPixel(7, 2, colorData.color); drawPixel(8, 2, colorData.color);
+        drawPixel(3, 3, colorData.color); drawPixel(4, 3, colorData.color); drawPixel(5, 3, colorData.color); drawPixel(6, 3, colorData.color); drawPixel(7, 3, colorData.color); drawPixel(8, 3, colorData.color);
+        // Heavy body
+        drawPixel(2, 4, colorData.accent); drawPixel(3, 4, colorData.color); drawPixel(4, 4, colorData.color); drawPixel(5, 4, '#333333'); drawPixel(6, 4, '#333333'); drawPixel(7, 4, colorData.color); drawPixel(8, 4, colorData.color); drawPixel(9, 4, colorData.accent);
+        drawPixel(3, 5, colorData.color); drawPixel(4, 5, colorData.color); drawPixel(5, 5, colorData.color); drawPixel(6, 5, colorData.color); drawPixel(7, 5, colorData.color); drawPixel(8, 5, colorData.color);
+        drawPixel(3, 6, colorData.accent); drawPixel(4, 6, colorData.accent); drawPixel(5, 6, colorData.accent); drawPixel(6, 6, colorData.accent); drawPixel(7, 6, colorData.accent); drawPixel(8, 6, colorData.accent);
+        // Weapon mounts
+        drawPixel(2, 5, '#666666'); drawPixel(9, 5, '#666666');
+        break;
+        
+      case 'sniper':
+        // Long-range enemy design
+        // Slim profile with scope
+        drawPixel(5, 1, '#ffffff'); drawPixel(6, 1, '#ffffff'); // Scope
+        drawPixel(5, 2, colorData.color); drawPixel(6, 2, colorData.color);
+        drawPixel(4, 3, colorData.accent); drawPixel(5, 3, '#ffffff'); drawPixel(6, 3, '#ffffff'); drawPixel(7, 3, colorData.accent);
+        // Narrow body
+        drawPixel(5, 4, colorData.color); drawPixel(6, 4, colorData.color);
+        drawPixel(4, 5, colorData.color); drawPixel(5, 5, '#333333'); drawPixel(6, 5, '#333333'); drawPixel(7, 5, colorData.color);
+        drawPixel(5, 6, colorData.accent); drawPixel(6, 6, colorData.accent);
+        // Long barrel/weapon
+        drawPixel(5, 7, '#666666'); drawPixel(6, 7, '#666666');
+        drawPixel(5, 8, '#666666'); drawPixel(6, 8, '#666666');
+        break;
+        
+      case 'drone':
+        // Robotic drone design
+        // Rotor/propeller effect
+        drawPixel(3, 1, '#cccccc'); drawPixel(5, 1, '#cccccc'); drawPixel(6, 1, '#cccccc'); drawPixel(8, 1, '#cccccc');
+        // Main body
+        drawPixel(4, 2, colorData.accent); drawPixel(5, 2, colorData.color); drawPixel(6, 2, colorData.color); drawPixel(7, 2, colorData.accent);
+        drawPixel(4, 3, colorData.color); drawPixel(5, 3, '#ffff00'); drawPixel(6, 3, '#ffff00'); drawPixel(7, 3, colorData.color); // Yellow sensors
+        drawPixel(4, 4, colorData.color); drawPixel(5, 4, colorData.color); drawPixel(6, 4, colorData.color); drawPixel(7, 4, colorData.color);
+        // Support struts
+        drawPixel(3, 5, colorData.accent); drawPixel(5, 5, '#333333'); drawPixel(6, 5, '#333333'); drawPixel(8, 5, colorData.accent);
+        // Bottom sensors/weapons
+        drawPixel(5, 6, '#ff0000'); drawPixel(6, 6, '#ff0000'); // Red targeting laser
+        break;
+        
+      case 'interceptor':
+        // Fast pursuit ship
+        // Pointed nose
+        drawPixel(5, 1, colorData.accent); drawPixel(6, 1, colorData.accent);
+        drawPixel(4, 2, colorData.color); drawPixel(5, 2, colorData.color); drawPixel(6, 2, colorData.color); drawPixel(7, 2, colorData.color);
+        // Cockpit
+        drawPixel(4, 3, colorData.color); drawPixel(5, 3, '#ffffff'); drawPixel(6, 3, '#ffffff'); drawPixel(7, 3, colorData.color);
+        // Main body with swept wings
+        drawPixel(2, 4, colorData.accent); drawPixel(3, 4, colorData.color); drawPixel(4, 4, colorData.color); drawPixel(5, 4, '#333333'); drawPixel(6, 4, '#333333'); drawPixel(7, 4, colorData.color); drawPixel(8, 4, colorData.color); drawPixel(9, 4, colorData.accent);
+        drawPixel(4, 5, colorData.color); drawPixel(5, 5, colorData.color); drawPixel(6, 5, colorData.color); drawPixel(7, 5, colorData.color);
+        // Engine exhausts
+        drawPixel(4, 6, '#ff6600'); drawPixel(5, 6, '#ffaa00'); drawPixel(6, 6, '#ffaa00'); drawPixel(7, 6, '#ff6600');
+        drawPixel(5, 7, '#ffff00'); drawPixel(6, 7, '#ffff00'); // Bright engine glow
+        break;
+        
+      default:
+        // Fallback to simple design
+        drawPixel(4, 2, colorData.color); drawPixel(5, 2, colorData.color); drawPixel(6, 2, colorData.color); drawPixel(7, 2, colorData.color);
+        drawPixel(4, 3, colorData.color); drawPixel(5, 3, '#ffffff'); drawPixel(6, 3, '#ffffff'); drawPixel(7, 3, colorData.color);
+        drawPixel(4, 4, colorData.color); drawPixel(5, 4, colorData.color); drawPixel(6, 4, colorData.color); drawPixel(7, 4, colorData.color);
+        drawPixel(4, 5, colorData.accent); drawPixel(5, 5, colorData.accent); drawPixel(6, 5, colorData.accent); drawPixel(7, 5, colorData.accent);
+        break;
     }
   }
   
@@ -1286,7 +1624,24 @@ export class GhisGame {
       
       ctx.fillStyle = '#ffffff';
       ctx.font = '16px monospace';
-      ctx.fillText('Press R to restart', ctx.canvas.width / 2, ctx.canvas.height / 2 + 40);
+      if (this.input.isMobile) {
+        ctx.fillText('Tap RESTART GAME button to restart', ctx.canvas.width / 2, ctx.canvas.height / 2 + 40);
+        // Show mobile restart button
+        const restartBtn = document.getElementById('ghisRestartBtn');
+        if (restartBtn) {
+          restartBtn.style.display = 'block';
+        }
+      } else {
+        ctx.fillText('Press R to restart', ctx.canvas.width / 2, ctx.canvas.height / 2 + 40);
+      }
+    } else {
+      // Hide mobile restart button when not in game over state
+      if (this.input.isMobile) {
+        const restartBtn = document.getElementById('ghisRestartBtn');
+        if (restartBtn) {
+          restartBtn.style.display = 'none';
+        }
+      }
     }
     
     // Instructions

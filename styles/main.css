@@ -2992,131 +2992,214 @@ button.card:disabled {
   }
 }
 
-/* Mobile Touch Controls for GHÏS */
+/* Mobile Touch Controls for GHÏS - Twin Stick Shooter */
 .ghis-mobile-controls {
   display: flex;
   justify-content: space-between;
   align-items: center;
   width: 100%;
   max-width: 800px;
-  height: 120px;
+  height: 150px; /* Increased height for analog sticks */
   margin-top: 10px;
   position: relative;
   pointer-events: none;
+  padding: 0 20px; /* Increased padding for better spacing */
 }
 
-.mobile-movement-pad {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(3, 1fr);
-  gap: 5px;
-  width: 120px;
-  height: 120px;
+/* Movement Analog Stick (Left Side) */
+.mobile-movement-stick {
+  width: 150px;
+  height: 150px;
   pointer-events: auto;
+  position: relative;
 }
 
-.mobile-move-btn {
-  background: var(--panel);
-  border: 2px solid var(--border);
-  border-radius: 6px;
-  color: var(--accent);
-  font-family: 'Press Start 2P', monospace;
-  font-size: 16px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.1s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0.8;
-  /* Enhanced touch accessibility */
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-  -webkit-user-select: none;
-  user-select: none;
-  /* Prevent text selection */
-  -webkit-touch-callout: none;
-  -webkit-user-drag: none;
-  -khtml-user-drag: none;
-  -moz-user-drag: none;
-  -o-user-drag: none;
-  user-drag: none;
-}
-
-.mobile-move-btn:active,
-.mobile-move-btn.active {
-  background: var(--accent);
-  color: var(--bg);
-  opacity: 1;
-  transform: scale(0.95);
-}
-
-.move-up {
-  grid-column: 2;
-  grid-row: 1;
-}
-
-.move-down {
-  grid-column: 2;
-  grid-row: 3;
-}
-
-.move-left {
-  grid-column: 1;
-  grid-row: 2;
-}
-
-.move-right {
-  grid-column: 3;
-  grid-row: 2;
-}
-
-.mobile-shoot-area {
-  width: 140px;
-  height: 120px;
+.stick-container {
+  width: 100%;
+  height: 100%;
   background: var(--panel);
   border: 3px solid var(--border);
-  border-radius: 12px;
+  border-radius: 50%;
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.1s;
-  opacity: 0.8;
-  pointer-events: auto;
+  transition: all 0.15s ease;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  /* Add gradient background for depth */
+  background: radial-gradient(circle at center, var(--panel), rgba(0, 0, 0, 0.2));
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3), inset 0 2px 4px rgba(255, 255, 255, 0.1);
   /* Enhanced touch accessibility */
   touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-  -webkit-user-select: none;
-  user-select: none;
-  /* Prevent text selection */
   -webkit-touch-callout: none;
   -webkit-user-drag: none;
-  -khtml-user-drag: none;
-  -moz-user-drag: none;
-  -o-user-drag: none;
-  user-drag: none;
+  overflow: hidden;
 }
 
-.mobile-shoot-area:active,
-.mobile-shoot-area.active {
-  background: var(--bad);
-  border-color: #ff8888;
+.stick-container::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 80%;
+  height: 80%;
+  border: 2px dashed rgba(119, 255, 221, 0.3);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0.6;
+}
+
+.stick-container.active {
+  border-color: var(--good);
+  box-shadow: 0 0 15px rgba(119, 255, 221, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.2);
+}
+
+.stick-container.active::before {
+  border-color: rgba(119, 255, 221, 0.6);
   opacity: 1;
-  transform: scale(0.98);
 }
 
-.shoot-text {
+.stick-knob {
+  width: 50px;
+  height: 50px;
+  background: var(--accent);
+  border: 2px solid var(--border);
+  border-radius: 50%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  transition: all 0.1s ease;
+  cursor: grab;
+  /* Add gradient for depth */
+  background: radial-gradient(circle at 30% 30%, #77ffdd, var(--accent));
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4), inset 0 1px 2px rgba(255, 255, 255, 0.3);
+  z-index: 10;
+}
+
+.stick-container.active .stick-knob {
+  background: radial-gradient(circle at 30% 30%, #ffffff, var(--good));
+  border-color: var(--good);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5), inset 0 1px 2px rgba(255, 255, 255, 0.5);
+  cursor: grabbing;
+}
+
+/* Aim/Shoot Analog Stick (Right Side) */
+.mobile-aim-stick {
+  width: 150px;
+  height: 150px;
+  pointer-events: auto;
+  position: relative;
+}
+
+.aim-container {
+  width: 100%;
+  height: 100%;
+  background: var(--panel);
+  border: 3px solid var(--border);
+  border-radius: 50%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  /* Add gradient background for depth */
+  background: radial-gradient(circle at center, var(--panel), rgba(0, 0, 0, 0.2));
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3), inset 0 2px 4px rgba(255, 255, 255, 0.1);
+  /* Enhanced touch accessibility */
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
+  overflow: hidden;
+}
+
+.aim-container::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 80%;
+  height: 80%;
+  border: 2px dashed rgba(255, 68, 68, 0.3);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0.6;
+}
+
+.aim-container.active {
+  border-color: var(--bad);
+  box-shadow: 0 0 15px rgba(255, 68, 68, 0.8), inset 0 2px 4px rgba(255, 255, 255, 0.2);
+}
+
+.aim-container.active::before {
+  border-color: rgba(255, 68, 68, 0.6);
+  opacity: 1;
+  animation: pulse-aim 1s ease-in-out infinite alternate;
+}
+
+.aim-knob {
+  width: 45px;
+  height: 45px;
+  background: var(--bad);
+  border: 2px solid var(--border);
+  border-radius: 50%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  transition: all 0.1s ease;
+  cursor: grab;
+  /* Add gradient for depth */
+  background: radial-gradient(circle at 30% 30%, #ff8888, var(--bad));
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4), inset 0 1px 2px rgba(255, 255, 255, 0.3);
+  z-index: 10;
+}
+
+.aim-container.active .aim-knob {
+  background: radial-gradient(circle at 30% 30%, #ffffff, #ff4444);
+  border-color: #ff4444;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5), inset 0 1px 2px rgba(255, 255, 255, 0.5);
+  cursor: grabbing;
+}
+
+.aim-text {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
   color: var(--accent);
   font-family: 'Press Start 2P', monospace;
-  font-size: 10px;
+  font-size: 8px;
   text-align: center;
-  line-height: 1.2;
   font-weight: bold;
+  letter-spacing: 0.5px;
+  opacity: 0.8;
+  pointer-events: none;
+  z-index: 5;
 }
 
-.mobile-shoot-area.active .shoot-text {
+.aim-container.active .aim-text {
   color: var(--ink);
+  text-shadow: 0 0 4px rgba(255, 255, 255, 0.8);
+  opacity: 1;
+}
+
+@keyframes pulse-aim {
+  from {
+    opacity: 0.6;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.05);
+  }
 }
 
 /* Hide mobile controls on desktop */
@@ -3126,9 +3209,104 @@ button.card:disabled {
   }
 }
 
-/* Show mobile controls only on mobile */
+/* Show mobile controls only on mobile with improved responsive design */
 @media (max-width: 768px) {
   .ghis-mobile-controls {
     display: flex;
+  }
+  
+  /* Adjust for smaller screens */
+  @media (max-width: 480px) {
+    .ghis-mobile-controls {
+      height: 130px;
+      padding: 0 15px;
+    }
+    
+    .mobile-movement-stick,
+    .mobile-aim-stick {
+      width: 130px;
+      height: 130px;
+    }
+    
+    .stick-knob,
+    .aim-knob {
+      width: 40px;
+      height: 40px;
+    }
+    
+    .aim-text {
+      font-size: 7px;
+      bottom: 8px;
+    }
+  }
+  
+  /* Very small screens */
+  @media (max-width: 360px) {
+    .ghis-mobile-controls {
+      height: 120px;
+      padding: 0 10px;
+    }
+    
+    .mobile-movement-stick,
+    .mobile-aim-stick {
+      width: 120px;
+      height: 120px;
+    }
+    
+    .stick-knob,
+    .aim-knob {
+      width: 35px;
+      height: 35px;
+    }
+    
+    .aim-text {
+      font-size: 6px;
+      bottom: 6px;
+    }
+  }
+}
+
+/* Mobile Restart Button for GHÏS */
+.ghis-restart-button {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  
+  padding: 15px 30px;
+  font-size: 18px;
+  font-weight: bold;
+  font-family: monospace;
+  color: #ffffff;
+  background: linear-gradient(135deg, #ff4444, #cc2222);
+  border: 3px solid #ffffff;
+  border-radius: 10px;
+  
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.8), 
+              inset 0 1px 2px rgba(255, 255, 255, 0.3);
+  
+  cursor: pointer;
+  pointer-events: auto;
+  
+  transition: all 0.2s ease;
+  z-index: 1000;
+}
+
+.ghis-restart-button:hover {
+  background: linear-gradient(135deg, #ff6666, #ee3333);
+  transform: translate(-50%, -50%) scale(1.05);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.9), 
+              inset 0 1px 2px rgba(255, 255, 255, 0.4);
+}
+
+.ghis-restart-button:active {
+  transform: translate(-50%, -50%) scale(0.95);
+  background: linear-gradient(135deg, #cc2222, #aa1111);
+}
+
+/* Hide restart button on desktop */
+@media (min-width: 769px) {
+  .ghis-restart-button {
+    display: none !important;
   }
 }

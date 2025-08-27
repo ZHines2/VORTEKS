@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GHIS Twin-Stick Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: monospace;
+            background: #000;
+            color: #fff;
+        }
+        #testResults {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #333;
+        }
+        .test-pass { color: #0f0; }
+        .test-fail { color: #f00; }
+    </style>
+</head>
+<body>
+    <div id="testResults">
+        <h2>GHIS Twin-Stick Controls Test</h2>
+        <div id="results"></div>
+    </div>
+
+    <script type="module">
+        // Import the GHIS module
+        import { GhisGame } from '/src/ghis.js';
+
+        function runTests() {
+            const results = document.getElementById('results');
+            let testsPassed = 0;
+            let totalTests = 0;
+
+            function test(name, condition) {
+                totalTests++;
+                const result = document.createElement('div');
+                result.textContent = `${name}: ${condition ? 'PASS' : 'FAIL'}`;
+                result.className = condition ? 'test-pass' : 'test-fail';
+                results.appendChild(result);
+                if (condition) testsPassed++;
+                return condition;
+            }
+
+            // Create a test instance
+            const game = new GhisGame();
+
+            // Test 1: Check if analog stick input properties exist
+            test('Analog stick input properties exist', 
+                game.input.moveStick && 
+                game.input.aimStick &&
+                typeof game.input.moveStick.x === 'number' &&
+                typeof game.input.aimStick.active === 'boolean'
+            );
+
+            // Test 2: Check if mobile controls create analog sticks
+            game.input.isMobile = true;
+            game.createMobileControlUI();
+            
+            const mobileControls = document.getElementById('ghisMobileControls');
+            const movementStick = mobileControls?.querySelector('.mobile-movement-stick');
+            const aimStick = mobileControls?.querySelector('.mobile-aim-stick');
+
+            test('Mobile controls UI created', mobileControls !== null);
+            test('Movement stick element exists', movementStick !== null);
+            test('Aim stick element exists', aimStick !== null);
+
+            // Test 3: Test analog input processing
+            game.input.moveStick.x = 0.5;
+            game.input.moveStick.y = -0.8;
+            game.input.moveStick.active = true;
+            
+            const playerVxBefore = game.player.vx;
+            const playerVyBefore = game.player.vy;
+            
+            game.updatePlayer(16); // Simulate 16ms frame
+            
+            test('Player movement responds to analog input', 
+                game.player.vx !== playerVxBefore || game.player.vy !== playerVyBefore
+            );
+
+            // Test 4: Test aiming with aim stick
+            game.input.aimStick.x = 1.0;
+            game.input.aimStick.y = 0.0;
+            game.input.aimStick.active = true;
+            
+            // Create a mock canvas context for rendering test
+            const mockCtx = {
+                save: () => {},
+                restore: () => {},
+                translate: () => {},
+                rotate: () => {},
+                fillStyle: '',
+                fillRect: () => {},
+                strokeStyle: '',
+                lineWidth: 0,
+                setLineDash: () => {},
+                beginPath: () => {},
+                moveTo: () => {},
+                lineTo: () => {},
+                stroke: () => {},
+                arc: () => {},
+                fill: () => {},
+                canvas: { width: 800, height: 600 }
+            };
+            
+            game.renderPlayer(mockCtx);
+            
+            test('Player angle set by aim stick', 
+                Math.abs(game.player.angle - 0) < 0.1 // Should point right (0 radians)
+            );
+
+            // Test 5: Test weapon shooting with analog controls
+            game.input.shoot = true;
+            const projectilesBefore = game.projectiles.length;
+            game.shootWeapons(16);
+            
+            test('Weapons fire with analog controls', 
+                game.projectiles.length > projectilesBefore
+            );
+
+            // Test 6: Test zap weapon (lightning chain)
+            game.player.powerups.zap = 1;
+            game.spawnEnemy(); // Add an enemy to target
+            
+            const enemy = game.enemies[0];
+            if (enemy) {
+                enemy.x = game.player.x + 50; // Place enemy nearby
+                enemy.y = game.player.y;
+                
+                const enemyHpBefore = enemy.hp;
+                game.shootZap();
+                
+                test('Lightning chain weapon works', 
+                    enemy.hp < enemyHpBefore
+                );
+            } else {
+                test('Lightning chain weapon works', false);
+            }
+
+            // Clean up
+            game.destroy();
+
+            // Summary
+            const summary = document.createElement('div');
+            summary.innerHTML = `<br><strong>Tests passed: ${testsPassed}/${totalTests}</strong>`;
+            summary.className = testsPassed === totalTests ? 'test-pass' : 'test-fail';
+            results.appendChild(summary);
+
+            if (testsPassed === totalTests) {
+                console.log('✅ All twin-stick control tests passed!');
+            } else {
+                console.log('❌ Some tests failed. Check implementation.');
+            }
+        }
+
+        // Run tests when page loads
+        document.addEventListener('DOMContentLoaded', runTests);
+    </script>
+</body>
+</html>
