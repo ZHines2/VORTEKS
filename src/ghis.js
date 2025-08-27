@@ -290,16 +290,16 @@ export class GhisGame {
       mobileControls.id = 'ghisMobileControls';
       mobileControls.className = 'ghis-mobile-controls';
       
-      // Movement pad (left side)
+      // Movement pad (left side) - improved layout
       const movementPad = document.createElement('div');
       movementPad.className = 'mobile-movement-pad';
       
-      // Create directional buttons
+      // Create directional buttons with better layout
       const directions = [
-        { name: 'up', symbol: '▲', class: 'move-up' },
-        { name: 'down', symbol: '▼', class: 'move-down' },
-        { name: 'left', symbol: '◀', class: 'move-left' },
-        { name: 'right', symbol: '▶', class: 'move-right' }
+        { name: 'up', symbol: '▲', class: 'move-up', gridPos: { col: 2, row: 1 } },
+        { name: 'down', symbol: '▼', class: 'move-down', gridPos: { col: 2, row: 3 } },
+        { name: 'left', symbol: '◀', class: 'move-left', gridPos: { col: 1, row: 2 } },
+        { name: 'right', symbol: '▶', class: 'move-right', gridPos: { col: 3, row: 2 } }
       ];
       
       directions.forEach(dir => {
@@ -307,15 +307,28 @@ export class GhisGame {
         btn.className = `mobile-move-btn ${dir.class}`;
         btn.innerHTML = dir.symbol;
         btn.setAttribute('data-direction', dir.name);
+        btn.style.gridColumn = dir.gridPos.col;
+        btn.style.gridRow = dir.gridPos.row;
         
-        // Touch events for movement buttons
+        // Enhanced touch events for movement buttons
         btn.addEventListener('touchstart', (e) => {
           e.preventDefault();
           this.input[dir.name] = true;
           btn.classList.add('active');
+          
+          // Add haptic feedback if available
+          if (navigator.vibrate) {
+            navigator.vibrate(50);
+          }
         });
         
         btn.addEventListener('touchend', (e) => {
+          e.preventDefault();
+          this.input[dir.name] = false;
+          btn.classList.remove('active');
+        });
+        
+        btn.addEventListener('touchcancel', (e) => {
           e.preventDefault();
           this.input[dir.name] = false;
           btn.classList.remove('active');
@@ -327,20 +340,51 @@ export class GhisGame {
         movementPad.appendChild(btn);
       });
       
-      // Shooting area (right side) - entire right side is shoot area
+      // Add center area indicator for movement pad
+      const centerIndicator = document.createElement('div');
+      centerIndicator.className = 'movement-center';
+      centerIndicator.innerHTML = '●';
+      centerIndicator.style.gridColumn = '2';
+      centerIndicator.style.gridRow = '2';
+      movementPad.appendChild(centerIndicator);
+      
+      // Enhanced shooting area (right side)
       const shootArea = document.createElement('div');
       shootArea.className = 'mobile-shoot-area';
-      shootArea.innerHTML = '<div class="shoot-text">HOLD TO SHOOT</div>';
       
-      // Touch events for shooting
+      // Create shooting area with better visual feedback
+      const shootText = document.createElement('div');
+      shootText.className = 'shoot-text';
+      shootText.innerHTML = 'FIRE';
+      
+      const shootIcon = document.createElement('div');
+      shootIcon.className = 'shoot-icon';
+      shootIcon.innerHTML = '🔥';
+      
+      shootArea.appendChild(shootIcon);
+      shootArea.appendChild(shootText);
+      
+      // Enhanced touch events for shooting
       shootArea.addEventListener('touchstart', (e) => {
         e.preventDefault();
         this.input.shoot = true;
         this.input.touchShooting = true;
         shootArea.classList.add('active');
+        
+        // Stronger haptic feedback for shooting
+        if (navigator.vibrate) {
+          navigator.vibrate([50, 30, 50]);
+        }
       });
       
       shootArea.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        this.input.shoot = false;
+        this.input.touchShooting = false;
+        shootArea.classList.remove('active');
+      });
+      
+      shootArea.addEventListener('touchcancel', (e) => {
         e.preventDefault();
         this.input.shoot = false;
         this.input.touchShooting = false;
@@ -406,19 +450,72 @@ export class GhisGame {
       y = Math.random() * this.world.height;
     } while (this.getDistance(x, y, this.player.x, this.player.y) < 300); // Spawn farther away
     
+    // Define different enemy types with unique characteristics
+    const enemyTypes = [
+      {
+        type: 'scout',
+        hp: 2,
+        speed: 0.5,
+        shootRate: 2500,
+        size: 5,
+        color: '#ff6666',
+        accent: '#ff9999'
+      },
+      {
+        type: 'bruiser',
+        hp: 4,
+        speed: 0.2,
+        shootRate: 1500,
+        size: 8,
+        color: '#ff4444',
+        accent: '#ff7777'
+      },
+      {
+        type: 'sniper',
+        hp: 1,
+        speed: 0.1,
+        shootRate: 3000,
+        size: 4,
+        color: '#4444ff',
+        accent: '#7777ff'
+      },
+      {
+        type: 'drone',
+        hp: 3,
+        speed: 0.4,
+        shootRate: 2000,
+        size: 6,
+        color: '#44ff44',
+        accent: '#77ff77'
+      },
+      {
+        type: 'interceptor',
+        hp: 2,
+        speed: 0.6,
+        shootRate: 1800,
+        size: 7,
+        color: '#ffff44',
+        accent: '#ffff77'
+      }
+    ];
+    
+    // Select random enemy type
+    const enemyTemplate = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
+    
     const enemy = {
       x: x,
       y: y,
-      vx: (Math.random() - 0.5) * 1, // Slower movement
+      vx: (Math.random() - 0.5) * 1,
       vy: (Math.random() - 0.5) * 1,
-      hp: 2, // Less HP so they die easier
-      maxHP: 2,
-      size: 6,
-      type: 'basic',
+      hp: enemyTemplate.hp,
+      maxHP: enemyTemplate.hp,
+      size: enemyTemplate.size,
+      type: enemyTemplate.type,
       lastShot: 0,
-      shootRate: 2000,
-      speed: 0.3, // Slower enemy speed
-      color: '#ff4444'
+      shootRate: enemyTemplate.shootRate,
+      speed: enemyTemplate.speed,
+      color: enemyTemplate.color,
+      accent: enemyTemplate.accent
     };
     
     this.enemies.push(enemy);
@@ -1172,9 +1269,8 @@ export class GhisGame {
   
   renderEnemies(ctx) {
     for (const enemy of this.enemies) {
-      // Simple enemy rendering
-      ctx.fillStyle = enemy.color;
-      ctx.fillRect(enemy.x - enemy.size, enemy.y - enemy.size, enemy.size * 2, enemy.size * 2);
+      // Draw enemy sprite instead of simple rectangle
+      this.drawEnemySprite(ctx, enemy);
       
       // Health bar
       if (enemy.hp < enemy.maxHP) {
@@ -1188,6 +1284,109 @@ export class GhisGame {
         ctx.fillStyle = '#ff4444';
         ctx.fillRect(enemy.x - barWidth/2, enemy.y - enemy.size - 8, barWidth * healthPercent, barHeight);
       }
+    }
+  }
+  
+  drawEnemySprite(ctx, enemy) {
+    const pixelSize = Math.max(1, Math.floor(enemy.size / 6)); // Scale pixels with enemy size
+    const centerX = enemy.x;
+    const centerY = enemy.y;
+    
+    // Helper function to draw a pixel
+    const drawPixel = (px, py, color) => {
+      ctx.fillStyle = color;
+      ctx.fillRect(
+        centerX + (px - 6) * pixelSize - pixelSize/2, 
+        centerY + (py - 6) * pixelSize - pixelSize/2, 
+        pixelSize, 
+        pixelSize
+      );
+    };
+    
+    const colorData = {
+      color: enemy.color,
+      accent: enemy.accent || enemy.color
+    };
+    
+    switch(enemy.type) {
+      case 'scout':
+        // Fast, agile enemy design
+        // Head/cockpit
+        drawPixel(5, 2, colorData.color); drawPixel(6, 2, colorData.color);
+        drawPixel(4, 3, colorData.accent); drawPixel(5, 3, '#ffffff'); drawPixel(6, 3, '#ffffff'); drawPixel(7, 3, colorData.accent);
+        drawPixel(5, 4, colorData.color); drawPixel(6, 4, colorData.color);
+        // Wings/body
+        drawPixel(3, 5, colorData.accent); drawPixel(4, 5, colorData.color); drawPixel(5, 5, colorData.color); drawPixel(6, 5, colorData.color); drawPixel(7, 5, colorData.color); drawPixel(8, 5, colorData.accent);
+        drawPixel(4, 6, colorData.accent); drawPixel(5, 6, colorData.accent); drawPixel(6, 6, colorData.accent); drawPixel(7, 6, colorData.accent);
+        // Engine trail
+        drawPixel(5, 7, '#ffaa00'); drawPixel(6, 7, '#ffaa00');
+        break;
+        
+      case 'bruiser':
+        // Heavy, armored enemy design
+        // Thick armor plating
+        drawPixel(4, 1, colorData.accent); drawPixel(5, 1, colorData.accent); drawPixel(6, 1, colorData.accent); drawPixel(7, 1, colorData.accent);
+        drawPixel(3, 2, colorData.color); drawPixel(4, 2, colorData.color); drawPixel(5, 2, '#ffffff'); drawPixel(6, 2, '#ffffff'); drawPixel(7, 2, colorData.color); drawPixel(8, 2, colorData.color);
+        drawPixel(3, 3, colorData.color); drawPixel(4, 3, colorData.color); drawPixel(5, 3, colorData.color); drawPixel(6, 3, colorData.color); drawPixel(7, 3, colorData.color); drawPixel(8, 3, colorData.color);
+        // Heavy body
+        drawPixel(2, 4, colorData.accent); drawPixel(3, 4, colorData.color); drawPixel(4, 4, colorData.color); drawPixel(5, 4, '#333333'); drawPixel(6, 4, '#333333'); drawPixel(7, 4, colorData.color); drawPixel(8, 4, colorData.color); drawPixel(9, 4, colorData.accent);
+        drawPixel(3, 5, colorData.color); drawPixel(4, 5, colorData.color); drawPixel(5, 5, colorData.color); drawPixel(6, 5, colorData.color); drawPixel(7, 5, colorData.color); drawPixel(8, 5, colorData.color);
+        drawPixel(3, 6, colorData.accent); drawPixel(4, 6, colorData.accent); drawPixel(5, 6, colorData.accent); drawPixel(6, 6, colorData.accent); drawPixel(7, 6, colorData.accent); drawPixel(8, 6, colorData.accent);
+        // Weapon mounts
+        drawPixel(2, 5, '#666666'); drawPixel(9, 5, '#666666');
+        break;
+        
+      case 'sniper':
+        // Long-range enemy design
+        // Slim profile with scope
+        drawPixel(5, 1, '#ffffff'); drawPixel(6, 1, '#ffffff'); // Scope
+        drawPixel(5, 2, colorData.color); drawPixel(6, 2, colorData.color);
+        drawPixel(4, 3, colorData.accent); drawPixel(5, 3, '#ffffff'); drawPixel(6, 3, '#ffffff'); drawPixel(7, 3, colorData.accent);
+        // Narrow body
+        drawPixel(5, 4, colorData.color); drawPixel(6, 4, colorData.color);
+        drawPixel(4, 5, colorData.color); drawPixel(5, 5, '#333333'); drawPixel(6, 5, '#333333'); drawPixel(7, 5, colorData.color);
+        drawPixel(5, 6, colorData.accent); drawPixel(6, 6, colorData.accent);
+        // Long barrel/weapon
+        drawPixel(5, 7, '#666666'); drawPixel(6, 7, '#666666');
+        drawPixel(5, 8, '#666666'); drawPixel(6, 8, '#666666');
+        break;
+        
+      case 'drone':
+        // Robotic drone design
+        // Rotor/propeller effect
+        drawPixel(3, 1, '#cccccc'); drawPixel(5, 1, '#cccccc'); drawPixel(6, 1, '#cccccc'); drawPixel(8, 1, '#cccccc');
+        // Main body
+        drawPixel(4, 2, colorData.accent); drawPixel(5, 2, colorData.color); drawPixel(6, 2, colorData.color); drawPixel(7, 2, colorData.accent);
+        drawPixel(4, 3, colorData.color); drawPixel(5, 3, '#ffff00'); drawPixel(6, 3, '#ffff00'); drawPixel(7, 3, colorData.color); // Yellow sensors
+        drawPixel(4, 4, colorData.color); drawPixel(5, 4, colorData.color); drawPixel(6, 4, colorData.color); drawPixel(7, 4, colorData.color);
+        // Support struts
+        drawPixel(3, 5, colorData.accent); drawPixel(5, 5, '#333333'); drawPixel(6, 5, '#333333'); drawPixel(8, 5, colorData.accent);
+        // Bottom sensors/weapons
+        drawPixel(5, 6, '#ff0000'); drawPixel(6, 6, '#ff0000'); // Red targeting laser
+        break;
+        
+      case 'interceptor':
+        // Fast pursuit ship
+        // Pointed nose
+        drawPixel(5, 1, colorData.accent); drawPixel(6, 1, colorData.accent);
+        drawPixel(4, 2, colorData.color); drawPixel(5, 2, colorData.color); drawPixel(6, 2, colorData.color); drawPixel(7, 2, colorData.color);
+        // Cockpit
+        drawPixel(4, 3, colorData.color); drawPixel(5, 3, '#ffffff'); drawPixel(6, 3, '#ffffff'); drawPixel(7, 3, colorData.color);
+        // Main body with swept wings
+        drawPixel(2, 4, colorData.accent); drawPixel(3, 4, colorData.color); drawPixel(4, 4, colorData.color); drawPixel(5, 4, '#333333'); drawPixel(6, 4, '#333333'); drawPixel(7, 4, colorData.color); drawPixel(8, 4, colorData.color); drawPixel(9, 4, colorData.accent);
+        drawPixel(4, 5, colorData.color); drawPixel(5, 5, colorData.color); drawPixel(6, 5, colorData.color); drawPixel(7, 5, colorData.color);
+        // Engine exhausts
+        drawPixel(4, 6, '#ff6600'); drawPixel(5, 6, '#ffaa00'); drawPixel(6, 6, '#ffaa00'); drawPixel(7, 6, '#ff6600');
+        drawPixel(5, 7, '#ffff00'); drawPixel(6, 7, '#ffff00'); // Bright engine glow
+        break;
+        
+      default:
+        // Fallback to simple design
+        drawPixel(4, 2, colorData.color); drawPixel(5, 2, colorData.color); drawPixel(6, 2, colorData.color); drawPixel(7, 2, colorData.color);
+        drawPixel(4, 3, colorData.color); drawPixel(5, 3, '#ffffff'); drawPixel(6, 3, '#ffffff'); drawPixel(7, 3, colorData.color);
+        drawPixel(4, 4, colorData.color); drawPixel(5, 4, colorData.color); drawPixel(6, 4, colorData.color); drawPixel(7, 4, colorData.color);
+        drawPixel(4, 5, colorData.accent); drawPixel(5, 5, colorData.accent); drawPixel(6, 5, colorData.accent); drawPixel(7, 5, colorData.accent);
+        break;
     }
   }
   
