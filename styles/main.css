@@ -535,6 +535,8 @@ button.card:disabled {
   /* Improved mobile handling */
   max-height: min(90vh, calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 40px));
   width: min(96vw, 640px);
+  /* Ensure bottom content is accessible above mobile browser toolbars */
+  padding-bottom: max(24px, env(safe-area-inset-bottom, 24px));
 }
 
 /* Help Modal Tab System */
@@ -2075,7 +2077,7 @@ button.card:disabled {
   z-index: 100;
   animation: slideUp 0.3s ease-out;
   /* Ensure panel respects safe areas on mobile */
-  padding-bottom: max(15px, env(safe-area-inset-bottom));
+  padding-bottom: max(24px, env(safe-area-inset-bottom, 24px));
   /* Prevent content from being cut off */
   max-height: 50vh;
   overflow-y: auto;
@@ -2231,6 +2233,8 @@ button.card:disabled {
     padding: 12px;
     /* Ensure panel is above any canvas touch handling */
     z-index: 200;
+    /* Maintain safe bottom padding for mobile browser toolbars */
+    padding-bottom: max(60px, env(safe-area-inset-bottom, 60px));
   }
   
   .combat-buttons {
@@ -2324,6 +2328,13 @@ button.card:disabled {
   /* Fix iOS Safari modal issues */
   .modal {
     -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Enhanced bottom padding for mobile browser toolbars */
+  .modal .box {
+    padding-bottom: max(48px, env(safe-area-inset-bottom, 48px));
+    /* Adjust max-height to account for increased bottom padding */
+    max-height: min(85vh, calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 80px));
   }
   
   /* Prevent iOS zoom on input focus */
