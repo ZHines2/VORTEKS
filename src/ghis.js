@@ -120,7 +120,10 @@ export class GhisGame {
       touchShooting: false,
       touchMoveX: 0,
       touchMoveY: 0,
-      isMobile: false
+      isMobile: false,
+      // Analog stick input
+      moveStick: { x: 0, y: 0, active: false },
+      aimStick: { x: 0, y: 0, active: false, worldX: 0, worldY: 0 }
     };
     
     // Initialize
@@ -290,112 +293,194 @@ export class GhisGame {
       mobileControls.id = 'ghisMobileControls';
       mobileControls.className = 'ghis-mobile-controls';
       
-      // Movement pad (left side) - improved layout
-      const movementPad = document.createElement('div');
-      movementPad.className = 'mobile-movement-pad';
+      // Movement stick (left side) - analog joystick
+      const movementStick = document.createElement('div');
+      movementStick.className = 'mobile-movement-stick';
       
-      // Create directional buttons with better layout
-      const directions = [
-        { name: 'up', symbol: '▲', class: 'move-up', gridPos: { col: 2, row: 1 } },
-        { name: 'down', symbol: '▼', class: 'move-down', gridPos: { col: 2, row: 3 } },
-        { name: 'left', symbol: '◀', class: 'move-left', gridPos: { col: 1, row: 2 } },
-        { name: 'right', symbol: '▶', class: 'move-right', gridPos: { col: 3, row: 2 } }
-      ];
+      // Stick container (outer ring)
+      const stickContainer = document.createElement('div');
+      stickContainer.className = 'stick-container';
       
-      directions.forEach(dir => {
-        const btn = document.createElement('button');
-        btn.className = `mobile-move-btn ${dir.class}`;
-        btn.innerHTML = dir.symbol;
-        btn.setAttribute('data-direction', dir.name);
-        btn.style.gridColumn = dir.gridPos.col;
-        btn.style.gridRow = dir.gridPos.row;
+      // Stick knob (inner circle)
+      const stickKnob = document.createElement('div');
+      stickKnob.className = 'stick-knob';
+      
+      stickContainer.appendChild(stickKnob);
+      movementStick.appendChild(stickContainer);
+      
+      // Touch events for movement stick
+      let moveStickActive = false;
+      let moveStickRect = null;
+      
+      const updateMoveStick = (clientX, clientY) => {
+        if (!moveStickRect) return;
         
-        // Enhanced touch events for movement buttons
-        btn.addEventListener('touchstart', (e) => {
-          e.preventDefault();
-          this.input[dir.name] = true;
-          btn.classList.add('active');
-          
-          // Add haptic feedback if available
-          if (navigator.vibrate) {
-            navigator.vibrate(50);
-          }
-        });
+        const centerX = moveStickRect.left + moveStickRect.width / 2;
+        const centerY = moveStickRect.top + moveStickRect.height / 2;
+        const radius = Math.min(moveStickRect.width, moveStickRect.height) / 2 - 10;
         
-        btn.addEventListener('touchend', (e) => {
-          e.preventDefault();
-          this.input[dir.name] = false;
-          btn.classList.remove('active');
-        });
+        let deltaX = clientX - centerX;
+        let deltaY = clientY - centerY;
+        const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
         
-        btn.addEventListener('touchcancel', (e) => {
-          e.preventDefault();
-          this.input[dir.name] = false;
-          btn.classList.remove('active');
-        });
+        if (distance > radius) {
+          deltaX = (deltaX / distance) * radius;
+          deltaY = (deltaY / distance) * radius;
+        }
         
-        // Prevent context menu
-        btn.addEventListener('contextmenu', e => e.preventDefault());
+        this.input.moveStick.x = deltaX / radius;
+        this.input.moveStick.y = deltaY / radius;
+        this.input.moveStick.active = true;
         
-        movementPad.appendChild(btn);
+        // Update visual position
+        stickKnob.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+        stickContainer.classList.add('active');
+      };
+      
+      const resetMoveStick = () => {
+        this.input.moveStick.x = 0;
+        this.input.moveStick.y = 0;
+        this.input.moveStick.active = false;
+        stickKnob.style.transform = 'translate(0px, 0px)';
+        stickContainer.classList.remove('active');
+      };
+      
+      stickContainer.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        moveStickActive = true;
+        moveStickRect = stickContainer.getBoundingClientRect();
+        updateMoveStick(e.touches[0].clientX, e.touches[0].clientY);
+        
+        // Add haptic feedback
+        if (navigator.vibrate) {
+          navigator.vibrate(50);
+        }
       });
       
-      // Add center area indicator for movement pad
-      const centerIndicator = document.createElement('div');
-      centerIndicator.className = 'movement-center';
-      centerIndicator.innerHTML = '●';
-      centerIndicator.style.gridColumn = '2';
-      centerIndicator.style.gridRow = '2';
-      movementPad.appendChild(centerIndicator);
-      
-      // Enhanced shooting area (right side)
-      const shootArea = document.createElement('div');
-      shootArea.className = 'mobile-shoot-area';
-      
-      // Create shooting area with better visual feedback
-      const shootText = document.createElement('div');
-      shootText.className = 'shoot-text';
-      shootText.innerHTML = 'FIRE';
-      
-      const shootIcon = document.createElement('div');
-      shootIcon.className = 'shoot-icon';
-      shootIcon.innerHTML = '🔥';
-      
-      shootArea.appendChild(shootIcon);
-      shootArea.appendChild(shootText);
-      
-      // Enhanced touch events for shooting
-      shootArea.addEventListener('touchstart', (e) => {
+      stickContainer.addEventListener('touchmove', (e) => {
         e.preventDefault();
-        this.input.shoot = true;
-        this.input.touchShooting = true;
-        shootArea.classList.add('active');
+        if (moveStickActive) {
+          updateMoveStick(e.touches[0].clientX, e.touches[0].clientY);
+        }
+      });
+      
+      stickContainer.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        moveStickActive = false;
+        resetMoveStick();
+      });
+      
+      stickContainer.addEventListener('touchcancel', (e) => {
+        e.preventDefault();
+        moveStickActive = false;
+        resetMoveStick();
+      });
+      
+      // Aim/Shoot stick (right side) - analog aim and shoot
+      const aimStick = document.createElement('div');
+      aimStick.className = 'mobile-aim-stick';
+      
+      // Aim stick container
+      const aimContainer = document.createElement('div');
+      aimContainer.className = 'aim-container';
+      
+      // Aim stick knob
+      const aimKnob = document.createElement('div');
+      aimKnob.className = 'aim-knob';
+      
+      // Aim text
+      const aimText = document.createElement('div');
+      aimText.className = 'aim-text';
+      aimText.innerHTML = 'AIM & FIRE';
+      
+      aimContainer.appendChild(aimKnob);
+      aimContainer.appendChild(aimText);
+      aimStick.appendChild(aimContainer);
+      
+      // Touch events for aim stick
+      let aimStickActive = false;
+      let aimStickRect = null;
+      
+      const updateAimStick = (clientX, clientY) => {
+        if (!aimStickRect) return;
         
-        // Stronger haptic feedback for shooting
+        const centerX = aimStickRect.left + aimStickRect.width / 2;
+        const centerY = aimStickRect.top + aimStickRect.height / 2;
+        const radius = Math.min(aimStickRect.width, aimStickRect.height) / 2 - 10;
+        
+        let deltaX = clientX - centerX;
+        let deltaY = clientY - centerY;
+        const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+        
+        if (distance > radius) {
+          deltaX = (deltaX / distance) * radius;
+          deltaY = (deltaY / distance) * radius;
+        }
+        
+        this.input.aimStick.x = deltaX / radius;
+        this.input.aimStick.y = deltaY / radius;
+        this.input.aimStick.active = true;
+        
+        // Calculate world coordinates for aiming
+        const aimRange = 200; // Range of aim
+        this.input.aimStick.worldX = this.player.x + (deltaX / radius) * aimRange;
+        this.input.aimStick.worldY = this.player.y + (deltaY / radius) * aimRange;
+        
+        // Update visual position
+        aimKnob.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+        aimContainer.classList.add('active');
+        
+        // Auto-shoot when aiming (if far enough from center)
+        this.input.shoot = distance > radius * 0.2; // Start shooting when 20% from center
+      };
+      
+      const resetAimStick = () => {
+        this.input.aimStick.x = 0;
+        this.input.aimStick.y = 0;
+        this.input.aimStick.active = false;
+        this.input.shoot = false;
+        aimKnob.style.transform = 'translate(0px, 0px)';
+        aimContainer.classList.remove('active');
+      };
+      
+      aimContainer.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        aimStickActive = true;
+        aimStickRect = aimContainer.getBoundingClientRect();
+        updateAimStick(e.touches[0].clientX, e.touches[0].clientY);
+        
+        // Add haptic feedback
         if (navigator.vibrate) {
           navigator.vibrate([50, 30, 50]);
         }
       });
       
-      shootArea.addEventListener('touchend', (e) => {
+      aimContainer.addEventListener('touchmove', (e) => {
         e.preventDefault();
-        this.input.shoot = false;
-        this.input.touchShooting = false;
-        shootArea.classList.remove('active');
+        if (aimStickActive) {
+          updateAimStick(e.touches[0].clientX, e.touches[0].clientY);
+        }
       });
       
-      shootArea.addEventListener('touchcancel', (e) => {
+      aimContainer.addEventListener('touchend', (e) => {
         e.preventDefault();
-        this.input.shoot = false;
-        this.input.touchShooting = false;
-        shootArea.classList.remove('active');
+        aimStickActive = false;
+        resetAimStick();
       });
       
-      // Prevent context menu
-      shootArea.addEventListener('contextmenu', e => e.preventDefault());
+      aimContainer.addEventListener('touchcancel', (e) => {
+        e.preventDefault();
+        aimStickActive = false;
+        resetAimStick();
+      });
       
-      mobileControls.appendChild(movementPad);
-      mobileControls.appendChild(shootArea);
+      // Prevent context menu on both sticks
+      [stickContainer, aimContainer].forEach(element => {
+        element.addEventListener('contextmenu', e => e.preventDefault());
+      });
+      
+      mobileControls.appendChild(movementStick);
+      mobileControls.appendChild(aimStick);
       
       // Insert after the game canvas
       ghisGame.parentNode.insertBefore(mobileControls, ghisGame.nextSibling);
@@ -561,17 +646,25 @@ export class GhisGame {
     const maxSpeed = 4 * this.player.speed;
     const friction = 0.95;
     
-    if (this.input.up) {
-      this.player.vy -= acceleration;
-    }
-    if (this.input.down) {
-      this.player.vy += acceleration;
-    }
-    if (this.input.left) {
-      this.player.vx -= acceleration;
-    }
-    if (this.input.right) {
-      this.player.vx += acceleration;
+    // Use analog stick input if active (mobile), otherwise use keyboard
+    if (this.input.moveStick.active) {
+      // Analog movement from mobile stick
+      this.player.vx += this.input.moveStick.x * acceleration;
+      this.player.vy += this.input.moveStick.y * acceleration;
+    } else {
+      // Digital movement from keyboard
+      if (this.input.up) {
+        this.player.vy -= acceleration;
+      }
+      if (this.input.down) {
+        this.player.vy += acceleration;
+      }
+      if (this.input.left) {
+        this.player.vx -= acceleration;
+      }
+      if (this.input.right) {
+        this.player.vx += acceleration;
+      }
     }
     
     // Apply friction
@@ -1067,10 +1160,16 @@ export class GhisGame {
   }
   
   renderPlayer(ctx) {
-    // Calculate player angle based on mouse position
-    const mouseWorldX = this.input.mouseX + this.camera.x;
-    const mouseWorldY = this.input.mouseY + this.camera.y;
-    this.player.angle = Math.atan2(mouseWorldY - this.player.y, mouseWorldX - this.player.x);
+    // Calculate player angle based on aim stick or mouse position
+    if (this.input.aimStick.active) {
+      // Use aim stick for aiming on mobile
+      this.player.angle = Math.atan2(this.input.aimStick.y, this.input.aimStick.x);
+    } else {
+      // Use mouse position for aiming on desktop
+      const mouseWorldX = this.input.mouseX + this.camera.x;
+      const mouseWorldY = this.input.mouseY + this.camera.y;
+      this.player.angle = Math.atan2(mouseWorldY - this.player.y, mouseWorldX - this.player.x);
+    }
     
     // Invulnerability flashing effect
     if (this.player.invulnerable > 0) {
@@ -1096,6 +1195,30 @@ export class GhisGame {
       ctx.beginPath();
       ctx.arc(this.player.x, this.player.y, this.player.size + 4, 0, Math.PI * 2);
       ctx.fill();
+    }
+    
+    // Draw aim indicator when using aim stick
+    if (this.input.aimStick.active && this.input.isMobile) {
+      ctx.save();
+      ctx.translate(-this.camera.x, -this.camera.y);
+      
+      // Draw aim line
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([5, 5]);
+      ctx.beginPath();
+      ctx.moveTo(this.player.x, this.player.y);
+      ctx.lineTo(this.input.aimStick.worldX, this.input.aimStick.worldY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      
+      // Draw aim target
+      ctx.fillStyle = 'rgba(255, 0, 0, 0.7)';
+      ctx.beginPath();
+      ctx.arc(this.input.aimStick.worldX, this.input.aimStick.worldY, 8, 0, Math.PI * 2);
+      ctx.fill();
+      
+      ctx.restore();
     }
   }
   
