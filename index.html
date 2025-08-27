@@ -228,6 +228,52 @@
     </div>
   </div>
   
+  <!-- GHÏS Mode UI (hidden by default) -->
+  <div id="ghisUI" class="ghis-container" hidden>
+    <div class="ghis-header">
+      <h2>GHÏS MODE</h2>
+      <div class="ghis-header-buttons">
+        <button id="ghisDebugBtn" class="btn">DEBUG</button>
+        <button id="ghisPauseBtn" class="btn">PAUSE</button>
+        <button id="ghisQuit" class="btn">RETURN TO MENU</button>
+      </div>
+    </div>
+    
+    <!-- GHÏS Game Canvas -->
+    <div class="ghis-game">
+      <canvas id="ghisCanvas" width="800" height="600"></canvas>
+    </div>
+    
+    <!-- GHÏS HUD -->
+    <div class="ghis-hud">
+      <div class="ghis-stats">
+        <div class="ghis-stat">
+          <span class="ghis-stat-label">HP:</span>
+          <span id="ghisHP" class="ghis-stat-value">5/5</span>
+        </div>
+        <div class="ghis-stat">
+          <span class="ghis-stat-label">Shield:</span>
+          <span id="ghisShield" class="ghis-stat-value">0/0</span>
+        </div>
+        <div class="ghis-stat">
+          <span class="ghis-stat-label">Drones:</span>
+          <span id="ghisDrones" class="ghis-stat-value">0</span>
+        </div>
+      </div>
+      <div class="ghis-powerups" id="ghisPowerups">
+        <!-- Powerup counts will be populated here -->
+      </div>
+    </div>
+    
+    <!-- GHÏS Log -->
+    <div class="ghis-log">
+      <div class="ghis-log-header">Light Body Status</div>
+      <div id="ghisLogContent" class="ghis-log-content" aria-live="polite">
+        Welcome to GHÏS Mode. Pilot your Light Body through infinite space!
+      </div>
+    </div>
+  </div>
+
   <!-- Judge Game Over Modal -->
   <div class="modal" id="judgeGameOverModal" hidden>
     <div class="box" style="width:min(96vw, 500px)">
@@ -257,6 +303,7 @@
           <button id="campaignBtn" class="btn" title="Play campaign mode">CAMPAIGN</button>
           <button id="tournamentBtn" class="btn" title="Battle 9 AI opponents in a tournament until only one remains">TOURNAMENT</button>
           <button id="metroidvaniaBtn" class="btn" title="Explore a procedural maze, start with no cards, and collect abilities by defeating enemies">MAZE EXPLORER</button>
+          <button id="ghisBtn" class="btn" title="Pilot your Light Body in rogue-like asteroids combat with card-based powerups">GHÏS MODE</button>
         </div>
         <div class="debug-group">
           <button id="selfTest" class="btn debug-btn" title="Run built-in tests">DEBUG</button>

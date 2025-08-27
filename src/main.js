@@ -9,6 +9,7 @@ import { MOTTOS } from './mottos.js';
 import { CARDS } from '../data/cards.js';
 import { Campaign } from './campaign.js';
 import { MetroidvaniaGame } from './metroidvania.js';
+import { GhisGame } from './ghis.js';
 import { 
   initBarcodeScanner, 
   scanBarcode, 
@@ -3234,6 +3235,12 @@ document.addEventListener('DOMContentLoaded', () => {
       startMetroidvania();
     };
     
+    // GHÏS button handler
+    document.getElementById('ghisBtn').onclick = () => {
+      modal.hidden = true;
+      startGhis();
+    };
+    
     // Reset all data button handler
     document.getElementById('resetAllDataBtn').onclick = () => {
       resetAllGameData();
@@ -3919,6 +3926,200 @@ document.addEventListener('DOMContentLoaded', () => {
   // Expose Tournament functions for UI event handlers
   window.Tournament = Tournament;
   window.startTournament = startTournament;
+
+  // GHÏS Functions
+  let currentGhisGame = null;
+  let ghisAnimationId = null;
+  
+  function startGhis() {
+    try {
+      console.log('Starting GHÏS game...');
+      
+      // Hide main game UI
+      document.querySelector('.wrap').style.display = 'none';
+      
+      // Show GHÏS UI
+      const ghisUI = document.getElementById('ghisUI');
+      ghisUI.hidden = false;
+      
+      // Create new GHÏS game
+      console.log('Creating GhisGame instance...');
+      currentGhisGame = new GhisGame();
+      window.currentGhisGame = currentGhisGame; // Expose for logging
+      console.log('GhisGame instance created successfully:', !!currentGhisGame);
+      
+      // Get canvas and start rendering
+      const canvas = document.getElementById('ghisCanvas');
+      const ctx = canvas.getContext('2d');
+      
+      // Set up event listeners
+      setupGhisControls();
+      
+      // Add mouse move listener to canvas
+      canvas.addEventListener('mousemove', currentGhisGame.mouseMoveHandler);
+      
+      // Start game loop
+      function gameLoop(timestamp) {
+        if (currentGhisGame) {
+          currentGhisGame.update(timestamp);
+          currentGhisGame.render(ctx);
+          updateGhisHUD();
+          ghisAnimationId = requestAnimationFrame(gameLoop);
+        }
+      }
+      
+      ghisAnimationId = requestAnimationFrame(gameLoop);
+      console.log('GHÏS game started successfully');
+    } catch (error) {
+      console.error('Error starting GHÏS game:', error);
+      console.error('Error stack:', error.stack);
+      
+      // Show error to user
+      alert('Error starting GHÏS Mode: ' + error.message);
+      
+      // Hide GHÏS UI and show main UI again
+      document.getElementById('ghisUI').hidden = true;
+      document.querySelector('.wrap').style.display = '';
+    }
+  }
+  
+  function setupGhisControls() {
+    // Debug button
+    document.getElementById('ghisDebugBtn').onclick = () => {
+      if (currentGhisGame) {
+        if (currentGhisGame.debug.enabled) {
+          currentGhisGame.disableDebug();
+          document.getElementById('ghisDebugBtn').textContent = 'DEBUG';
+          logToGhis('Debug mode disabled');
+        } else {
+          currentGhisGame.enableDebug();
+          document.getElementById('ghisDebugBtn').textContent = 'DEBUG ON';
+          logToGhis('Debug mode enabled - F: God Mode, H: Hitboxes');
+        }
+      }
+    };
+    
+    // Pause button
+    document.getElementById('ghisPauseBtn').onclick = () => {
+      if (currentGhisGame) {
+        if (currentGhisGame.gameState === 'playing') {
+          currentGhisGame.gameState = 'paused';
+          document.getElementById('ghisPauseBtn').textContent = 'RESUME';
+          logToGhis('Game paused');
+        } else if (currentGhisGame.gameState === 'paused') {
+          currentGhisGame.gameState = 'playing';
+          document.getElementById('ghisPauseBtn').textContent = 'PAUSE';
+          logToGhis('Game resumed');
+        }
+      }
+    };
+    
+    // Quit button
+    document.getElementById('ghisQuit').onclick = () => {
+      quitGhis();
+    };
+    
+    // Restart on game over (R key)
+    document.addEventListener('keydown', (e) => {
+      if (e.code === 'KeyR' && currentGhisGame && currentGhisGame.gameState === 'gameOver') {
+        restartGhis();
+      }
+    });
+  }
+  
+  function updateGhisHUD() {
+    if (!currentGhisGame) return;
+    
+    const player = currentGhisGame.player;
+    
+    // Update stats
+    document.getElementById('ghisHP').textContent = `${Math.ceil(player.hp)}/${player.maxHP}`;
+    
+    const shieldText = player.maxShield > 0 ? `${player.shield}/${player.maxShield}` : '0/0';
+    document.getElementById('ghisShield').textContent = shieldText;
+    
+    document.getElementById('ghisDrones').textContent = player.drones.length;
+    
+    // Update powerups display
+    const powerupsContainer = document.getElementById('ghisPowerups');
+    powerupsContainer.innerHTML = '';
+    
+    for (const [type, count] of Object.entries(player.powerups)) {
+      if (count > 0) {
+        const powerupDiv = document.createElement('div');
+        powerupDiv.className = 'ghis-powerup';
+        
+        const iconSpan = document.createElement('span');
+        iconSpan.className = 'ghis-powerup-icon';
+        iconSpan.textContent = currentGhisGame.getPowerupSymbol(type);
+        
+        const countSpan = document.createElement('span');
+        countSpan.textContent = count;
+        
+        powerupDiv.appendChild(iconSpan);
+        powerupDiv.appendChild(countSpan);
+        powerupsContainer.appendChild(powerupDiv);
+      }
+    }
+  }
+  
+  function logToGhis(message) {
+    const logContent = document.getElementById('ghisLogContent');
+    const logEntry = document.createElement('div');
+    logEntry.textContent = message;
+    logContent.appendChild(logEntry);
+    logContent.scrollTop = logContent.scrollHeight;
+  }
+  
+  // Make logToGhis available globally
+  window.logToGhis = logToGhis;
+  
+  function restartGhis() {
+    if (currentGhisGame) {
+      currentGhisGame.destroy();
+    }
+    
+    // Remove canvas event listener
+    const canvas = document.getElementById('ghisCanvas');
+    if (currentGhisGame && currentGhisGame.mouseMoveHandler) {
+      canvas.removeEventListener('mousemove', currentGhisGame.mouseMoveHandler);
+    }
+    
+    // Clear log
+    document.getElementById('ghisLogContent').innerHTML = 'Restarting GHÏS Mode...';
+    
+    // Restart the game
+    startGhis();
+  }
+  
+  function quitGhis() {
+    // Stop animation loop
+    if (ghisAnimationId) {
+      cancelAnimationFrame(ghisAnimationId);
+      ghisAnimationId = null;
+    }
+    
+    // Cleanup game instance
+    if (currentGhisGame) {
+      currentGhisGame.destroy();
+      currentGhisGame = null;
+    }
+    
+    // Remove canvas event listener
+    const canvas = document.getElementById('ghisCanvas');
+    if (currentGhisGame && currentGhisGame.mouseMoveHandler) {
+      canvas.removeEventListener('mousemove', currentGhisGame.mouseMoveHandler);
+    }
+    
+    // Hide GHÏS UI
+    document.getElementById('ghisUI').hidden = true;
+    
+    // Show main game UI
+    document.querySelector('.wrap').style.display = 'block';
+    
+    // Return to start screen
+    showStart();
+  }
 
   showStart();
 });
