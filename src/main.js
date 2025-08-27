@@ -3954,7 +3954,8 @@ document.addEventListener('DOMContentLoaded', () => {
       
       // Set canvas size based on device
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
-                       ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+                       ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) ||
+                       (window.innerWidth <= 768); // Also consider small screen sizes
       
       if (isMobile) {
         // For mobile, use a more responsive approach

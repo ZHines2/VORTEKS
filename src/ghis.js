@@ -130,9 +130,18 @@ export class GhisGame {
   }
   
   setupEventListeners() {
-    // Detect if device is mobile
+    // Detect if device is mobile - include screen size for better detection
     this.input.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
-                         ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+                         ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) ||
+                         (window.innerWidth <= 768); // Also consider small screen sizes
+    
+    console.log('Mobile detection:', {
+      userAgent: navigator.userAgent,
+      touchStart: 'ontouchstart' in window,
+      maxTouchPoints: navigator.maxTouchPoints,
+      screenWidth: window.innerWidth,
+      isMobile: this.input.isMobile
+    });
     
     // Keyboard input
     this.keyDownHandler = (e) => {
