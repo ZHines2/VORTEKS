@@ -18,18 +18,19 @@ export class GhisGame {
       vx: 0, // Velocity
       vy: 0,
       angle: 0, // Facing direction in radians
-      hp: 5,
-      maxHP: 5,
+      hp: 20, // Start with more HP
+      maxHP: 20,
       shield: 0,
       maxShield: 0,
       speed: 1, // Base movement speed multiplier
       size: 8, // Ship collision radius
+      invulnerable: 0, // Invulnerability frames after taking damage
       
       // Weapons and abilities
       weapons: {
         pewpew: {
-          damage: 1,
-          fireRate: 300, // Milliseconds between shots
+          damage: 2, // Increased base damage
+          fireRate: 200, // Faster firing rate
           lastFired: 0,
           pierce: 0, // How many enemies to pass through
           multishot: 1, // Number of projectiles per shot
@@ -37,7 +38,7 @@ export class GhisGame {
           criticalDamage: 1.5 // Critical damage multiplier
         },
         zap: {
-          damage: 1,
+          damage: 3, // Stronger zap damage
           fireRate: 1000, // Slower than pewpew
           lastFired: 0,
           chains: 1, // Number of chain targets
@@ -204,8 +205,8 @@ export class GhisGame {
   }
   
   generateInitialEnemies() {
-    // Spawn some basic enemies around the player
-    for (let i = 0; i < 10; i++) {
+    // Spawn fewer initial enemies for better balance
+    for (let i = 0; i < 5; i++) {
       this.spawnEnemy();
     }
   }
@@ -216,20 +217,20 @@ export class GhisGame {
     do {
       x = Math.random() * this.world.width;
       y = Math.random() * this.world.height;
-    } while (this.getDistance(x, y, this.player.x, this.player.y) < 200);
+    } while (this.getDistance(x, y, this.player.x, this.player.y) < 300); // Spawn farther away
     
     const enemy = {
       x: x,
       y: y,
-      vx: (Math.random() - 0.5) * 2,
-      vy: (Math.random() - 0.5) * 2,
-      hp: 3,
-      maxHP: 3,
+      vx: (Math.random() - 0.5) * 1, // Slower movement
+      vy: (Math.random() - 0.5) * 1,
+      hp: 2, // Less HP so they die easier
+      maxHP: 2,
       size: 6,
       type: 'basic',
       lastShot: 0,
       shootRate: 2000,
-      speed: 0.5,
+      speed: 0.3, // Slower enemy speed
       color: '#ff4444'
     };
     
@@ -265,7 +266,7 @@ export class GhisGame {
     this.checkCollisions();
     
     // Spawn more enemies if needed
-    if (this.enemies.length < 15) {
+    if (this.enemies.length < 8) { // Reduced max enemies
       this.spawnEnemy();
     }
   }
@@ -308,6 +309,11 @@ export class GhisGame {
     this.player.x = clamp(this.player.x, this.player.size, this.world.width - this.player.size);
     this.player.y = clamp(this.player.y, this.player.size, this.world.height - this.player.size);
     
+    // Update invulnerability frames
+    if (this.player.invulnerable > 0) {
+      this.player.invulnerable -= deltaTime;
+    }
+    
     // Handle shooting
     if (this.input.shoot) {
       this.shootWeapons(deltaTime);
@@ -337,20 +343,26 @@ export class GhisGame {
     for (let i = this.enemies.length - 1; i >= 0; i--) {
       const enemy = this.enemies[i];
       
+      // Apply freeze effect
+      let speedMultiplier = 1;
+      if (this.player.powerups.freeze > 0) {
+        speedMultiplier = Math.max(0.2, 1 - (this.player.powerups.freeze * 0.15)); // Each freeze reduces speed by 15%
+      }
+      
       // Move toward player
       const dx = this.player.x - enemy.x;
       const dy = this.player.y - enemy.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
       
       if (dist > 0) {
-        const speed = enemy.speed * deltaTime * 0.01;
+        const speed = enemy.speed * deltaTime * 0.01 * speedMultiplier;
         enemy.vx += (dx / dist) * speed;
         enemy.vy += (dy / dist) * speed;
       }
       
       // Apply movement
-      enemy.x += enemy.vx;
-      enemy.y += enemy.vy;
+      enemy.x += enemy.vx * speedMultiplier;
+      enemy.y += enemy.vy * speedMultiplier;
       
       // Apply friction
       enemy.vx *= 0.98;
@@ -540,7 +552,7 @@ export class GhisGame {
     }
     
     // Player vs enemies (collision damage)
-    if (!this.debug.godMode) {
+    if (!this.debug.godMode && this.player.invulnerable <= 0) {
       for (const enemy of this.enemies) {
         if (this.isColliding(this.player, enemy)) {
           // Take damage (with shield check)
@@ -549,6 +561,9 @@ export class GhisGame {
           } else {
             this.player.hp--;
           }
+          
+          // Add invulnerability frames (1 second)
+          this.player.invulnerable = 1000;
           
           // Knockback
           const dx = this.player.x - enemy.x;
@@ -561,6 +576,8 @@ export class GhisGame {
           if (this.player.hp <= 0) {
             this.gameState = 'gameOver';
           }
+          
+          break; // Only take damage from one enemy per frame
         }
       }
     }
@@ -599,6 +616,9 @@ export class GhisGame {
         break;
       case 'echo':
         this.player.weapons.pewpew.fireRate = Math.max(50, this.player.weapons.pewpew.fireRate - 50);
+        break;
+      case 'freeze':
+        // Freeze effect is applied in updateEnemies based on powerup count
         break;
       case 'focus':
         this.player.weapons.pewpew.criticalChance = Math.min(0.5, this.player.weapons.pewpew.criticalChance + 0.1);
@@ -744,6 +764,14 @@ export class GhisGame {
     const mouseWorldX = this.input.mouseX + this.camera.x;
     const mouseWorldY = this.input.mouseY + this.camera.y;
     this.player.angle = Math.atan2(mouseWorldY - this.player.y, mouseWorldX - this.player.x);
+    
+    // Invulnerability flashing effect
+    if (this.player.invulnerable > 0) {
+      const flashRate = 200; // Flash every 200ms
+      if (Math.floor(this.gameTime / flashRate) % 2 === 0) {
+        return; // Skip rendering to create flashing effect
+      }
+    }
     
     ctx.save();
     ctx.translate(this.player.x, this.player.y);
