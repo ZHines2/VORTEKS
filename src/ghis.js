@@ -114,7 +114,13 @@ export class GhisGame {
       right: false,
       shoot: false,
       mouseX: 0,
-      mouseY: 0
+      mouseY: 0,
+      // Touch-specific input
+      touchMoving: false,
+      touchShooting: false,
+      touchMoveX: 0,
+      touchMoveY: 0,
+      isMobile: false
     };
     
     // Initialize
@@ -124,6 +130,19 @@ export class GhisGame {
   }
   
   setupEventListeners() {
+    // Detect if device is mobile - include screen size for better detection
+    this.input.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                         ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) ||
+                         (window.innerWidth <= 768); // Also consider small screen sizes
+    
+    console.log('Mobile detection:', {
+      userAgent: navigator.userAgent,
+      touchStart: 'ontouchstart' in window,
+      maxTouchPoints: navigator.maxTouchPoints,
+      screenWidth: window.innerWidth,
+      isMobile: this.input.isMobile
+    });
+    
     // Keyboard input
     this.keyDownHandler = (e) => {
       switch(e.code) {
@@ -196,13 +215,158 @@ export class GhisGame {
       this.input.mouseY = e.clientY - rect.top;
     };
     
+    // Touch event handlers
+    this.touchStartHandler = (e) => {
+      e.preventDefault();
+      const canvas = e.target;
+      const rect = canvas.getBoundingClientRect();
+      
+      for (let i = 0; i < e.touches.length; i++) {
+        const touch = e.touches[i];
+        const touchX = touch.clientX - rect.left;
+        const touchY = touch.clientY - rect.top;
+        
+        // Update mouse position for aiming (use first touch)
+        if (i === 0) {
+          this.input.mouseX = touchX;
+          this.input.mouseY = touchY;
+        }
+      }
+      
+      // Start shooting on touch
+      this.input.shoot = true;
+      this.input.touchShooting = true;
+    };
+    
+    this.touchMoveHandler = (e) => {
+      e.preventDefault();
+      const canvas = e.target;
+      const rect = canvas.getBoundingClientRect();
+      
+      if (e.touches.length > 0) {
+        const touch = e.touches[0];
+        const touchX = touch.clientX - rect.left;
+        const touchY = touch.clientY - rect.top;
+        
+        // Update mouse position for aiming
+        this.input.mouseX = touchX;
+        this.input.mouseY = touchY;
+      }
+    };
+    
+    this.touchEndHandler = (e) => {
+      e.preventDefault();
+      
+      // Stop shooting when no touches
+      if (e.touches.length === 0) {
+        this.input.shoot = false;
+        this.input.touchShooting = false;
+      }
+    };
+    
+    // Mobile control handlers
+    this.setupMobileControls();
+    
     document.addEventListener('keydown', this.keyDownHandler);
     document.addEventListener('keyup', this.keyUpHandler);
+  }
+  
+  setupMobileControls() {
+    // Create mobile control UI if on mobile device
+    if (this.input.isMobile) {
+      this.createMobileControlUI();
+    }
+  }
+  
+  createMobileControlUI() {
+    // Create mobile controls container
+    const ghisGame = document.querySelector('.ghis-game');
+    if (!ghisGame) return;
+    
+    // Check if mobile controls already exist
+    let mobileControls = document.getElementById('ghisMobileControls');
+    if (!mobileControls) {
+      mobileControls = document.createElement('div');
+      mobileControls.id = 'ghisMobileControls';
+      mobileControls.className = 'ghis-mobile-controls';
+      
+      // Movement pad (left side)
+      const movementPad = document.createElement('div');
+      movementPad.className = 'mobile-movement-pad';
+      
+      // Create directional buttons
+      const directions = [
+        { name: 'up', symbol: '▲', class: 'move-up' },
+        { name: 'down', symbol: '▼', class: 'move-down' },
+        { name: 'left', symbol: '◀', class: 'move-left' },
+        { name: 'right', symbol: '▶', class: 'move-right' }
+      ];
+      
+      directions.forEach(dir => {
+        const btn = document.createElement('button');
+        btn.className = `mobile-move-btn ${dir.class}`;
+        btn.innerHTML = dir.symbol;
+        btn.setAttribute('data-direction', dir.name);
+        
+        // Touch events for movement buttons
+        btn.addEventListener('touchstart', (e) => {
+          e.preventDefault();
+          this.input[dir.name] = true;
+          btn.classList.add('active');
+        });
+        
+        btn.addEventListener('touchend', (e) => {
+          e.preventDefault();
+          this.input[dir.name] = false;
+          btn.classList.remove('active');
+        });
+        
+        // Prevent context menu
+        btn.addEventListener('contextmenu', e => e.preventDefault());
+        
+        movementPad.appendChild(btn);
+      });
+      
+      // Shooting area (right side) - entire right side is shoot area
+      const shootArea = document.createElement('div');
+      shootArea.className = 'mobile-shoot-area';
+      shootArea.innerHTML = '<div class="shoot-text">HOLD TO SHOOT</div>';
+      
+      // Touch events for shooting
+      shootArea.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        this.input.shoot = true;
+        this.input.touchShooting = true;
+        shootArea.classList.add('active');
+      });
+      
+      shootArea.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        this.input.shoot = false;
+        this.input.touchShooting = false;
+        shootArea.classList.remove('active');
+      });
+      
+      // Prevent context menu
+      shootArea.addEventListener('contextmenu', e => e.preventDefault());
+      
+      mobileControls.appendChild(movementPad);
+      mobileControls.appendChild(shootArea);
+      
+      // Insert after the game canvas
+      ghisGame.parentNode.insertBefore(mobileControls, ghisGame.nextSibling);
+    }
   }
   
   removeEventListeners() {
     document.removeEventListener('keydown', this.keyDownHandler);
     document.removeEventListener('keyup', this.keyUpHandler);
+    
+    // Remove mobile controls if they exist
+    const mobileControls = document.getElementById('ghisMobileControls');
+    if (mobileControls) {
+      mobileControls.remove();
+    }
   }
   
   generateInitialEnemies() {
@@ -1129,10 +1293,15 @@ export class GhisGame {
     ctx.fillStyle = '#aaaaaa';
     ctx.font = '10px monospace';
     ctx.textAlign = 'right';
-    ctx.fillText('WASD/Arrows: Move | Mouse: Aim | Space: Shoot', ctx.canvas.width - 10, ctx.canvas.height - 30);
     
-    if (this.debug.enabled) {
-      ctx.fillText('Debug: F=God Mode | H=Hitboxes', ctx.canvas.width - 10, ctx.canvas.height - 15);
+    if (this.input.isMobile) {
+      ctx.fillText('Use controls below to move and shoot', ctx.canvas.width - 10, ctx.canvas.height - 30);
+      ctx.fillText('Touch screen to aim | Hold shoot button to fire', ctx.canvas.width - 10, ctx.canvas.height - 15);
+    } else {
+      ctx.fillText('WASD/Arrows: Move | Mouse: Aim | Space: Shoot', ctx.canvas.width - 10, ctx.canvas.height - 30);
+      if (this.debug.enabled) {
+        ctx.fillText('Debug: F=God Mode | H=Hitboxes', ctx.canvas.width - 10, ctx.canvas.height - 15);
+      }
     }
   }
   

@@ -3952,11 +3952,50 @@ document.addEventListener('DOMContentLoaded', () => {
       const canvas = document.getElementById('ghisCanvas');
       const ctx = canvas.getContext('2d');
       
+      // Set canvas size based on device
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                       ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) ||
+                       (window.innerWidth <= 768); // Also consider small screen sizes
+      
+      if (isMobile) {
+        // For mobile, use a more responsive approach
+        const container = canvas.parentElement;
+        const containerWidth = Math.min(container.clientWidth, window.innerWidth - 20);
+        const aspectRatio = 4/3; // 800x600 aspect ratio
+        
+        canvas.width = Math.min(800, containerWidth);
+        canvas.height = canvas.width / aspectRatio;
+        
+        // Ensure canvas doesn't exceed viewport
+        if (canvas.height > window.innerHeight * 0.6) {
+          canvas.height = window.innerHeight * 0.6;
+          canvas.width = canvas.height * aspectRatio;
+        }
+        
+        // Update canvas style for proper display
+        canvas.style.width = canvas.width + 'px';
+        canvas.style.height = canvas.height + 'px';
+      } else {
+        // Desktop: use fixed size
+        canvas.width = 800;
+        canvas.height = 600;
+        canvas.style.width = '800px';
+        canvas.style.height = '600px';
+      }
+      
       // Set up event listeners
       setupGhisControls();
       
       // Add mouse move listener to canvas
       canvas.addEventListener('mousemove', currentGhisGame.mouseMoveHandler);
+      
+      // Add touch event listeners to canvas for mobile support
+      canvas.addEventListener('touchstart', currentGhisGame.touchStartHandler);
+      canvas.addEventListener('touchmove', currentGhisGame.touchMoveHandler);
+      canvas.addEventListener('touchend', currentGhisGame.touchEndHandler);
+      
+      // Prevent default touch behaviors on canvas
+      canvas.style.touchAction = 'none';
       
       // Start game loop
       function gameLoop(timestamp) {
@@ -4079,10 +4118,17 @@ document.addEventListener('DOMContentLoaded', () => {
       currentGhisGame.destroy();
     }
     
-    // Remove canvas event listener
+    // Remove canvas event listeners
     const canvas = document.getElementById('ghisCanvas');
-    if (currentGhisGame && currentGhisGame.mouseMoveHandler) {
-      canvas.removeEventListener('mousemove', currentGhisGame.mouseMoveHandler);
+    if (currentGhisGame) {
+      if (currentGhisGame.mouseMoveHandler) {
+        canvas.removeEventListener('mousemove', currentGhisGame.mouseMoveHandler);
+      }
+      if (currentGhisGame.touchStartHandler) {
+        canvas.removeEventListener('touchstart', currentGhisGame.touchStartHandler);
+        canvas.removeEventListener('touchmove', currentGhisGame.touchMoveHandler);
+        canvas.removeEventListener('touchend', currentGhisGame.touchEndHandler);
+      }
     }
     
     // Clear log
@@ -4105,10 +4151,17 @@ document.addEventListener('DOMContentLoaded', () => {
       currentGhisGame = null;
     }
     
-    // Remove canvas event listener
+    // Remove canvas event listeners
     const canvas = document.getElementById('ghisCanvas');
-    if (currentGhisGame && currentGhisGame.mouseMoveHandler) {
-      canvas.removeEventListener('mousemove', currentGhisGame.mouseMoveHandler);
+    if (currentGhisGame) {
+      if (currentGhisGame.mouseMoveHandler) {
+        canvas.removeEventListener('mousemove', currentGhisGame.mouseMoveHandler);
+      }
+      if (currentGhisGame.touchStartHandler) {
+        canvas.removeEventListener('touchstart', currentGhisGame.touchStartHandler);
+        canvas.removeEventListener('touchmove', currentGhisGame.touchMoveHandler);
+        canvas.removeEventListener('touchend', currentGhisGame.touchEndHandler);
+      }
     }
     
     // Hide GHÏS UI
