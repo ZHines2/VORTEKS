@@ -120,6 +120,7 @@ export class GhisGame {
     // Initialize
     this.setupEventListeners();
     this.generateInitialEnemies();
+    this.spawnStartingPowerups(); // Give player some initial powerups
   }
   
   setupEventListeners() {
@@ -208,6 +209,28 @@ export class GhisGame {
     // Spawn fewer initial enemies for better balance
     for (let i = 0; i < 5; i++) {
       this.spawnEnemy();
+    }
+  }
+  
+  spawnStartingPowerups() {
+    // Spawn some starting powerups to help the player get going
+    const startingPowerups = ['heart', 'shield', 'strike', 'surge'];
+    
+    for (let i = 0; i < startingPowerups.length; i++) {
+      const angle = (i / startingPowerups.length) * Math.PI * 2;
+      const distance = 100;
+      const x = this.player.x + Math.cos(angle) * distance;
+      const y = this.player.y + Math.sin(angle) * distance;
+      
+      const drop = {
+        x: x,
+        y: y,
+        type: startingPowerups[i],
+        seed: Math.random() * Math.PI * 2,
+        createdAt: this.gameTime
+      };
+      
+      this.powerupDrops.push(drop);
     }
   }
   
@@ -596,6 +619,29 @@ export class GhisGame {
   collectPowerup(type) {
     this.player.powerups[type]++;
     
+    // Log the powerup collection
+    if (window.currentGhisGame === this) {
+      const powerupNames = {
+        heart: 'Heart (+5 max HP)',
+        shield: 'Shield (restore/boost)',
+        strike: 'Strike (+1 damage)',
+        pierce: 'Pierce (+1 penetration)',
+        zap: 'Zap (lightning chain)',
+        echo: 'Echo (faster firing)',
+        freeze: 'Freeze (slow enemies)',
+        focus: 'Focus (+10% crit chance)',
+        droid: 'Droid (+1 companion)',
+        hope: 'Hope (+1 healing/sec)',
+        overload: 'Overload (+1 multishot)',
+        surge: 'Surge (+20% speed)',
+        reap: 'Reap (piercing laser)'
+      };
+      
+      if (typeof window.logToGhis === 'function') {
+        window.logToGhis(`Collected ${powerupNames[type] || type}!`);
+      }
+    }
+    
     // Apply powerup effect
     switch (type) {
       case 'heart':
@@ -793,24 +839,116 @@ export class GhisGame {
   }
   
   drawLightBodyShip(ctx) {
-    // Light Body ship - should be based on player game data eventually
-    // For now, a simple pixelated ship design
+    // Light Body ship - appearance based on player powerups and stats
     const scale = 2;
+    const powerups = this.player.powerups;
     
-    ctx.fillStyle = '#00ffff'; // Main body
-    ctx.fillRect(-4 * scale, -2 * scale, 8 * scale, 4 * scale);
+    // Base ship color - changes based on dominant powerup
+    let mainColor = '#00ffff'; // Default cyan
+    let accentColor = '#ffffff'; // Default white
     
-    ctx.fillStyle = '#ffffff'; // Cockpit
-    ctx.fillRect(2 * scale, -1 * scale, 2 * scale, 2 * scale);
+    // Determine dominant powerup for color theming
+    let maxPowerup = '';
+    let maxCount = 0;
+    for (const [type, count] of Object.entries(powerups)) {
+      if (count > maxCount) {
+        maxCount = count;
+        maxPowerup = type;
+      }
+    }
     
-    ctx.fillStyle = '#0088ff'; // Wings
-    ctx.fillRect(-6 * scale, -1 * scale, 2 * scale, 2 * scale);
-    ctx.fillRect(-2 * scale, -3 * scale, 2 * scale, 1 * scale);
-    ctx.fillRect(-2 * scale, 2 * scale, 2 * scale, 1 * scale);
+    // Color theme based on dominant powerup
+    switch (maxPowerup) {
+      case 'heart':
+        mainColor = '#ff4444'; accentColor = '#ffaaaa'; break;
+      case 'shield':
+        mainColor = '#4444ff'; accentColor = '#aaaaff'; break;
+      case 'strike':
+        mainColor = '#ff8844'; accentColor = '#ffcc88'; break;
+      case 'pierce':
+        mainColor = '#ffff44'; accentColor = '#ffff88'; break;
+      case 'zap':
+        mainColor = '#8844ff'; accentColor = '#cc88ff'; break;
+      case 'echo':
+        mainColor = '#44ff88'; accentColor = '#88ffaa'; break;
+      case 'freeze':
+        mainColor = '#44ffff'; accentColor = '#88ffff'; break;
+      case 'focus':
+        mainColor = '#ff44ff'; accentColor = '#ff88ff'; break;
+      case 'droid':
+        mainColor = '#ffaa44'; accentColor = '#ffcc88'; break;
+      case 'hope':
+        mainColor = '#88ff44'; accentColor = '#aaffaa'; break;
+      case 'overload':
+        mainColor = '#ff4488'; accentColor = '#ff88aa'; break;
+      case 'surge':
+        mainColor = '#4488ff'; accentColor = '#88aaff'; break;
+      case 'reap':
+        mainColor = '#884444'; accentColor = '#aa8888'; break;
+    }
     
-    // Engine glow
-    ctx.fillStyle = '#ff4400';
-    ctx.fillRect(-6 * scale, -1 * scale, 1 * scale, 2 * scale);
+    // Main body - size increases with total powerups
+    const totalPowerups = Object.values(powerups).reduce((a, b) => a + b, 0);
+    const bodyScale = scale + Math.min(totalPowerups * 0.1, 1); // Grows up to +1 scale
+    
+    ctx.fillStyle = mainColor;
+    ctx.fillRect(-4 * bodyScale, -2 * bodyScale, 8 * bodyScale, 4 * bodyScale);
+    
+    // Cockpit
+    ctx.fillStyle = accentColor;
+    ctx.fillRect(2 * bodyScale, -1 * bodyScale, 2 * bodyScale, 2 * bodyScale);
+    
+    // Wings - enhanced based on surge powerups
+    const wingScale = scale + (powerups.surge || 0) * 0.2;
+    ctx.fillStyle = mainColor;
+    ctx.fillRect(-6 * wingScale, -1 * scale, 2 * wingScale, 2 * scale);
+    ctx.fillRect(-2 * wingScale, -3 * scale, 2 * wingScale, 1 * scale);
+    ctx.fillRect(-2 * wingScale, 2 * scale, 2 * wingScale, 1 * scale);
+    
+    // Engine effects - enhanced based on powerups
+    let engineColor = '#ff4400';
+    if (powerups.surge > 0) engineColor = '#44aaff'; // Blue engines for speed
+    if (powerups.focus > 0) engineColor = '#ff44aa'; // Pink engines for focus
+    
+    ctx.fillStyle = engineColor;
+    const engineLength = 1 + (powerups.surge || 0) * 0.3;
+    ctx.fillRect(-6 * scale, -1 * scale, engineLength * scale, 2 * scale);
+    
+    // Weapon hardpoints - show based on strike/pierce powerups
+    if ((powerups.strike || 0) > 0) {
+      ctx.fillStyle = '#ffaa00';
+      ctx.fillRect(3 * scale, -2 * scale, 1 * scale, 1 * scale);
+      ctx.fillRect(3 * scale, 1 * scale, 1 * scale, 1 * scale);
+    }
+    
+    // Shield emitters - show if shield powerups collected
+    if ((powerups.shield || 0) > 0) {
+      ctx.fillStyle = '#aaaaff';
+      ctx.fillRect(-1 * scale, -3 * scale, 1 * scale, 1 * scale);
+      ctx.fillRect(-1 * scale, 2 * scale, 1 * scale, 1 * scale);
+    }
+    
+    // Special effects based on powerups
+    if ((powerups.zap || 0) > 0) {
+      // Lightning crackling effect
+      ctx.strokeStyle = '#ffff00';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(-2, -2);
+      ctx.lineTo(2, 2);
+      ctx.moveTo(-2, 2);
+      ctx.lineTo(2, -2);
+      ctx.stroke();
+    }
+    
+    if ((powerups.hope || 0) > 0) {
+      // Healing aura
+      const auraIntensity = 0.3 + Math.sin(this.gameTime * 0.005) * 0.2;
+      ctx.fillStyle = `rgba(100, 255, 100, ${auraIntensity})`;
+      ctx.beginPath();
+      ctx.arc(0, 0, 8 + powerups.hope, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
   
   renderDrones(ctx) {

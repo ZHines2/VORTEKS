@@ -3945,6 +3945,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Create new GHÏS game
       console.log('Creating GhisGame instance...');
       currentGhisGame = new GhisGame();
+      window.currentGhisGame = currentGhisGame; // Expose for logging
       console.log('GhisGame instance created successfully:', !!currentGhisGame);
       
       // Get canvas and start rendering
@@ -4069,6 +4070,9 @@ document.addEventListener('DOMContentLoaded', () => {
     logContent.appendChild(logEntry);
     logContent.scrollTop = logContent.scrollHeight;
   }
+  
+  // Make logToGhis available globally
+  window.logToGhis = logToGhis;
   
   function restartGhis() {
     if (currentGhisGame) {
