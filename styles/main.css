@@ -2991,3 +2991,144 @@ button.card:disabled {
     max-height: 100px;
   }
 }
+
+/* Mobile Touch Controls for GHÏS */
+.ghis-mobile-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 800px;
+  height: 120px;
+  margin-top: 10px;
+  position: relative;
+  pointer-events: none;
+}
+
+.mobile-movement-pad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 5px;
+  width: 120px;
+  height: 120px;
+  pointer-events: auto;
+}
+
+.mobile-move-btn {
+  background: var(--panel);
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  color: var(--accent);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.1s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.8;
+  /* Enhanced touch accessibility */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  /* Prevent text selection */
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  user-drag: none;
+}
+
+.mobile-move-btn:active,
+.mobile-move-btn.active {
+  background: var(--accent);
+  color: var(--bg);
+  opacity: 1;
+  transform: scale(0.95);
+}
+
+.move-up {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.move-down {
+  grid-column: 2;
+  grid-row: 3;
+}
+
+.move-left {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.move-right {
+  grid-column: 3;
+  grid-row: 2;
+}
+
+.mobile-shoot-area {
+  width: 140px;
+  height: 120px;
+  background: var(--panel);
+  border: 3px solid var(--border);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.1s;
+  opacity: 0.8;
+  pointer-events: auto;
+  /* Enhanced touch accessibility */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  /* Prevent text selection */
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  user-drag: none;
+}
+
+.mobile-shoot-area:active,
+.mobile-shoot-area.active {
+  background: var(--bad);
+  border-color: #ff8888;
+  opacity: 1;
+  transform: scale(0.98);
+}
+
+.shoot-text {
+  color: var(--accent);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  text-align: center;
+  line-height: 1.2;
+  font-weight: bold;
+}
+
+.mobile-shoot-area.active .shoot-text {
+  color: var(--ink);
+}
+
+/* Hide mobile controls on desktop */
+@media (min-width: 769px) {
+  .ghis-mobile-controls {
+    display: none;
+  }
+}
+
+/* Show mobile controls only on mobile */
+@media (max-width: 768px) {
+  .ghis-mobile-controls {
+    display: flex;
+  }
+}
