@@ -3265,3 +3265,48 @@ button.card:disabled {
     }
   }
 }
+
+/* Mobile Restart Button for GHÏS */
+.ghis-restart-button {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  
+  padding: 15px 30px;
+  font-size: 18px;
+  font-weight: bold;
+  font-family: monospace;
+  color: #ffffff;
+  background: linear-gradient(135deg, #ff4444, #cc2222);
+  border: 3px solid #ffffff;
+  border-radius: 10px;
+  
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.8), 
+              inset 0 1px 2px rgba(255, 255, 255, 0.3);
+  
+  cursor: pointer;
+  pointer-events: auto;
+  
+  transition: all 0.2s ease;
+  z-index: 1000;
+}
+
+.ghis-restart-button:hover {
+  background: linear-gradient(135deg, #ff6666, #ee3333);
+  transform: translate(-50%, -50%) scale(1.05);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.9), 
+              inset 0 1px 2px rgba(255, 255, 255, 0.4);
+}
+
+.ghis-restart-button:active {
+  transform: translate(-50%, -50%) scale(0.95);
+  background: linear-gradient(135deg, #cc2222, #aa1111);
+}
+
+/* Hide restart button on desktop */
+@media (min-width: 769px) {
+  .ghis-restart-button {
+    display: none !important;
+  }
+}

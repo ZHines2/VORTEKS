@@ -479,8 +479,24 @@ export class GhisGame {
         element.addEventListener('contextmenu', e => e.preventDefault());
       });
       
+      // Restart button (hidden by default, shown during game over)
+      const restartButton = document.createElement('button');
+      restartButton.id = 'ghisRestartBtn';
+      restartButton.className = 'ghis-restart-button';
+      restartButton.textContent = 'RESTART GAME';
+      restartButton.style.display = 'none'; // Hidden by default
+      
+      // Restart button handler
+      restartButton.addEventListener('click', () => {
+        // Call the global restart function from main.js
+        if (window.restartGhis) {
+          window.restartGhis();
+        }
+      });
+      
       mobileControls.appendChild(movementStick);
       mobileControls.appendChild(aimStick);
+      mobileControls.appendChild(restartButton);
       
       // Insert after the game canvas
       ghisGame.parentNode.insertBefore(mobileControls, ghisGame.nextSibling);
@@ -1608,7 +1624,24 @@ export class GhisGame {
       
       ctx.fillStyle = '#ffffff';
       ctx.font = '16px monospace';
-      ctx.fillText('Press R to restart', ctx.canvas.width / 2, ctx.canvas.height / 2 + 40);
+      if (this.input.isMobile) {
+        ctx.fillText('Tap RESTART GAME button to restart', ctx.canvas.width / 2, ctx.canvas.height / 2 + 40);
+        // Show mobile restart button
+        const restartBtn = document.getElementById('ghisRestartBtn');
+        if (restartBtn) {
+          restartBtn.style.display = 'block';
+        }
+      } else {
+        ctx.fillText('Press R to restart', ctx.canvas.width / 2, ctx.canvas.height / 2 + 40);
+      }
+    } else {
+      // Hide mobile restart button when not in game over state
+      if (this.input.isMobile) {
+        const restartBtn = document.getElementById('ghisRestartBtn');
+        if (restartBtn) {
+          restartBtn.style.display = 'none';
+        }
+      }
     }
     
     // Instructions

@@ -4138,6 +4138,9 @@ document.addEventListener('DOMContentLoaded', () => {
     startGhis();
   }
   
+  // Make restartGhis available globally for mobile controls
+  window.restartGhis = restartGhis;
+  
   function quitGhis() {
     // Stop animation loop
     if (ghisAnimationId) {
