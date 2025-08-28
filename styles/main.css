@@ -3050,16 +3050,19 @@ button.card:disabled {
   border-radius: 50%;
   transform: translate(-50%, -50%);
   opacity: 0.6;
+  transition: all 0.3s ease;
 }
 
 .stick-container.active {
   border-color: var(--good);
-  box-shadow: 0 0 15px rgba(119, 255, 221, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.2);
+  box-shadow: 0 0 20px rgba(119, 255, 221, 0.8), inset 0 2px 4px rgba(255, 255, 255, 0.2);
+  transform: scale(1.02);
 }
 
 .stick-container.active::before {
-  border-color: rgba(119, 255, 221, 0.6);
+  border-color: rgba(119, 255, 221, 0.8);
   opacity: 1;
+  transform: translate(-50%, -50%) scale(1.1);
 }
 
 .stick-knob {
@@ -3072,7 +3075,7 @@ button.card:disabled {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  transition: all 0.1s ease;
+  transition: transform 0.05s ease, box-shadow 0.15s ease;
   cursor: grab;
   /* Add gradient for depth */
   background: radial-gradient(circle at 30% 30%, #77ffdd, var(--accent));
@@ -3083,7 +3086,7 @@ button.card:disabled {
 .stick-container.active .stick-knob {
   background: radial-gradient(circle at 30% 30%, #ffffff, var(--good));
   border-color: var(--good);
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5), inset 0 1px 2px rgba(255, 255, 255, 0.5);
+  box-shadow: 0 4px 12px rgba(119, 255, 221, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.5);
   cursor: grabbing;
 }
 
@@ -3131,17 +3134,20 @@ button.card:disabled {
   border-radius: 50%;
   transform: translate(-50%, -50%);
   opacity: 0.6;
+  transition: all 0.3s ease;
 }
 
 .aim-container.active {
   border-color: var(--bad);
-  box-shadow: 0 0 15px rgba(255, 68, 68, 0.8), inset 0 2px 4px rgba(255, 255, 255, 0.2);
+  box-shadow: 0 0 20px rgba(255, 68, 68, 0.8), inset 0 2px 4px rgba(255, 255, 255, 0.2);
+  transform: scale(1.02);
 }
 
 .aim-container.active::before {
-  border-color: rgba(255, 68, 68, 0.6);
+  border-color: rgba(255, 68, 68, 0.8);
   opacity: 1;
-  animation: pulse-aim 1s ease-in-out infinite alternate;
+  animation: pulse-aim 1.5s ease-in-out infinite alternate;
+  transform: translate(-50%, -50%) scale(1.1);
 }
 
 .aim-knob {
@@ -3154,7 +3160,7 @@ button.card:disabled {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  transition: all 0.1s ease;
+  transition: transform 0.05s ease, box-shadow 0.15s ease;
   cursor: grab;
   /* Add gradient for depth */
   background: radial-gradient(circle at 30% 30%, #ff8888, var(--bad));
@@ -3165,7 +3171,7 @@ button.card:disabled {
 .aim-container.active .aim-knob {
   background: radial-gradient(circle at 30% 30%, #ffffff, #ff4444);
   border-color: #ff4444;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5), inset 0 1px 2px rgba(255, 255, 255, 0.5);
+  box-shadow: 0 4px 12px rgba(255, 68, 68, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.5);
   cursor: grabbing;
 }
 
@@ -3183,22 +3189,27 @@ button.card:disabled {
   opacity: 0.8;
   pointer-events: none;
   z-index: 5;
+  transition: all 0.3s ease;
 }
 
 .aim-container.active .aim-text {
-  color: var(--ink);
-  text-shadow: 0 0 4px rgba(255, 255, 255, 0.8);
+  text-shadow: 0 0 6px rgba(255, 255, 255, 0.8);
   opacity: 1;
+  transform: translateX(-50%) scale(1.1);
 }
 
 @keyframes pulse-aim {
-  from {
+  0% {
     opacity: 0.6;
     transform: translate(-50%, -50%) scale(1);
   }
-  to {
-    opacity: 1;
+  50% {
+    opacity: 0.9;
     transform: translate(-50%, -50%) scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.1);
   }
 }
 

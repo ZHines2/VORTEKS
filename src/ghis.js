@@ -133,18 +133,15 @@ export class GhisGame {
   }
   
   setupEventListeners() {
-    // Detect if device is mobile - include screen size for better detection
-    this.input.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
-                         ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) ||
-                         (window.innerWidth <= 768); // Also consider small screen sizes
+    // Dynamic mobile detection that responds to viewport changes
+    this.updateMobileDetection();
     
-    console.log('Mobile detection:', {
-      userAgent: navigator.userAgent,
-      touchStart: 'ontouchstart' in window,
-      maxTouchPoints: navigator.maxTouchPoints,
-      screenWidth: window.innerWidth,
-      isMobile: this.input.isMobile
-    });
+    // Listen for resize events to update mobile controls dynamically
+    this.resizeHandler = () => {
+      this.updateMobileDetection();
+    };
+    window.addEventListener('resize', this.resizeHandler);
+    window.addEventListener('orientationchange', this.resizeHandler);
     
     // Keyboard input
     this.keyDownHandler = (e) => {
@@ -280,6 +277,40 @@ export class GhisGame {
       this.createMobileControlUI();
     }
   }
+
+  updateMobileDetection() {
+    const wasMobile = this.input.isMobile;
+    
+    // Detect if device is mobile - include screen size for better detection
+    this.input.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                         ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) ||
+                         (window.innerWidth <= 768); // Also consider small screen sizes
+    
+    console.log('Mobile detection update:', {
+      userAgent: navigator.userAgent,
+      touchStart: 'ontouchstart' in window,
+      maxTouchPoints: navigator.maxTouchPoints,
+      screenWidth: window.innerWidth,
+      wasMobile: wasMobile,
+      isMobile: this.input.isMobile
+    });
+
+    // Update mobile controls if mobile state changed
+    if (wasMobile !== this.input.isMobile) {
+      if (this.input.isMobile) {
+        this.createMobileControlUI();
+      } else {
+        this.removeMobileControlUI();
+      }
+    }
+  }
+
+  removeMobileControlUI() {
+    const existingControls = document.getElementById('ghisMobileControls');
+    if (existingControls) {
+      existingControls.remove();
+    }
+  }
   
   createMobileControlUI() {
     // Create mobile controls container
@@ -323,17 +354,42 @@ export class GhisGame {
         let deltaY = clientY - centerY;
         const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
         
+        // Improved dead zone handling with smooth transition
+        const deadZone = radius * 0.1;
+        let normalizedDistance = distance;
+        
+        if (distance <= deadZone) {
+          // In dead zone - no movement
+          this.input.moveStick.x = 0;
+          this.input.moveStick.y = 0;
+          this.input.moveStick.active = false;
+          stickKnob.style.transform = 'translate(0px, 0px)';
+          stickContainer.classList.remove('active');
+          return;
+        }
+        
+        // Apply smooth mapping outside dead zone
+        normalizedDistance = (distance - deadZone) / (radius - deadZone);
+        if (normalizedDistance > 1) normalizedDistance = 1;
+        
+        // Smooth the response curve for better feel
+        const smoothedDistance = normalizedDistance * normalizedDistance * (3 - 2 * normalizedDistance);
+        
         if (distance > radius) {
           deltaX = (deltaX / distance) * radius;
           deltaY = (deltaY / distance) * radius;
         }
         
-        this.input.moveStick.x = deltaX / radius;
-        this.input.moveStick.y = deltaY / radius;
+        const normalizedX = (deltaX / radius) * smoothedDistance * (distance / Math.max(distance, 1));
+        const normalizedY = (deltaY / radius) * smoothedDistance * (distance / Math.max(distance, 1));
+        
+        this.input.moveStick.x = normalizedX;
+        this.input.moveStick.y = normalizedY;
         this.input.moveStick.active = true;
         
-        // Update visual position
-        stickKnob.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+        // Smooth visual position update with momentum
+        const visualScale = 0.9; // Slightly reduce visual movement for more comfortable feel
+        stickKnob.style.transform = `translate(${deltaX * visualScale}px, ${deltaY * visualScale}px)`;
         stickContainer.classList.add('active');
       };
       
@@ -341,8 +397,16 @@ export class GhisGame {
         this.input.moveStick.x = 0;
         this.input.moveStick.y = 0;
         this.input.moveStick.active = false;
+        
+        // Smooth return animation
+        stickKnob.style.transition = 'transform 0.2s ease-out';
         stickKnob.style.transform = 'translate(0px, 0px)';
         stickContainer.classList.remove('active');
+        
+        // Remove transition after animation for responsive touch
+        setTimeout(() => {
+          stickKnob.style.transition = 'transform 0.05s ease';
+        }, 200);
       };
       
       stickContainer.addEventListener('touchstart', (e) => {
@@ -412,26 +476,63 @@ export class GhisGame {
         let deltaY = clientY - centerY;
         const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
         
+        // Improved dead zone and shooting threshold
+        const deadZone = radius * 0.15; // Slightly larger dead zone for aim stick
+        const shootThreshold = radius * 0.3; // More intuitive shooting threshold
+        
+        if (distance <= deadZone) {
+          // In dead zone - no aiming or shooting
+          this.input.aimStick.x = 0;
+          this.input.aimStick.y = 0;
+          this.input.aimStick.active = false;
+          this.input.shoot = false;
+          aimKnob.style.transform = 'translate(0px, 0px)';
+          aimContainer.classList.remove('active');
+          aimText.style.color = ''; // Reset text color
+          return;
+        }
+        
+        // Apply smooth mapping outside dead zone
+        let normalizedDistance = (distance - deadZone) / (radius - deadZone);
+        if (normalizedDistance > 1) normalizedDistance = 1;
+        
+        // Smooth the response curve for better feel
+        const smoothedDistance = normalizedDistance * normalizedDistance * (3 - 2 * normalizedDistance);
+        
         if (distance > radius) {
           deltaX = (deltaX / distance) * radius;
           deltaY = (deltaY / distance) * radius;
         }
         
-        this.input.aimStick.x = deltaX / radius;
-        this.input.aimStick.y = deltaY / radius;
+        const normalizedX = (deltaX / radius) * smoothedDistance * (distance / Math.max(distance, 1));
+        const normalizedY = (deltaY / radius) * smoothedDistance * (distance / Math.max(distance, 1));
+        
+        this.input.aimStick.x = normalizedX;
+        this.input.aimStick.y = normalizedY;
         this.input.aimStick.active = true;
         
         // Calculate world coordinates for aiming
         const aimRange = 200; // Range of aim
-        this.input.aimStick.worldX = this.player.x + (deltaX / radius) * aimRange;
-        this.input.aimStick.worldY = this.player.y + (deltaY / radius) * aimRange;
+        this.input.aimStick.worldX = this.player.x + normalizedX * aimRange;
+        this.input.aimStick.worldY = this.player.y + normalizedY * aimRange;
         
-        // Update visual position
-        aimKnob.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+        // Visual feedback for shooting threshold
+        const willShoot = distance > shootThreshold;
+        if (willShoot) {
+          aimText.style.color = '#ff4444'; // Red when shooting
+          aimText.innerHTML = 'FIRING!';
+        } else {
+          aimText.style.color = '#77ffdd'; // Blue when aiming
+          aimText.innerHTML = 'AIM & FIRE';
+        }
+        
+        // Smooth visual position update
+        const visualScale = 0.9;
+        aimKnob.style.transform = `translate(${deltaX * visualScale}px, ${deltaY * visualScale}px)`;
         aimContainer.classList.add('active');
         
-        // Auto-shoot when aiming (if far enough from center)
-        this.input.shoot = distance > radius * 0.2; // Start shooting when 20% from center
+        // Auto-shoot when aiming (improved threshold)
+        this.input.shoot = willShoot;
       };
       
       const resetAimStick = () => {
@@ -439,8 +540,20 @@ export class GhisGame {
         this.input.aimStick.y = 0;
         this.input.aimStick.active = false;
         this.input.shoot = false;
+        
+        // Smooth return animation
+        aimKnob.style.transition = 'transform 0.2s ease-out';
         aimKnob.style.transform = 'translate(0px, 0px)';
         aimContainer.classList.remove('active');
+        
+        // Reset text
+        aimText.style.color = '';
+        aimText.innerHTML = 'AIM & FIRE';
+        
+        // Remove transition after animation for responsive touch
+        setTimeout(() => {
+          aimKnob.style.transition = 'transform 0.05s ease';
+        }, 200);
       };
       
       aimContainer.addEventListener('touchstart', (e) => {
@@ -507,11 +620,14 @@ export class GhisGame {
     document.removeEventListener('keydown', this.keyDownHandler);
     document.removeEventListener('keyup', this.keyUpHandler);
     
-    // Remove mobile controls if they exist
-    const mobileControls = document.getElementById('ghisMobileControls');
-    if (mobileControls) {
-      mobileControls.remove();
+    // Remove resize handlers
+    if (this.resizeHandler) {
+      window.removeEventListener('resize', this.resizeHandler);
+      window.removeEventListener('orientationchange', this.resizeHandler);
     }
+    
+    // Remove mobile controls if they exist
+    this.removeMobileControlUI();
   }
   
   generateInitialEnemies() {
