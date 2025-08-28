@@ -3321,3 +3321,82 @@ button.card:disabled {
     display: none !important;
   }
 }
+
+/* GHÏS Game Over Modal Animations */
+#ghisGameOverModal {
+  animation: ghisModalFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#ghisGameOverModal .box {
+  animation: ghisModalSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes ghisModalFadeIn {
+  from {
+    background-color: rgba(0, 0, 0, 0);
+  }
+  to {
+    background-color: rgba(0, 0, 0, 0.8);
+  }
+}
+
+@keyframes ghisModalSlideUp {
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Enhanced styling for GHÏS game over stats */
+#ghisGameOverStats {
+  border-left: 4px solid var(--bad);
+  position: relative;
+  overflow: hidden;
+}
+
+#ghisGameOverStats::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--bad), transparent);
+  animation: ghisStatsScan 2s ease-in-out infinite;
+}
+
+@keyframes ghisStatsScan {
+  0%, 100% { transform: translateX(-100%); }
+  50% { transform: translateX(100%); }
+}
+
+/* Glowing effect for final score */
+#ghisFinalScore {
+  text-shadow: 0 0 8px currentColor;
+  animation: ghisScoreGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes ghisScoreGlow {
+  from { text-shadow: 0 0 8px currentColor; }
+  to { text-shadow: 0 0 16px currentColor, 0 0 24px currentColor; }
+}
+
+/* Mission assessment typing effect */
+#ghisMissionAssessment {
+  animation: ghisTypewriter 1.5s steps(60, end) 0.5s both;
+}
+
+@keyframes ghisTypewriter {
+  from { 
+    width: 0;
+    opacity: 0;
+  }
+  to { 
+    width: 100%;
+    opacity: 1;
+  }
+}

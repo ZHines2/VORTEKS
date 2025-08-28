@@ -97,6 +97,14 @@ export class GhisGame {
     // Game timing
     this.lastUpdate = 0;
     this.gameTime = 0;
+    this.gameStartTime = 0;
+    
+    // Game stats for game over screen
+    this.stats = {
+      enemiesDefeated: 0,
+      powerupsCollected: 0,
+      score: 0
+    };
     
     // Debug mode
     this.debug = {
@@ -127,6 +135,7 @@ export class GhisGame {
     };
     
     // Initialize
+    this.gameStartTime = Date.now(); // Track when the game started
     this.setupEventListeners();
     this.generateInitialEnemies();
     this.spawnStartingPowerups(); // Give player some initial powerups
@@ -879,6 +888,8 @@ export class GhisGame {
       
       // Remove dead enemies
       if (enemy.hp <= 0) {
+        this.stats.enemiesDefeated++;
+        this.stats.score += 100; // Base score per enemy
         this.spawnPowerupDrop(enemy.x, enemy.y);
         this.enemies.splice(i, 1);
       }
@@ -1104,6 +1115,8 @@ export class GhisGame {
   
   collectPowerup(type) {
     this.player.powerups[type]++;
+    this.stats.powerupsCollected++;
+    this.stats.score += 50; // Bonus score for collecting powerups
     
     // Log the powerup collection
     if (window.currentGhisGame === this) {
@@ -1730,28 +1743,16 @@ export class GhisGame {
     
     // Game state messages
     if (this.gameState === 'gameOver') {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-      ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-      
-      ctx.fillStyle = '#ff4444';
-      ctx.font = '48px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText('GAME OVER', ctx.canvas.width / 2, ctx.canvas.height / 2);
-      
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '16px monospace';
-      if (this.input.isMobile) {
-        ctx.fillText('Tap RESTART GAME button to restart', ctx.canvas.width / 2, ctx.canvas.height / 2 + 40);
-        // Show mobile restart button
-        const restartBtn = document.getElementById('ghisRestartBtn');
-        if (restartBtn) {
-          restartBtn.style.display = 'block';
-        }
-      } else {
-        ctx.fillText('Press R to restart', ctx.canvas.width / 2, ctx.canvas.height / 2 + 40);
-      }
+      // Show the elegant game over modal instead of canvas text
+      this.showGameOverModal();
     } else {
-      // Hide mobile restart button when not in game over state
+      // Hide the game over modal when not in game over state
+      const modal = document.getElementById('ghisGameOverModal');
+      if (modal) {
+        modal.hidden = true;
+      }
+      
+      // Hide mobile restart button when not in game over state (kept for backward compatibility)
       if (this.input.isMobile) {
         const restartBtn = document.getElementById('ghisRestartBtn');
         if (restartBtn) {
@@ -1793,6 +1794,76 @@ export class GhisGame {
       reap: '💀'
     };
     return symbols[type] || '?';
+  }
+  
+  // Show the elegant game over modal
+  showGameOverModal() {
+    const modal = document.getElementById('ghisGameOverModal');
+    if (!modal) return;
+    
+    // Calculate survival time (ensure positive value)
+    const survivalTimeMs = Math.max(0, this.gameTime - this.gameStartTime);
+    const survivalMinutes = Math.floor(survivalTimeMs / 60000);
+    const survivalSeconds = Math.floor((survivalTimeMs % 60000) / 1000);
+    const survivalTime = `${survivalMinutes}:${survivalSeconds.toString().padStart(2, '0')}`;
+    
+    // Generate mission assessment based on performance
+    let assessment = "";
+    const { enemiesDefeated, powerupsCollected, score } = this.stats;
+    
+    if (score < 500) {
+      assessment = "Brief but brave. Even the shortest flights teach us about the void's mysteries.";
+    } else if (score < 1500) {
+      assessment = "A solid mission. Your Light Body showed resilience against the cosmic forces.";
+    } else if (score < 3000) {
+      assessment = "Impressive piloting! You've demonstrated mastery over the chaotic energies of space.";
+    } else if (score < 5000) {
+      assessment = "Exceptional performance! Your Light Body danced through danger with grace and precision.";
+    } else {
+      assessment = "Legendary flight! The cosmic entities themselves pause to acknowledge your mastery.";
+    }
+    
+    // Update modal content
+    document.getElementById('ghisSurvivalTime').textContent = survivalTime;
+    document.getElementById('ghisEnemiesDefeated').textContent = enemiesDefeated.toString();
+    document.getElementById('ghisPowerupsCollected').textContent = powerupsCollected.toString();
+    document.getElementById('ghisFinalScore').textContent = score.toString();
+    document.getElementById('ghisMissionAssessment').textContent = assessment;
+    
+    // Set up button handlers (only once)
+    if (!modal.dataset.handlersSet) {
+      const restartBtn = document.getElementById('ghisRestartGameBtn');
+      const menuBtn = document.getElementById('ghisReturnMenuBtn');
+      
+      if (restartBtn) {
+        restartBtn.addEventListener('click', () => {
+          if (window.restartGhis) {
+            window.restartGhis();
+          }
+        });
+      }
+      
+      if (menuBtn) {
+        menuBtn.addEventListener('click', () => {
+          modal.hidden = true;
+          // Return to start screen
+          if (window.showStart) {
+            window.showStart();
+          } else {
+            // Fallback - directly show start modal
+            const startModal = document.getElementById('startModal');
+            if (startModal) {
+              startModal.hidden = false;
+            }
+          }
+        });
+      }
+      
+      modal.dataset.handlersSet = 'true';
+    }
+    
+    // Show the modal
+    modal.hidden = false;
   }
   
   // Debug functions
