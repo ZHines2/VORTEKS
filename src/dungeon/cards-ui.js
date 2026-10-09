@@ -29,6 +29,18 @@ function makeCardEl(card, index, total, affordable, reduceMotion) {
   return el;
 }
 
+// Standalone card face (used for the card played onto the table).
+export function cardFace(card, extraClass = '') {
+  const el = document.createElement('div');
+  el.className = 'dcard table-card type-' + card.type + ' ' + extraClass;
+  el.innerHTML =
+    '<span class="dcard-cost">' + describeCost(card) + '</span>' +
+    '<span class="dcard-sym">' + card.sym + '</span>' +
+    '<span class="dcard-name">' + card.name + '</span>' +
+    '<span class="dcard-desc" style="opacity:.95;max-height:80px">' + card.description + '</span>';
+  return el;
+}
+
 export class HandView {
   constructor(container, { reduceMotion = false } = {}) {
     this.container = container;

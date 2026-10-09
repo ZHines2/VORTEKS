@@ -4,9 +4,11 @@
 
 import { DIRS } from './navigation.js';
 
-const IVORY = [232, 228, 216];
-const ACCENT = [110, 200, 255];
-const WARM = [255, 170, 90];
+let IVORY = [232, 228, 216];
+let ACCENT = [110, 200, 255];
+let WARM = [255, 170, 90];
+
+export function setPalette(p) { IVORY = p.ivory; ACCENT = p.accent; WARM = p.warm; }
 const BG = '#08080b';
 const NEAR = 0.12;
 const VIEW = 7;
@@ -58,7 +60,7 @@ export class DungeonRenderer {
     this.time = 0;
     this.reduceMotion = false;
     this.enemyFx = { hitAt: -1e9, flash: 0, shieldAt: -1e9, burn: false, frozen: false, dead: false, deadAt: 0 };
-    this.glyph = '◉';
+    this.fxTarget = null;
   }
 
   resize() {
@@ -142,19 +144,18 @@ export class DungeonRenderer {
     for (let z = cz - VIEW; z <= cz + VIEW; z++) {
       for (let x = cx - VIEW; x <= cx + VIEW; x++) {
         const c = nav.cell(x, z);
-        const solid = c === '#' || c === 'D';
+        const solid = nav.isWall(x, z);
         const dist = Math.hypot(x - this.rig.x, z - this.rig.z);
         if (dist > VIEW) continue;
         if (!solid) {
           faces.push({ dist, kind: 'floor', x, z, exit: c === 'X' });
           continue;
         }
-        const color = c === 'D' ? ACCENT : IVORY;
+        const color = c === 'D' ? ACCENT : c === 'X' ? WARM : IVORY;
         DIRS.forEach(d => {
           const ox = x + d.dx, oz = z + d.dz;
-          const oc = nav.cell(ox, oz);
-          if (oc === '#' || oc === 'D') return;
-          faces.push({ dist: dist - 0.01, kind: 'wall', x, z, d, color, door: c === 'D' });
+          if (nav.isWall(ox, oz)) return;
+          faces.push({ dist: dist - 0.01, kind: 'wall', x, z, d, color, door: c === 'D' || c === 'X' });
         });
       }
     }
@@ -218,23 +219,41 @@ export class DungeonRenderer {
           this.line3([c.x + ox, 0, c.z + oz], [c.x + ox, 0.35, c.z + oz], WARM, fog));
       }
     }
-    const e = nav.level.enemy;
+    for (const e of nav.level.enemies) this.drawEnemy(e, t);
+  }
+
+  hasSight(x, z) {
+    const x0 = this.rig.x, z0 = this.rig.z;
+    const n = Math.ceil(Math.hypot(x - x0, z - z0) * 4);
+    for (let i = 1; i < n; i++) {
+      const px = Math.round(x0 + (x - x0) * i / n), pz = Math.round(z0 + (z - z0) * i / n);
+      if (this.nav.isWall(px, pz)) return false;
+    }
+    return true;
+  }
+
+  drawEnemy(e, t) {
+    const { ctx } = this;
     const fx = this.enemyFx;
-    if (e && (nav.enemyAlive || fx.dead)) {
-      const fog = this.fogAt(e.x, e.z);
-      if (fog <= 0) return;
+    const isTarget = this.fxTarget === e;
+    const dying = isTarget && fx.dead && t - fx.deadAt < 900;
+    if (!e.alive && !dying) return;
+    const fog = this.fogAt(e.x, e.z);
+    if (fog <= 0 || !this.hasSight(e.x, e.z)) return;
+    {
       let a = fog;
       let jitter = 0;
-      const sinceHit = t - fx.hitAt;
+      const sinceHit = isTarget ? t - fx.hitAt : 1e9;
       if (sinceHit < 350 && !this.reduceMotion) jitter = Math.sin(sinceHit * 0.12) * 0.06 * (1 - sinceHit / 350);
-      if (fx.dead) a *= Math.max(0, 1 - (t - fx.deadAt) / 900);
-      const bobY = this.reduceMotion ? 0 : Math.sin(t * 0.003) * 0.04;
-      const base = 0.5 + bobY, r = 0.28;
+      if (dying) a *= Math.max(0, 1 - (t - fx.deadAt) / 900);
+      const bobY = this.reduceMotion ? 0 : Math.sin(t * 0.003 + e.x) * 0.04;
+      const boss = !!e.spec?.boss;
+      const base = 0.5 + bobY, r = boss ? 0.36 : 0.28, hh = boss ? 0.6 : 0.5;
       const ex = e.x + jitter, ez = e.z;
-      const top = [ex, base + 0.5, ez], bot = [ex, base - 0.5, ez];
+      const top = [ex, base + hh, ez], bot = [ex, base - hh + (boss ? 0.1 : 0), ez];
       const ring = [[ex - r, base, ez], [ex, base, ez - r], [ex + r, base, ez], [ex, base, ez + r]];
       const spin = this.reduceMotion ? 0 : t * 0.001;
-      const col = sinceHit < 150 ? [255, 255, 255] : (fx.burn ? WARM : (fx.frozen ? ACCENT : IVORY));
+      const col = sinceHit < 150 ? [255, 255, 255] : (isTarget && fx.burn ? WARM : (isTarget && fx.frozen ? ACCENT : IVORY));
       const rot = ([px, py, pz]) => {
         const dx = px - ex, dz = pz - ez;
         return [ex + dx * Math.cos(spin) - dz * Math.sin(spin), py, ez + dx * Math.sin(spin) + dz * Math.cos(spin)];
@@ -245,18 +264,16 @@ export class DungeonRenderer {
         this.line3(top, R[i], col, a, 1.2);
         this.line3(bot, R[i], col, a, 1.2);
       }
-      // glyph face
-      this.drawBillboard(ex, ez, base + 0.78, (sx, sy, k) => {
+      this.drawBillboard(ex, ez, base + hh + 0.28, (sx, sy, k) => {
         ctx.font = `${Math.max(10, k * 0.18)}px monospace`;
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillStyle = rgba(col, a);
-        ctx.fillText(this.glyph, sx, sy);
+        ctx.fillText(e.glyph || '◉', sx, sy);
       });
-      if (t - fx.shieldAt < 700) {
+      if (isTarget && t - fx.shieldAt < 700) {
         const k = 1 - (t - fx.shieldAt) / 700;
         const sr = 0.5;
-        const ringPts = [[ex - sr, 0.5, ez - sr], [ex + sr, 0.5, ez - sr], [ex + sr, 0.5, ez + sr], [ex - sr, 0.5, ez + sr]];
-        this.poly([[ringPts[0][0], 0, ringPts[0][2]], [ringPts[1][0], 0, ringPts[1][2]], [ringPts[1][0], 1, ringPts[1][2]], [ringPts[0][0], 1, ringPts[0][2]]], ACCENT, k, false, 2);
+        this.poly([[ex - sr, 0, ez - sr], [ex + sr, 0, ez - sr], [ex + sr, 1, ez - sr], [ex - sr, 1, ez - sr]], ACCENT, k, false, 2);
       }
     }
   }
@@ -281,7 +298,7 @@ export class DungeonRenderer {
       for (let x = 0; x < w; x++) {
         if (!nav.visited.has(x + ',' + z)) continue;
         const c = nav.cell(x, z);
-        ctx.fillStyle = c === '#' ? 'rgba(232,228,216,.35)' : c === 'D' ? 'rgba(110,200,255,.7)' : c === 'X' ? 'rgba(255,170,90,.8)' : 'rgba(232,228,216,.08)';
+        ctx.fillStyle = c === '#' ? 'rgba(232,228,216,.35)' : c === 'D' ? 'rgba(110,200,255,.7)' : c === 'X' ? (nav.exitLocked() ? 'rgba(255,90,90,.8)' : 'rgba(255,170,90,.8)') : 'rgba(232,228,216,.08)';
         ctx.fillRect(x * s, z * s, s - 1, s - 1);
         if (nav.isEnemyAt(x, z)) { ctx.fillStyle = '#f66'; ctx.fillRect(x * s + 2, z * s + 2, s - 5, s - 5); }
         if (nav.isChestAt(x, z)) { ctx.fillStyle = '#fa5'; ctx.fillRect(x * s + 3, z * s + 3, s - 7, s - 7); }

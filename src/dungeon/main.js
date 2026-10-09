@@ -2,38 +2,46 @@
 // Wires navigation, renderer, encounter bridge and card UI together.
 
 import { Navigator } from './navigation.js';
-import { CameraRig, DungeonRenderer } from './renderer.js';
-import { Encounter, createActor, PLAYER_DECK, getCard, canAfford, draw } from './encounter.js';
-import { HandView } from './cards-ui.js';
+import { CameraRig, DungeonRenderer, setPalette } from './renderer.js';
+import { Encounter, createActor, makeEnemyConfig, getCard, canAfford } from './encounter.js';
+import { HandView, cardFace } from './cards-ui.js';
+import { LOCATIONS } from './levels.js';
+import { Run } from './run.js';
 
 const $ = id => document.getElementById(id);
 const sleep = ms => new Promise(r => setTimeout(r, reduce ? Math.min(ms, 60) : ms));
 
 let reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-let nav, rig, renderer, hand, player, encounter;
+let nav, rig, renderer, hand, player, encounter, run, currentEnemy;
 let mode = 'title'; // title | explore | combat | end
 let busy = false;
 let pendingEncounterCheck = false;
-let rewardTaken = false;
 
-const ENEMY = { name: 'WARDEN', hp: 14, deckIds: ['swords', 'swords', 'swords', 'shield', 'shield', 'bolt', 'fire', 'swords'] };
 
 function newRun() {
-  nav = new Navigator();
+  run = new Run();
+  loadLocation();
+}
+
+function loadLocation() {
+  const loc = run.location;
+  setPalette(loc.palette);
+  nav = new Navigator(loc);
   rig = new CameraRig(nav);
   rig.reduceMotion = reduce;
   renderer.nav = nav;
   renderer.rig = rig;
   renderer.reduceMotion = reduce;
+  renderer.fxTarget = null;
   renderer.enemyFx = { hitAt: -1e9, shieldAt: -1e9, burn: false, frozen: false, dead: false, deadAt: 0 };
-  player = createActor({ name: 'YOU', hp: 20, deckIds: PLAYER_DECK });
+  player = createActor({ name: 'YOU', hp: run.hp, maxHP: run.maxHP, deckIds: run.deckIds });
   encounter = null;
-  rewardTaken = false;
+  currentEnemy = null;
   busy = false;
   pendingEncounterCheck = false;
   setMode('explore');
   updateHud();
-  toast('Find the way down.');
+  toast(loc.name + ' — ' + loc.blurb, 3000);
 }
 
 function setMode(m) {
@@ -52,13 +60,38 @@ function toast(msg, ms = 2200) {
   toastTimer = setTimeout(() => t.classList.remove('show'), ms);
 }
 
+function renderIntent() {
+  const box = $('intent');
+  box.innerHTML = '';
+  for (const c of encounter.enemy.intent) {
+    const fx = c.effects || {};
+    const bits = [];
+    if (fx.damage) bits.push('⚔' + fx.damage);
+    if (fx.shield) bits.push('🛡' + fx.shield);
+    if (fx.heal) bits.push('♥' + fx.heal);
+    if (c.status?.target?.burn) bits.push('🔥');
+    if (c.status?.target?.freezeEnergy) bits.push('❄');
+    const chip = document.createElement('span');
+    chip.className = 'chip';
+    chip.title = c.name + ': ' + c.description;
+    chip.innerHTML = c.sym + '<small>' + bits.join(' ') + '</small>';
+    box.appendChild(chip);
+  }
+}
+
 function updateHud() {
   $('hp').textContent = player.hp + '/' + player.maxHP;
   $('sh').textContent = player.shield;
   $('en').textContent = mode === 'combat' ? player.energy + '/' + player.maxEnergy : '-';
+  if (nav) $('loc').textContent = run.location.name + '  ' + nav.defeated + '/' + nav.quota + (nav.remaining ? '' : '  ✓ EXIT OPEN');
+  if (encounter) {
+    $('pile-deck').textContent = 'DECK ' + player.deck.length;
+    $('pile-discard').textContent = 'DISCARD ' + player.discard.length;
+    renderIntent();
+  }
   if (encounter) {
     const e = encounter.enemy;
-    $('enemy-name').textContent = e.name + '  ❤ ' + e.hp + (e.shield ? '  🛡 ' + e.shield : '');
+    $('enemy-name').textContent = e.glyph + ' ' + e.name + '  ❤ ' + e.hp + (e.shield ? '  🛡 ' + e.shield : '');
     $('enemy-hp-fill').style.width = Math.max(0, e.hp / e.maxHP * 100) + '%';
     $('enemy-status').textContent = [e.burn ? '🔥 burn ' + e.burn.amount + '×' + e.burn.turns : '', e.frozen ? '❄ frozen' : ''].filter(Boolean).join('  ');
     renderer.enemyFx.burn = !!e.burn;
@@ -88,30 +121,32 @@ function interact() {
   const what = nav.interact();
   if (what === 'door') toast('The door grinds open.');
   else if (what === 'chest') takeReward();
+  else if (what === 'locked') toast('Sealed. Defeat ' + nav.remaining + ' more opponent' + (nav.remaining > 1 ? 's' : '') + '.', 1800);
   else toast('Nothing to use here.', 900);
 }
 
 function takeReward() {
-  rewardTaken = true;
   const wallop = getCard('wallop');
+  run.addCard('wallop');
   player.discard.push(wallop);
   player.hp = Math.min(player.maxHP, player.hp + 6);
+  run.hp = player.hp;
   updateHud();
   toast(wallop.sym + ' Found Wallop and a restorative glow (+6 HP). Added to your deck.', 3500);
 }
 
 function checkEncounter() {
-  if (nav.atExit()) return finish(true);
-  if (!encounter && nav.enemyAlive) {
-    const d = nav.enemyInRange(3);
-    if (d >= 0) {
-      nav.dir = d;
-      rig.moveTo(nav);
-      busy = true;
-      toast('◉ The Warden stirs.', 1500);
-      const wait = () => rig.moving ? requestAnimationFrame(wait) : startCombat();
-      wait();
-    }
+  if (nav.atExit()) return completeLocation();
+  const hit = nav.enemyInRange(3);
+  if (hit) {
+    currentEnemy = hit.enemy;
+    renderer.fxTarget = hit.enemy;
+    nav.dir = hit.dir;
+    rig.moveTo(nav);
+    busy = true;
+    toast(hit.enemy.spec.kind.toUpperCase() + ' stirs.', 1500);
+    const wait = () => rig.moving ? requestAnimationFrame(wait) : startCombat();
+    wait();
   }
 }
 
@@ -119,7 +154,10 @@ function checkEncounter() {
 function startCombat() {
   player.deck = [...player.deck, ...player.hand, ...player.discard].sort(() => Math.random() - 0.5);
   player.hand = []; player.discard = []; player.burn = null; player.frozen = 0; player.nextPlus = 0; player.shield = 0;
-  encounter = new Encounter(player, ENEMY);
+  renderer.enemyFx = { hitAt: -1e9, shieldAt: -1e9, burn: false, frozen: false, dead: false, deadAt: 0 };
+  const cfg = makeEnemyConfig(currentEnemy.spec, run.location);
+  currentEnemy.glyph = cfg.glyph;
+  encounter = new Encounter(player, cfg);
   setMode('combat');
   busy = false;
   renderHand();
@@ -133,12 +171,17 @@ function renderHand() {
   updateHud();
 }
 
-function flashCard(card) {
-  const p = $('played');
-  p.hidden = false;
-  p.textContent = card.sym;
-  p.style.animation = 'none'; void p.offsetWidth; p.style.animation = '';
-  setTimeout(() => { p.hidden = true; }, reduce ? 500 : 900);
+function flashCard(card, enemy = false) {
+  const t = $('table');
+  t.hidden = false;
+  t.innerHTML = '';
+  const el = cardFace(card, enemy ? 'enemy' : '');
+  t.appendChild(el);
+  clearTimeout(flashCard.timer);
+  flashCard.timer = setTimeout(() => {
+    el.classList.add('leaving');
+    setTimeout(() => { t.hidden = true; }, reduce ? 0 : 400);
+  }, reduce ? 500 : 800);
 }
 
 function presentEvents(events, mine) {
@@ -184,7 +227,7 @@ async function endTurn() {
     const res = encounter.enemyStep();
     if (!res) break;
     toast(encounter.enemy.name + ' plays ' + res.card.sym + ' ' + res.card.name, 900);
-    flashCard(res.card);
+    flashCard(res.card, true);
     presentEvents(res.events, false);
     updateHud();
     await sleep(900);
@@ -201,36 +244,96 @@ async function endCombat() {
   busy = true;
   updateHud();
   hand.clear();
+  $('intent').innerHTML = '';
   if (encounter.winner === 'player') {
     renderer.enemyFx.dead = true;
     renderer.enemyFx.deadAt = renderer.time;
-    toast('The Warden unravels. The way is open.', 2500);
+    toast('Opponent defeated.', 2000);
     await sleep(1000);
-    nav.enemyAlive = false;
+    currentEnemy.alive = false;
+    run.hp = player.hp;
     player.shield = 0; player.burn = null; player.frozen = 0;
     encounter = null;
+    currentEnemy = null;
     setMode('explore');
     busy = false;
     updateHud();
+    if (nav.remaining === 0) toast('The exit unseals.', 2500);
   } else {
     setMode('end');
-    showOverlay('YOU FELL', 'THE FIRST DESCENT', 'The corridor is quiet again.', 'TRY AGAIN');
+    showOverlay('YOU FELL', LOCATIONS[run.loc].name, 'The corridor is quiet again.', 'TRY AGAIN');
+    ov.mode = 'restart';
   }
 }
 
-function finish(won) {
+function completeLocation() {
   setMode('end');
-  showOverlay('DESCENT COMPLETE', 'THE FIRST DESCENT',
-    'You passed the Warden and reached the exit.' + (rewardTaken ? ' You carried Wallop out of the dark.' : ' The hidden cache was left behind.'),
-    'DESCEND AGAIN');
+  run.hp = player.hp;
+  const doneIndex = run.loc;
+  run.completeLocation();
+  if (run.finished) {
+    showOverlay('DESCENT COMPLETE', 'THE FIRST DESCENT',
+      'The Core falls silent. ' + run.rewards.length + ' card' + (run.rewards.length === 1 ? '' : 's') + ' carried out of the dark.', 'DESCEND AGAIN');
+    ov.mode = 'restart';
+    renderPath();
+    return;
+  }
+  run.heal(5);
+  showOverlay(LOCATIONS[doneIndex].name + ' CLEARED', 'CHOOSE A REWARD', 'Take a card for your deck (you also recover 5 HP).', 'CONTINUE');
+  ov.mode = 'reward';
+  renderPath();
+  const box = $('rewards');
+  box.innerHTML = '';
+  $('ov-btn').hidden = true;
+  run.rewardChoices().forEach(id => {
+    const card = getCard(id);
+    const el = cardFace(card);
+    el.setAttribute('role', 'button');
+    el.tabIndex = 0;
+    const pick = () => {
+      run.addCard(id);
+      box.innerHTML = '';
+      $('ov-btn').hidden = false;
+      $('ov-text').textContent = card.name + ' added. Next: ' + run.location.name + '.';
+      ov.mode = 'next';
+      $('ov-btn').textContent = 'DESCEND';
+    };
+    el.addEventListener('click', pick);
+    el.addEventListener('keydown', e => { if (e.key === 'Enter') pick(); });
+    box.appendChild(el);
+  });
 }
+
+function renderPath() {
+  const box = $('path');
+  box.innerHTML = '';
+  LOCATIONS.forEach((l, i) => {
+    if (i) box.append('→');
+    const n = document.createElement('span');
+    const cleared = run.cleared.includes(l.id);
+    n.className = 'node' + (cleared ? ' cleared' : (i === run.loc && !run.finished ? ' current' : ''));
+    n.innerHTML = l.name + '<small>' + (cleared ? '✓ cleared' : l.opponents.length + ' opponent' + (l.opponents.length > 1 ? 's' : '')) + '</small>';
+    box.appendChild(n);
+  });
+}
+
+const ov = { mode: 'start' };
 
 function showOverlay(title, sub, text, btn) {
   $('ov-title').textContent = title;
   $('ov-sub').textContent = sub;
   $('ov-text').textContent = text;
   $('ov-btn').textContent = btn;
+  $('ov-btn').hidden = false;
+  $('rewards').innerHTML = '';
   $('overlay').classList.remove('hidden');
+}
+
+function overlayButton() {
+  $('overlay').classList.add('hidden');
+  if (ov.mode === 'next') loadLocation();
+  else if (ov.mode === 'restart') { renderer.fxTarget = null; newRun(); }
+  else newRun();
 }
 
 // ---------- boot ----------
@@ -249,11 +352,12 @@ function frame(now) {
 
 function init() {
   const canvas = $('view');
-  nav = new Navigator();
+  run = new Run();
+  nav = new Navigator(run.location);
   rig = new CameraRig(nav);
   renderer = new DungeonRenderer(canvas, nav, rig);
   hand = new HandView($('hand'), { reduceMotion: reduce });
-  player = createActor({ name: 'YOU', hp: 20, deckIds: PLAYER_DECK });
+  player = createActor({ name: 'YOU', hp: run.hp, maxHP: run.maxHP, deckIds: run.deckIds });
   renderer.resize();
   window.addEventListener('resize', () => renderer.resize());
 
@@ -269,7 +373,7 @@ function init() {
   document.querySelectorAll('#controls button').forEach(b =>
     b.addEventListener('click', () => act(b.dataset.act)));
   $('endTurn').addEventListener('click', endTurn);
-  $('ov-btn').addEventListener('click', () => { $('overlay').classList.add('hidden'); newRun(); });
+  $('ov-btn').addEventListener('click', overlayButton);
 
   const keys = { ArrowUp: 'fwd', w: 'fwd', W: 'fwd', ArrowDown: 'back', s: 'back', S: 'back',
     ArrowLeft: 'left', a: 'left', A: 'left', q: 'left', Q: 'left',
@@ -281,7 +385,7 @@ function init() {
       return;
     }
     if (mode === 'title' || mode === 'end') {
-      if (ev.key === 'Enter') $('ov-btn').click();
+      if (ev.key === 'Enter' && !$('ov-btn').hidden) $('ov-btn').click();
       return;
     }
     const a = keys[ev.key];

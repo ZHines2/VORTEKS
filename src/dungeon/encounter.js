@@ -5,6 +5,8 @@
 
 import { CARDS } from '../../data/cards.js';
 import { shuffle } from '../utils.js';
+import { makePersonaDeck } from '../ai.js';
+import { GLYPHS } from './levels.js';
 
 export const SUPPORTED_CARDS = ['swords', 'shield', 'heart', 'bolt', 'fire', 'snow', 'star', 'dagger', 'wallop'];
 export const HAND_SIZE = 5;
@@ -26,11 +28,23 @@ export const ENEMY_DECK = [
   'swords', 'swords', 'swords', 'shield', 'shield', 'bolt', 'fire', 'swords'
 ];
 
-export function createActor({ name, hp, maxHP = hp, deckIds, maxEnergy = 3 }) {
+export function createActor({ name, hp, maxHP = hp, deckIds, deckCards, maxEnergy = 3, glyph }) {
   return {
-    name, hp, maxHP, shield: 0, energy: 0, maxEnergy,
-    nextPlus: 0, burn: null, frozen: 0,
-    deck: makeDeck(deckIds), hand: [], discard: []
+    name, hp, maxHP, shield: 0, energy: 0, maxEnergy, glyph,
+    nextPlus: 0, burn: null, frozen: 0, intent: [],
+    deck: deckCards ? shuffle(deckCards.map(c => ({ ...c }))) : makeDeck(deckIds), hand: [], discard: []
+  };
+}
+
+// Builds an enemy from the shared persona/AI deck system, restricted to the
+// cards the bridge can resolve, scaled by the location's HP and booster.
+export function makeEnemyConfig(spec, location) {
+  const deckCards = makePersonaDeck(spec.kind, null, location.booster || 0)
+    .filter(c => SUPPORTED_CARDS.includes(c.id));
+  const hp = location.hp + (spec.boss ? 6 : 0);
+  return {
+    name: (spec.boss ? 'WARDEN ' : '') + spec.kind.toUpperCase(),
+    hp, deckCards, glyph: GLYPHS[spec.kind] || '◉', maxEnergy: spec.boss ? 4 : 3
   };
 }
 
@@ -110,7 +124,30 @@ export class Encounter {
     this.turn = 'player';
     this.over = false;
     this.winner = null;
+    draw(this.enemy, HAND_SIZE);
     this.startTurn(this.player);
+    this.refreshIntent();
+  }
+
+  // Slay-the-Spire style telegraph: the cards the enemy would play next turn.
+  refreshIntent() {
+    const e = this.enemy;
+    let energy = Math.max(0, e.maxEnergy - e.frozen);
+    let hp = e.hp;
+    const pool = e.hand.filter(c => !(c.effects?.heal && hp >= e.maxHP));
+    pool.sort((a, b) => (b.ai?.pri || 0) - (a.ai?.pri || 0));
+    const plan = [];
+    let shielded = false;
+    for (const c of pool) {
+      if (c.cost > energy) continue;
+      if (c.effects?.shield && shielded) continue;
+      if (c.effects?.lifeCost && hp <= c.effects.lifeCost) continue;
+      energy -= c.cost;
+      if (c.effects?.shield) shielded = true;
+      if (c.effects?.lifeCost) hp -= c.effects.lifeCost;
+      plan.push(c);
+    }
+    e.intent = plan;
   }
 
   startTurn(actor) {
@@ -146,6 +183,7 @@ export class Encounter {
     const events = applyCard(card, actor, them);
     actor.discard.push(card);
     this.checkEnd();
+    if (actor === this.player) this.refreshIntent();
     return { card, events };
   }
 
@@ -180,6 +218,9 @@ export class Encounter {
   endEnemyTurn() {
     if (this.over) return [];
     this.turn = 'player';
-    return this.startTurn(this.player);
+    const ev = this.startTurn(this.player);
+    draw(this.enemy, Math.max(0, HAND_SIZE - this.enemy.hand.length));
+    this.refreshIntent();
+    return ev;
   }
 }
