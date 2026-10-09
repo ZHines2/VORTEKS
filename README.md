@@ -8,6 +8,7 @@ VORTEKS is a browser-based game built with vanilla JavaScript ES modules. Its ma
 - **Campaign** adds persistent deck progression and increasingly challenging opponents.
 - **Tournament** runs a series of battles against AI opponents.
 - **Maze Explorer** is a maze exploration mode with enemy encounters and collectible card abilities.
+- **Dungeon (β)** (`dungeon.html`) is an experimental first-person wireframe dungeon crawl that reuses the shared card data. See [`DUNGEON.md`](DUNGEON.md).
 - **GHÏS** is a separate arcade-style space survival mode with card-based powerups.
 
 ## Card and opponent data
