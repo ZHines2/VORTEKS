@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>VORTEKS — The First Descent (prototype)</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles/dungeon.css">
+</head>
+<body>
+  <div id="app">
+    <canvas id="view" aria-label="First-person dungeon view"></canvas>
+
+    <div id="hud-top">
+      <div class="pill" id="loc">-</div>
+      <div class="pill">❤ <span id="hp">20/20</span></div>
+      <div class="pill">🔆 <span id="en">-</span></div>
+      <div class="pill">🛡 <span id="sh">0</span></div>
+      <canvas id="map" width="110" height="70" aria-label="Map"></canvas>
+      <div class="spacer"></div>
+      <label class="pill small"><input type="checkbox" id="reduceMotion"> reduce motion</label>
+      <a class="pill small" href="index.html">EXIT</a>
+    </div>
+
+    <div id="enemy-panel" hidden>
+      <div id="enemy-name">WARDEN</div>
+      <div class="bar"><div id="enemy-hp-fill"></div></div>
+      <div id="enemy-status"></div>
+      <div id="intent" aria-label="Enemy intent"></div>
+    </div>
+
+    <div id="toast" aria-live="polite"></div>
+    <div id="played" hidden></div>
+    <div id="table" hidden></div>
+
+    <div id="controls">
+      <button data-act="left" aria-label="Turn left">⟲</button>
+      <button data-act="fwd" aria-label="Move forward">▲</button>
+      <button data-act="right" aria-label="Turn right">⟳</button>
+      <button data-act="back" aria-label="Move backward">▼</button>
+      <button data-act="use" aria-label="Interact">✋</button>
+    </div>
+
+    <div id="combat" hidden>
+      <div id="piles"><span id="pile-deck">DECK 0</span><span id="pile-discard">DISCARD 0</span></div>
+      <div id="hand"></div>
+      <button id="endTurn" class="big">END TURN</button>
+    </div>
+
+    <div id="overlay">
+      <div class="panel">
+        <h1 id="ov-title">VORTEKS</h1>
+        <h2 id="ov-sub">THE FIRST DESCENT</h2>
+        <p id="ov-text">Descend, open the door, face the Warden, and reach the exit.<br>
+          <small>Keys: W/S or ↑/↓ move · A/D or ←/→ or Q/E turn · Space/F interact.<br>
+          In combat tap a card to inspect it, tap again to play.</small></p>
+        <div id="path"></div>
+        <div id="rewards"></div>
+        <button id="ov-btn" class="big">ENTER</button>
+        <p><a href="index.html">← back to VORTEKS</a></p>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="src/dungeon/main.js"></script>
+</body>
+</html>
